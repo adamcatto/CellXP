@@ -59,10 +59,12 @@ src/backend/cellxp/config/paths.py
 src/backend/cellxp/config/settings.py
 src/backend/cellxp/domain/__init__.py
 src/backend/cellxp/domain/artifacts.py
+src/backend/cellxp/domain/clock.py
 src/backend/cellxp/domain/coordinates.py
 src/backend/cellxp/domain/enums.py
 src/backend/cellxp/domain/errors.py
 src/backend/cellxp/domain/evidence.py
+src/backend/cellxp/domain/ids.py
 src/backend/cellxp/domain/models.py
 src/backend/cellxp/domain/safety.py
 src/backend/cellxp/domain/sequences.py
