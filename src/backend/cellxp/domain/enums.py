@@ -85,6 +85,36 @@ class ArtifactType(str, Enum):
     FILE = "file"
 
 
+class IntentType(str, Enum):
+    """Classified query intent (`routing_policy.md` §2)."""
+
+    VARIANT_EFFECT = "variant_effect"
+    GWAS_QTL = "gwas_qtl"
+    CRISPR_DESIGN = "crispr_design"
+    ANNOTATION = "annotation"
+    BINDING = "binding"
+    STRUCTURE = "structure"
+    ORIGAMI = "origami"
+    INVERSE_EDIT_DESIGN = "inverse_edit_design"
+    SYSTEMS_ANALYSIS = "systems_analysis"
+    LITERATURE = "literature"
+    VISUALIZATION = "visualization"
+    OUT_OF_DOMAIN = "out_of_domain"  # -> refuse/redirect (FR-8)
+    AMBIGUOUS = "ambiguous"  # -> clarify
+
+
+class RunStatus(str, Enum):
+    """Run lifecycle (`state_schema.md` §14)."""
+
+    QUEUED = "queued"
+    RUNNING = "running"
+    AWAITING_INPUT = "awaiting_input"  # open blocking clarification
+    AWAITING_REVIEW = "awaiting_review"  # pending review gate
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
 class PlanKind(str, Enum):
     """Task-taxonomy plan kind (`task_patterns.md` §0, `state_schema.md` §6)."""
 

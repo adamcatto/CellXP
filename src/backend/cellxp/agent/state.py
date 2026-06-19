@@ -9,7 +9,7 @@ reconcile the spec first (ADR-0004).
 from __future__ import annotations
 
 from operator import add
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict, TypeVar
 
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated
@@ -17,9 +17,11 @@ from typing_extensions import Annotated
 from cellxp.domain.artifacts import ArtifactRef
 from cellxp.domain.clock import utc_now_iso
 from cellxp.domain.enums import (
+    IntentType,
     PlanKind,
     ReviewDecision,
     ReviewGateStatus,
+    RunStatus,
     SubtaskType,
     TaskStatus,
 )
@@ -204,23 +206,83 @@ class Budget(BaseModel):
     spent: dict[str, float] = Field(default_factory=dict)
 
 
-# --- AgentState (TypedDict + reducers) is defined in §"target" below --------------------
+# --- §16 reducers ----------------------------------------------------------------------
+
+_HasId = TypeVar("_HasId")
+
+
+def merge_by_id(left: list[_HasId], right: list[_HasId]) -> list[_HasId]:
+    """Merge-by-id reducer (`state_schema.md` §16): items with the same `.id` are replaced,
+    new items appended. Used for `entities`/`clarifications`, which resolvers/UI update
+    incrementally rather than purely appending.
+    """
+    if not left:
+        return right
+    if not right:
+        return left
+    index = {item.id: i for i, item in enumerate(left)}  # type: ignore[attr-defined]
+    merged = list(left)
+    for item in right:
+        key = item.id  # type: ignore[attr-defined]
+        if key in index:
+            merged[index[key]] = item
+        else:
+            index[key] = len(merged)
+            merged.append(item)
+    return merged
+
+
+# --- §4 target AgentState --------------------------------------------------------------
 
 
 class AgentState(TypedDict, total=False):
-    messages: Annotated[list[Any], add]
+    """The shared working memory passed between graph nodes (`state_schema.md` §4).
+
+    Append fields use `Annotated[list, add]`; merge-by-id fields use `merge_by_id`;
+    everything else is last-write-wins (single owner node). Parallel nodes MUST only write
+    append/merge-by-id fields to avoid clobbering (§16).
+    """
+
+    # identity & meta
+    schema_version: str
+    run_id: str
+    created_at: str
+
+    # conversation
+    messages: Annotated[list[Message], add]
     user_query: str
-    intent: str
-    subtasks: list[dict[str, Any]]
-    evidence: Annotated[list[dict[str, Any]], add]
-    artifacts: Annotated[list[dict[str, Any]], add]
-    final_report: str
+
+    # inputs (raw -> normalized)
+    raw_inputs: list[RawInput]
+    normalized_inputs: NormalizedInputs
+
+    # understanding
+    intent: IntentType
+    risk: RiskAssessment
+    entities: Annotated[list[Entity], merge_by_id]
+    clarifications: Annotated[list[Clarification], merge_by_id]
+
+    # plan & execution
+    plan: Plan
+    subtasks: list[Subtask]
+    steps: Annotated[list[Step], add]
+    cursor: ExecutionCursor
+
+    # outputs
+    evidence: Annotated[list[EvidenceItem], add]
+    artifacts: Annotated[list[ArtifactRef], add]
+    final_report: Report
+
+    # control
+    review: ReviewState
+    errors: Annotated[list[RunError], add]
+    status: RunStatus
+    budget: Budget
 
 
-# Re-exported domain refs that compose into state (used by the TypedDict in 6b).
 __all__ = [
     "Message", "RawInput", "NormalizedInputs", "Entity", "ClarificationOption",
     "ClarificationAnswer", "Clarification", "Plan", "Subtask", "ExecutionCursor", "Step",
     "Report", "ReviewItem", "ReviewState", "RunError", "Budget", "AgentState",
-    "ArtifactRef", "EvidenceItem", "RiskAssessment",
+    "ArtifactRef", "EvidenceItem", "RiskAssessment", "merge_by_id",
 ]
