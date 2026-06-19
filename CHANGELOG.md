@@ -21,6 +21,8 @@ Categories: **Added**, **Changed**, **Deprecated**, **Removed**, **Fixed**, **Se
 - Wave 0 artifact domain contract (`domain/artifacts.py`): versioned manifests, bounded in-state
   references, explicit coordinate frames, progressive lifecycle and review metadata, accessible
   export guarantees, and superseding-correction links (`ART-1..8`).
+- Executable pull-request CI gates for backend lint/type/test/eval-catalog validation and frontend
+  production builds, plus path-scoped Docker Compose validation and nightly eval catalog checks.
 - Persistence layer (Wave 0 contract code) implementing the data specs: content-addressed object
   store with a `file://` backend (`storage/object_store.py`, `OS-*`/`PROV-4`), the SQLAlchemy 2
   relational schema mirroring `AgentState` (`storage/models.py`, `RS-*`), and a `StateRepository`

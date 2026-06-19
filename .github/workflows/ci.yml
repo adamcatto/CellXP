@@ -3,13 +3,28 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+  pull_request:
 jobs:
-  ci:
+  backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
       - run: pip install -e ".[dev]"
-      - run: make test
+      - run: make lint typecheck test eval-smoke
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: src/frontend/pnpm-lock.yaml
+      - run: pnpm --dir src/frontend install --frozen-lockfile
+      - run: make frontend-build

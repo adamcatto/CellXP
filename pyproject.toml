@@ -32,3 +32,14 @@ line-length = 100
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src/backend", "."]
+markers = [
+    "unit: T1 fast deterministic tests",
+    "integration: T2 graph and service integration",
+    "contract: T3 OpenAPI and client compatibility",
+    "e2e: T4 backend end-to-end",
+    "browser: T5 Playwright browser end-to-end",
+    "slow: exceeds the pull-request time budget",
+    "eval: T6 golden-query evaluation",
+    "gpu: requires a GPU",
+    "live: calls live external services",
+]

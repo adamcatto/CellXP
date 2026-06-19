@@ -1,15 +1,15 @@
 name: evals
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
+  schedule:
+    - cron: "17 4 * * *"
 jobs:
-  evals:
+  eval-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
       - run: pip install -e ".[dev]"
-      - run: make test
+      - run: make eval-smoke

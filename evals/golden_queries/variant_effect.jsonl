@@ -1,1 +1,1 @@
-{}
+{"id":"variant-effect-001","capability":"variant_effect","organism":"Homo sapiens","assembly":"GRCh38","message":"Could rs1421085 alter regulatory activity, and in which tissues is the evidence strongest?","expected":{"required_artifacts":[{"type":"genome_track"}],"required_models":[{"name":"alphagenome"}],"rubric_dimensions":["biological_correctness","confidence_calibration","provenance"]},"references":["FR-12","FR-13","FR-23","FR-24"],"added_at":"2026-06-19T00:00:00Z","last_reviewed_at":"2026-06-19T00:00:00Z"}

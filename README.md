@@ -256,6 +256,8 @@ make worker
 | `make test` | Run pytest |
 | `make lint` | Ruff lint check |
 | `make typecheck` | mypy type check |
+| `make frontend-build` | Build the production Next.js frontend |
+| `make eval-smoke` | Validate golden-query JSONL catalogs |
 | `make render-graph` | Render the LangGraph agent graph to a PNG |
 
 ---

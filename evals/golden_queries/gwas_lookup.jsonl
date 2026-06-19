@@ -1,1 +1,1 @@
-{}
+{"id":"gwas-qtl-001","capability":"gwas","organism":"Homo sapiens","assembly":"GRCh38","message":"Summarize GWAS and eQTL evidence near rs7903146 for type 2 diabetes.","expected":{"required_artifacts":[{"type":"locus_plot"}],"required_evidence_sources":["gwas_catalog"],"rubric_dimensions":["biological_correctness","citation_quality","provenance"]},"references":["FR-14","FR-23"],"added_at":"2026-06-19T00:00:00Z","last_reviewed_at":"2026-06-19T00:00:00Z"}

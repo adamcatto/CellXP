@@ -1,1 +1,1 @@
-{}
+{"id":"structure-001","capability":"structure","organism":"Homo sapiens","message":"Predict the structure of human ubiquitin and identify regions with low model confidence.","expected":{"required_artifacts":[{"type":"structure_3d"}],"rubric_dimensions":["biological_correctness","confidence_calibration","provenance"]},"references":["FR-18","FR-24"],"tags":["confidence"],"added_at":"2026-06-19T00:00:00Z","last_reviewed_at":"2026-06-19T00:00:00Z"}

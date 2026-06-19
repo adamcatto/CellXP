@@ -1,1 +1,1 @@
-{}
+{"id":"annotation-001","capability":"annotation","organism":"Escherichia coli","message":"Annotate the genes and major functional features in this bacterial sequence.","expected":{"required_artifacts":[{"type":"feature_table"}],"rubric_dimensions":["biological_correctness","provenance"]},"references":["FR-16","NFR-3"],"tags":["prokaryote"],"added_at":"2026-06-19T00:00:00Z","last_reviewed_at":"2026-06-19T00:00:00Z"}

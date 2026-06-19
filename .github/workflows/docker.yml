@@ -3,13 +3,23 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths:
+      - "docker-compose.yml"
+      - "infra/**"
+      - "src/**"
+      - "pyproject.toml"
+      - ".github/workflows/docker.yml"
+  pull_request:
+    paths:
+      - "docker-compose.yml"
+      - "infra/**"
+      - "src/**"
+      - "pyproject.toml"
+      - ".github/workflows/docker.yml"
 jobs:
-  docker:
+  compose:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: pip install -e ".[dev]"
-      - run: make test
+      - run: docker compose config --quiet
+      - run: docker compose -f infra/compose/docker-compose.yml config --quiet
