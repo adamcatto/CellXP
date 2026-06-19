@@ -51,7 +51,7 @@ Every folder below has a `README.md` index where noted — **read the README bef
 | Planning | `specs/planning/` | `roadmap` (near-term, committed), `future-additions` (backlog), `milestones`, `open_questions`, `risks` |
 | Explanations (why) | `documentation/explanation/` | architecture, multi-agent, harness/context eng., safety, evidence/confidence, coordinate systems, task patterns, why_langgraph |
 | Decisions | `documentation/adr/` | architectural decision records (numbered) |
-| How-to (implement) | `.agents/guidelines/` (README) | langgraph, langchain, deepagents, langsmith, interactive-visualization, testing, changelog-guidelines |
+| How-to (implement) | `.agents/guidelines/` (README) | stack-specific guidance plus feature documentation, testing, changelog, and atomic commits |
 | Reference | `documentation/reference/` | `external_models_and_services`, api, cli, config, env vars, service registry, db tables |
 | Community notes | `documentation/community-notes/` (README) | practical caveats (e.g. AlphaGenome-not-for-bacteria) |
 | Backend code | `src/backend/cellxp/` | agent/, api/, services/, domain/, storage/, jobs/, cli/, config/ (mostly stubs) |
@@ -65,6 +65,9 @@ Every folder below has a `README.md` index where noted — **read the README bef
 - **Decisions** go in `documentation/adr/` (one per decision, numbered).
 - **Planning:** committed/near-term → `specs/planning/roadmap.md`; speculative → `specs/planning/future-additions.md`. See either file's header for the promotion gate + status vocabulary.
 - **Changelog:** update `CHANGELOG.md` for notable changes, following `.agents/guidelines/changelog-guidelines.md` (Keep a Changelog; edit the `[Unreleased]` section).
+- **Feature documentation:** every added, changed, deprecated, or removed feature must synchronize
+  its specs, documentation, planning, tests/how-to-run instructions, indexes, and changelog as
+  applicable; follow `.agents/guidelines/feature-documentation.md`.
 - **Commits:** keep commits atomic — only the files you touched, with explicit paths; see `.agents/guidelines/atomic-commits.md`.
 - **Contributions / extension points** (new species, strain, assay, capability, model, harness, macro): `CONTRIBUTING.md`.
 
@@ -89,6 +92,8 @@ Every folder below has a `README.md` index where noted — **read the README bef
 
 ## 8. Before you finish a task
 
+- For every feature change, complete `.agents/guidelines/feature-documentation.md`; list updated
+  documentation/planning files at handoff and explicitly note any categories that were unaffected.
 - Make code/specs internally consistent (update cross-references and IDs).
 - Update `CHANGELOG.md` if the change is notable.
 - If you hit a non-obvious caveat, drop a `documentation/community-notes/` entry.

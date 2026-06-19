@@ -11,6 +11,7 @@ guideline disagree on intent, the spec wins; when they disagree on mechanics, fi
 | `deepagents.md` | sub-agents, virtual filesystem, planning, context compaction |
 | `langsmith.md` | tracing, evals, datasets, the post-training flywheel |
 | `interactive-visualization.md` | building artifacts/visualizations (genome tracks, structures, plots) |
+| `feature-documentation.md` | synchronizing specs, docs, planning, tests, and changelog for feature changes |
 | `changelog-guidelines.md` | maintaining `CHANGELOG.md` |
 | `atomic-commits.md` | staging and committing only the files you touched (path-scoped commits) |
 | `testing.md` | writing and running the test pyramid (pytest, Playwright, evals, CI triggers) |
