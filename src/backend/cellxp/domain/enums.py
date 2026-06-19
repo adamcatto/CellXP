@@ -85,6 +85,14 @@ class ArtifactType(str, Enum):
     FILE = "file"
 
 
+class RiskDecision(str, Enum):
+    """Early risk-gate outcome (`safety_model.md` §3, `risk_classifier.md`)."""
+
+    ALLOW = "allow"  # ordinary research request; proceed normally
+    RESTRICT = "restrict"  # legitimate but sensitive; force review gate + extra logging
+    BLOCK = "block"  # primary purpose hazardous; refuse or escalate, no capability work
+
+
 class VariantNotation(str, Enum):
     """Surface syntax a variant was written in (`input_normalizer.md` step 1)."""
 
