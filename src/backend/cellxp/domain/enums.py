@@ -85,6 +85,57 @@ class ArtifactType(str, Enum):
     FILE = "file"
 
 
+class PlanKind(str, Enum):
+    """Task-taxonomy plan kind (`task_patterns.md` §0, `state_schema.md` §6)."""
+
+    ATOMIC = "atomic"
+    MACRO = "macro"
+    COMPOSED = "composed"
+
+
+class SubtaskType(str, Enum):
+    """Capability a subtask routes to (`routing_policy.md` §2, `state_schema.md` §6)."""
+
+    VARIANT_EFFECT = "variant_effect"
+    GWAS = "gwas"
+    CRISPR = "crispr"
+    ANNOTATION = "annotation"
+    BINDING = "binding"
+    STRUCTURE = "structure"
+    ORIGAMI = "origami"
+    RAG = "rag"
+    VISUALIZATION = "visualization"
+
+
+class TaskStatus(str, Enum):
+    """Subtask/step lifecycle (`state_schema.md` §14)."""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    DONE = "done"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+    NEEDS_REVIEW = "needs_review"
+
+
+class ReviewGateStatus(str, Enum):
+    """Human-review gate state (`state_schema.md` §12, `human_review_policy.md`)."""
+
+    NOT_REQUIRED = "not_required"
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    CHANGES_REQUESTED = "changes_requested"
+
+
+class ReviewDecision(str, Enum):
+    """Per-item review decision (`state_schema.md` §12)."""
+
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
 class RiskDecision(str, Enum):
     """Early risk-gate outcome (`safety_model.md` §3, `risk_classifier.md`)."""
 
