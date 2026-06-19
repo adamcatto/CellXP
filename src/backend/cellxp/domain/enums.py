@@ -34,6 +34,14 @@ class CoordinateSystem(str, Enum):
     ONE_BASED_INCLUSIVE = "1-based-inclusive"  # VCF / GFF / genome-browser display
 
 
+class SequenceAlphabet(str, Enum):
+    """The biological alphabet a sequence is written in (`input_normalizer.md` step 2)."""
+
+    DNA = "dna"
+    RNA = "rna"
+    PROTEIN = "protein"
+
+
 class Topology(str, Enum):
     """Whether a contig/assembly replicon is linear or circular.
 

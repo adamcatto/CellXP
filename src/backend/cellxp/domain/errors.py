@@ -31,3 +31,7 @@ class CoordinateError(DomainValidationError):
     Raised by `domain/coordinates.py` and `domain/validators/coordinates.py` for any
     violation of the canonical coordinate invariants (`coordinate_systems.md` §6).
     """
+
+
+class SequenceError(DomainValidationError):
+    """Malformed biological sequence: bad alphabet, empty, or unparseable FASTA."""
