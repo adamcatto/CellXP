@@ -42,6 +42,7 @@ class ArtifactManifest(BaseModel):
     step_id: str | None = None
     evidence_ids: list[str] = []
     source_artifact_ids: list[str] = []
+    supersedes: str | None = None                 # corrected artifact ID (ART-4)
 
     summary: dict[str, Any] = {}                # bounded inline preview
     payload: dict[str, Any] | None = None        # only when <= OBJECT_INLINE_MAX

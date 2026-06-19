@@ -18,6 +18,9 @@ Categories: **Added**, **Changed**, **Deprecated**, **Removed**, **Fixed**, **Se
 ### Added
 - Feature-documentation guideline requiring every feature change to keep specs, docs, planning,
   test coverage/run instructions, indexes, and release history synchronized.
+- Wave 0 artifact domain contract (`domain/artifacts.py`): versioned manifests, bounded in-state
+  references, explicit coordinate frames, progressive lifecycle and review metadata, accessible
+  export guarantees, and superseding-correction links (`ART-1..8`).
 - Persistence layer (Wave 0 contract code) implementing the data specs: content-addressed object
   store with a `file://` backend (`storage/object_store.py`, `OS-*`/`PROV-4`), the SQLAlchemy 2
   relational schema mirroring `AgentState` (`storage/models.py`, `RS-*`), and a `StateRepository`
