@@ -17,6 +17,9 @@ from __future__ import annotations
 from pydantic import BaseModel, field_validator
 
 from .enums import Strand
+from .evidence import EvidenceItem  # re-exported: canonical shape lives in domain/evidence.py
+
+__all__ = ["GenomicInterval", "Variant", "EvidenceItem"]
 
 
 class GenomicInterval(BaseModel):
@@ -57,10 +60,3 @@ class Variant(BaseModel):
         if v < 0:
             raise ValueError("variant position must be non-negative (canonical 0-based)")
         return v
-
-
-class EvidenceItem(BaseModel):
-    source: str
-    claim: str
-    confidence: str
-    provenance: list[str] = []

@@ -42,6 +42,25 @@ class SequenceAlphabet(str, Enum):
     PROTEIN = "protein"
 
 
+class SourceKind(str, Enum):
+    """Kind of evidence backing a claim (`evidence_and_confidence.md` §2)."""
+
+    MEASUREMENT = "measurement"  # experimental assay readout (highest prior)
+    DATABASE = "database"  # GWAS Catalog, ClinVar, UniProt, GTEx record
+    LITERATURE = "literature"  # cited paper/preprint passage (RAG)
+    MODEL = "model"  # AlphaGenome/Evo2/ESMFold/Boltz prediction
+    COMPUTATION = "computation"  # deterministic calc (GC content, coordinate mapping)
+
+
+class ConfidenceBand(str, Enum):
+    """Qualitative confidence band; always present (`evidence_and_confidence.md` §4)."""
+
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    UNKNOWN = "unknown"
+
+
 class VariantNotation(str, Enum):
     """Surface syntax a variant was written in (`input_normalizer.md` step 1)."""
 
