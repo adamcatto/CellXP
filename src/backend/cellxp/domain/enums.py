@@ -61,6 +61,30 @@ class ConfidenceBand(str, Enum):
     UNKNOWN = "unknown"
 
 
+class ArtifactType(str, Enum):
+    """Registered artifact types (`artifact_model.md` §4). A one-off blob is not valid."""
+
+    GENOME_TRACK = "genome_track"
+    LOCUS_PLOT = "locus_plot"
+    CONTACT_MAP = "contact_map"
+    MOTIF_LOGO = "motif_logo"
+    STRUCTURE_3D = "structure_3d"
+    GUIDE_TABLE = "guide_table"
+    FEATURE_TABLE = "feature_table"
+    FUNCTION_TABLE = "function_table"
+    PROTEIN_DESIGN_TABLE = "protein_design_table"
+    STAPLE_TABLE = "staple_table"
+    ORIGAMI = "origami"
+    ORIGAMI_SIMULATION = "origami_simulation"
+    SEQUENCE_VIEWER = "sequence_viewer"
+    COORDINATE_TABLE = "coordinate_table"
+    OFF_TARGET_TABLE = "off_target_table"
+    AFFINITY_PANEL = "affinity_panel"
+    QC_PANEL = "qc_panel"
+    REPORT = "report"
+    FILE = "file"
+
+
 class VariantNotation(str, Enum):
     """Surface syntax a variant was written in (`input_normalizer.md` step 1)."""
 
