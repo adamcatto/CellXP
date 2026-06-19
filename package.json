@@ -1,0 +1,9 @@
+{
+  "name": "cellxp-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --dir src/frontend dev",
+    "build": "pnpm --dir src/frontend build",
+    "lint": "pnpm --dir src/frontend lint"
+  }
+}

@@ -1,0 +1,34 @@
+# Evaluation Plan
+
+> Status: Draft v0.1. Defines **quality measurement** of agent outputs (golden queries, rubrics, TRR).
+> **Automated verification** tiers (unit, integration, e2e, Playwright, CI triggers) are in
+> `testing_strategy.md`; implementation how-to in `.agents/guidelines/testing.md`.
+
+## 1. Scope
+
+**In scope (this doc + `evals/`):** non-deterministic LLM behavior, biological correctness, response
+quality, provenance completeness, safety posture — scored on golden queries against rubrics.
+
+**Out of scope:** deterministic invariants (coordinates, gates, API schemas) — those are **tests**
+(`tests/`, `TST-*`), though eval audits may cross-check the same metrics (`success_metrics.md`).
+
+## 2. Assets
+
+| Asset | Location |
+|---|---|
+| Golden queries | `evals/golden_queries/*.jsonl` |
+| Rubrics | `evals/rubrics/*.md` + `specs/evaluation/*_rubric.md` |
+| Runner | `evals/run_evals.py` |
+| Thresholds | `specs/product/success_metrics.md` |
+
+## 3. Execution (T6)
+
+- **Nightly** on `main` and on changes to agent, LLM service, harness, or prompts
+  (`testing_strategy.md` §5.2).
+- **Pre-release** full run required (`TST-8`, product_requirements §8).
+- Optional LangSmith tracing per `.agents/guidelines/langsmith.md`.
+
+## 4. Related
+
+`testing_strategy.md` · `regression_tests.md` · `golden_query_sets.md` · `safety_rubric.md` ·
+`biological_correctness_rubric.md` · `success_metrics.md`.
