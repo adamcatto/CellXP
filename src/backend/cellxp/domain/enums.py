@@ -42,6 +42,25 @@ class SequenceAlphabet(str, Enum):
     PROTEIN = "protein"
 
 
+class VariantNotation(str, Enum):
+    """Surface syntax a variant was written in (`input_normalizer.md` step 1)."""
+
+    RSID = "rsid"  # dbSNP identifier, e.g. rs334
+    VCF = "vcf"  # chrom/pos/ref/alt (1-based), space/colon/dash separated
+    HGVS_GENOMIC = "hgvs_genomic"  # accession:g.POSref>alt substitution
+
+
+class OrganismClass(str, Enum):
+    """Organism class that drives oracle selection (`supported_species.md` §1)."""
+
+    MAMMALIAN = "mammalian"
+    VERTEBRATE_NONMAMMAL = "vertebrate_nonmammal"
+    INVERTEBRATE = "invertebrate"
+    PLANT = "plant"
+    FUNGAL = "fungal"
+    PROKARYOTE = "prokaryote"
+
+
 class Topology(str, Enum):
     """Whether a contig/assembly replicon is linear or circular.
 

@@ -35,3 +35,7 @@ class CoordinateError(DomainValidationError):
 
 class SequenceError(DomainValidationError):
     """Malformed biological sequence: bad alphabet, empty, or unparseable FASTA."""
+
+
+class VariantError(DomainValidationError):
+    """Malformed or unparseable variant notation, or invalid alleles."""
