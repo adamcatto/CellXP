@@ -16,6 +16,12 @@ Categories: **Added**, **Changed**, **Deprecated**, **Removed**, **Fixed**, **Se
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- Persistence layer (Wave 0 contract code) implementing the data specs: content-addressed object
+  store with a `file://` backend (`storage/object_store.py`, `OS-*`/`PROV-4`), the SQLAlchemy 2
+  relational schema mirroring `AgentState` (`storage/models.py`, `RS-*`), and a `StateRepository`
+  that round-trips an `AgentState` by `run_id` and enforces append-only history with `supersedes`
+  corrections (`storage/repositories.py`, `RS-2`/`RS-3`/`PROV-2`/`PROV-3`). Cross-dialect column
+  types keep the round-trip testable on SQLite while targeting Postgres 16/JSONB in production.
 - System testing strategy (`specs/evaluation/testing_strategy.md`, `TST-*`) and implementation
   guideline (`.agents/guidelines/testing.md`): tiered pyramid (static → unit → integration → contract
   → backend e2e → Playwright → golden evals → live model), path-based CI triggers, and release gates;
