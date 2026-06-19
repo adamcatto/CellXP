@@ -39,3 +39,16 @@ class SequenceError(DomainValidationError):
 
 class VariantError(DomainValidationError):
     """Malformed or unparseable variant notation, or invalid alleles."""
+
+
+class IntegrityError(CellXPError):
+    """Stored content does not match its recorded hash (`provenance_model.md` §6, PROV-4).
+
+    Raised on read from the object store when a payload's `sha256` differs from the hash
+    captured in its `Step`/`ArtifactRef` provenance — i.e. corruption or tampering. Not a
+    user-validation error: it signals a data-integrity fault in the store itself.
+    """
+
+    def __init__(self, message: str, *, key: str | None = None) -> None:
+        super().__init__(message)
+        self.key = key
