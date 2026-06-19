@@ -195,8 +195,8 @@ CellXP/
 
 ### Prerequisites
 
-- Python 3.11+
-- Node.js 20+ and pnpm
+- Conda (the development environment pins Python 3.13)
+- NVM/Corepack (the frontend pins Node 22.9.0 and pnpm 10.17.0)
 - Docker (for Postgres, Redis, Ollama)
 
 ### 1. Start infrastructure
@@ -207,12 +207,19 @@ docker compose up -d
 docker compose exec ollama ollama pull gemma4:4b
 ```
 
-### 2. Install Python dependencies
+### 2. Create the development environments
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
+conda env create -f environment.yml
+conda activate cellxp
+
+nvm use
+corepack enable
+pnpm --dir src/frontend install --frozen-lockfile
 ```
+
+If the Conda environment already exists, synchronize it with
+`conda env update -n cellxp -f environment.yml --prune`.
 
 ### 3. Configure environment
 
