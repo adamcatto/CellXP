@@ -47,7 +47,9 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   (FR-1..FR-7) · the agent loop all subgraphs hang off · *in-progress* (implementation complete;
   automated graph coverage deferred) · depends-on: N2 · M1.
 - **N4 — Reference genome service.** GRCh38 + ≥1 prokaryote with circular handling (RGS-1..RGS-5) ·
-  coordinate source of truth; R2/R4 mitigation · *committed* · depends-on: N2 · M1.
+  coordinate source of truth; R2/R4 mitigation · *in-progress* (catalog + 6 operations + 69 tests
+  complete; Ensembl/dbSNP entity resolution and CrossMap liftover backends deferred to N5 phase) ·
+  depends-on: N2 · M1.
 - **N5 — Variant-effect vertical slice.** `variant_effect` subgraph + AlphaGenome service + binding
   evidence + evidence integration + report/run-trace (FR-12, FR-13, FR-14 binding subset, FR-22..24) ·
   proves the architecture end-to-end; first proven contract before fan-out · *committed* ·

@@ -21,6 +21,13 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-20** — N4 reference genome service (`services/reference/`): typed assembly catalog
+  (GRCh38, GRCm39, E. coli K-12 MG1655, G. oxydans 621H with all five circular plasmids);
+  `ReferenceGenomeService` implementing `list_supported_references`, `validate_variant`,
+  `get_sequence`, `resolve_entity`, `liftover`, and `annotate` with full provenance-bearing Steps
+  on every call (RGS-1..5); injectable `SequenceBackend` protocol; liftover and annotation types
+  (`LiftoverSegment`, `AnnotationFeature`); 69 unit tests covering circular topology, origin-crossing
+  extraction, ref-allele checks, contig alias resolution, and provenance compliance.
 - **2026-06-19** — N3 core orchestration spine: deterministic input normalization, intent and early
   risk classification, entity/assembly clarification with a durable LangGraph interrupt, typed
   atomic and composed plans, dependency-aware subtask looping and budgets, injectable capability
