@@ -21,6 +21,10 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-19** — N3 core orchestration spine: deterministic input normalization, intent and early
+  risk classification, entity/assembly clarification with a durable LangGraph interrupt, typed
+  atomic and composed plans, dependency-aware subtask looping and budgets, injectable capability
+  nodes, honest partial-failure reports, and safety/out-of-domain terminal responses.
 - **2026-06-19** — Feature-documentation guideline requiring every feature change to keep specs, docs, planning,
   test coverage/run instructions, indexes, and release history synchronized.
 - **2026-06-19** — Wave 0 artifact domain contract (`domain/artifacts.py`): versioned manifests, bounded in-state

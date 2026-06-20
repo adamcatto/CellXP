@@ -6,6 +6,10 @@
 >
 > For the planning model and where things go, see "How planning is organized" below. For *how this
 > work parallelizes across simultaneous agent sessions*, see "Execution waves" at the end.
+>
+> **Implementation checkpoint (2026-06-19):** Wave 0 is complete. N3 code is implemented with
+> deterministic bootstrap behavior and remains *in-progress* until its deferred graph coverage is
+> added. The next unblocked backend item on the critical path is N4.
 
 ## How planning is organized
 
@@ -33,14 +37,15 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
 <!-- The current focus: scoped, specced, dependencies known. Closing M0 + the M1 spine and first slice. -->
 
 - **N1 — Close M0.** Spec consistency pass + buildable scaffold + CI green · unblocks all code ·
-  *in-progress* · depends-on: — · M0.
+  *shipped* · depends-on: — · M0.
 - **N2 — Foundation contracts (the frozen spine).** `domain/` (coordinates, validators, models,
   evidence, errors, enums), `agent/state.py`, `services/base.py` + `registry`, storage/provenance
   models, `artifact_model`, `streaming_protocol` + `api_contracts` · the shared contracts every
   downstream slice imports; structurally mitigates R2 (coordinates) and R3 (provenance) ·
-  *in-progress* · depends-on: N1 · M1.
+  *shipped* · depends-on: N1 · M1.
 - **N3 — Core orchestration pipeline.** normalizer → intent → risk → entity → planner → clarify
-  (FR-1..FR-7) · the agent loop all subgraphs hang off · *committed* · depends-on: N2 · M1.
+  (FR-1..FR-7) · the agent loop all subgraphs hang off · *in-progress* (implementation complete;
+  automated graph coverage deferred) · depends-on: N2 · M1.
 - **N4 — Reference genome service.** GRCh38 + ≥1 prokaryote with circular handling (RGS-1..RGS-5) ·
   coordinate source of truth; R2/R4 mitigation · *committed* · depends-on: N2 · M1.
 - **N5 — Variant-effect vertical slice.** `variant_effect` subgraph + AlphaGenome service + binding
@@ -50,7 +55,8 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
 - **N6 — Frontend M1.** chat + progressive streaming UI, genome-browser pane v1, run inspector
   (FR-21, FR-27, FR-30) · the user-visible surface · *committed* · depends-on: N2 (contracts only) · M1.
 - **N7 — Safety M1.** `risk_classifier` on every run + audit log of refusals/consequential events
-  (FR-33, FR-34) · R1 structural defense · *committed* · depends-on: N2 · M1.
+  (FR-33, FR-34) · R1 structural defense · *in-progress* (early gate implemented; audit integration
+  remains) · depends-on: N2 · M1.
 
 ### Next
 <!-- Committed and sequenced, not started. Theme/epic granularity. -->

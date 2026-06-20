@@ -64,28 +64,37 @@ until the plan completes, fails, or hits budget; there are two durable pauses (`
 `await_review`). See `documentation/explanation/multi_agent_architecture.md` for the agent layers and
 `specs/agent/control-flow/*` for the dynamics.
 
-## 2. Top-level graph (current scaffold)
+## 2. Top-level graph (current implementation)
 
-The shipped graph (`graph.py`) wires a linear preamble → router → capability subgraphs → integration
-→ report:
+The N3 graph (`graph.py`) implements the safety-first preamble, blocking clarification pause, typed
+planning, dependency-aware task loop, graceful capability failure, and terminal report synthesis:
 
 ```
 START
   → input_normalizer
   → intent_classifier
-  → entity_resolver
   → risk_classifier
+      └──(block)─────────────────────────────────────────▶ report_generator → END
+  → entity_resolver
+      └──(blocking clarification)──▶ await_input ─────────┐
+                                                          ▼
   → planner
   → task_selector ──(route_task)──▶ {variant_effect | gwas | crispr | annotation | binding |
   │                                   structure | origami | rag | visualization}_subgraph
   │                                        │
   │                                        ▼
-  │                                 evidence_integrator → critic → report_generator → END
-  └──(no actionable work)──────────────────────────────▶ report_generator
+  │                                 evidence_integrator ─┘
+  └──(no ready work / budget exhausted)──▶ critic → report_generator → END
 ```
 
-This spec keeps that spine and extends it (additively) to support: clarification pauses, the
-human-review gate, multi-subtask/looping plans, and macros.
+Capability nodes are injectable. Until their roadmap slices land, the defaults fail honestly with a
+typed recoverable error, allowing the full control loop and partial-result report path to execute
+without claiming model results. Intent/entity/planning nodes currently provide deterministic
+bootstrap behavior behind their stable state contracts; provider-backed reasoning can be added
+without changing graph topology.
+
+The remaining additive topology change is the `human_review_gate`/`await_review` branch tracked by
+X6. Macro registration, concurrent dispatch, and evidence-driven replanning remain later extensions.
 
 ## 3. Target top-level graph
 
