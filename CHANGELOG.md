@@ -21,6 +21,14 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-20** — N5 variant-effect vertical slice (FR-13, AGS-1..5, BIS-1..5, FR-24):
+  `AlphaGenomeService` with `ModelBackend` protocol, organism-appropriate oracle selection
+  (AlphaGenome for mammalian, Evo 2 for other clades), and complete provenance on all calls;
+  `BindingService` with motif-scan and binding-delta types; `variant_effect` subgraph factory
+  orchestrating reference validation (RGS-1) → oracle → binding delta → run-trace Steps;
+  `evidence_integrator` node replacing N3 pass-through; coordinate transforms (window framing,
+  allele substitution, delta computation); 53 unit tests covering oracle routing, mock-backend
+  paths, binding delta emission, validation failure paths, and FR-24 run-trace completeness.
 - **2026-06-20** — N4 reference genome service (`services/reference/`): typed assembly catalog
   (GRCh38, GRCm39, E. coli K-12 MG1655, G. oxydans 621H with all five circular plasmids);
   `ReferenceGenomeService` implementing `list_supported_references`, `validate_variant`,

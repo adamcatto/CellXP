@@ -7,9 +7,10 @@
 > For the planning model and where things go, see "How planning is organized" below. For *how this
 > work parallelizes across simultaneous agent sessions*, see "Execution waves" at the end.
 >
-> **Implementation checkpoint (2026-06-19):** Wave 0 is complete. N3 code is implemented with
-> deterministic bootstrap behavior and remains *in-progress* until its deferred graph coverage is
-> added. The next unblocked backend item on the critical path is N4.
+> **Implementation checkpoint (2026-06-20):** Wave 0 is complete. N3 in-progress (spine complete;
+> automated graph coverage deferred). N4 in-progress (catalog + 6 operations + 69 tests; backends
+> deferred). N5 in-progress (AlphaGenomeService, BindingService, variant_effect subgraph, 53 tests;
+> real model backends deferred). N6/N7 and X1–X7 are next.
 
 ## How planning is organized
 
@@ -52,7 +53,9 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   depends-on: N2 · M1.
 - **N5 — Variant-effect vertical slice.** `variant_effect` subgraph + AlphaGenome service + binding
   evidence + evidence integration + report/run-trace (FR-12, FR-13, FR-14 binding subset, FR-22..24) ·
-  proves the architecture end-to-end; first proven contract before fan-out · *committed* ·
+  proves the architecture end-to-end; first proven contract before fan-out · *in-progress*
+  (AlphaGenomeService + BindingService + variant_effect subgraph + evidence_integrator + 53 tests
+  complete; real model backends and Ensembl entity-resolution deferred) ·
   depends-on: N3, N4 · M1.
 - **N6 — Frontend M1.** chat + progressive streaming UI, genome-browser pane v1, run inspector
   (FR-21, FR-27, FR-30) · the user-visible surface · *committed* · depends-on: N2 (contracts only) · M1.
