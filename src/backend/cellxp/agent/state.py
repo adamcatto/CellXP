@@ -247,6 +247,8 @@ class AgentState(TypedDict, total=False):
     schema_version: str
     run_id: str
     created_at: str
+    session_type: str
+    review_posture: Literal["standard", "strict"]
 
     # conversation
     messages: Annotated[list[Message], add]

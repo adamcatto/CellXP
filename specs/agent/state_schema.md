@@ -61,6 +61,8 @@ class AgentState(TypedDict, total=False):
     schema_version: str                                   # e.g. "1.0"
     run_id: str                                           # stable run identifier
     created_at: str                                       # ISO-8601
+    session_type: str                                     # session_types.md catalog key
+    review_posture: Literal["standard", "strict"]        # sessions never weaken safety
 
     # conversation
     messages: Annotated[list[Message], add]               # full chat transcript (reduced)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from cellxp.agent.state import AgentState, Budget, ExecutionCursor, RunError, Subtask
-from cellxp.domain.enums import TaskStatus
+from cellxp.domain.enums import RunStatus, TaskStatus
 
 _TERMINAL = {TaskStatus.DONE, TaskStatus.FAILED, TaskStatus.SKIPPED}
 
@@ -78,4 +78,11 @@ def run(state: AgentState) -> dict[str, object]:
     }
     if errors:
         update["errors"] = errors
+    if ready is None:
+        from cellxp.agent.routing import has_pending_actionable_review
+
+        routing_state = dict(state)
+        routing_state["subtasks"] = subtasks
+        if has_pending_actionable_review(routing_state):  # type: ignore[arg-type]
+            update["status"] = RunStatus.AWAITING_REVIEW
     return update

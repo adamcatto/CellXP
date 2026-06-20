@@ -21,6 +21,10 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-20** — X6 human review enforcement (FR-25, FR-26, FR-39): wire actionable outputs to
+  the audited LangGraph review interrupt before report generation, use replay-stable review IDs for
+  durable approval resume, cover actionable artifacts and subtasks, and add executable strict
+  defaults for genome-editing sessions with integration coverage for non-bypass behavior.
 - **2026-06-20** — X5 CRISPR design (FR-15, CRS-1..5): typed guide, off-target, scoring, and edit-
   outcome contracts; registered service with an injectable backend and organism/assembly guards;
   candidate-only actionable guide/off-target artifacts with per-guide confidence and provenance;

@@ -9,8 +9,7 @@ before being released to the user. The gate:
    actionable.emitted for each released artifact (AL-1, AL-6).
 
 The node is provided as a factory (make_human_review_gate) so an AuditRepository can be
-injected at graph-build time. The module-level `run` is the no-audit default. This node is
-wired into the graph by X6 (genome-editing session type + strict-posture routing).
+injected at graph-build time. The module-level `run` is the no-audit default.
 """
 
 from __future__ import annotations
@@ -20,10 +19,10 @@ from typing import TYPE_CHECKING, Any
 
 from langgraph.types import interrupt
 
-from cellxp.agent.state import AgentState, ReviewItem, ReviewState
-from cellxp.domain.audit import AGENT_ACTOR, AuditEntry, AuditEventType
+from cellxp.agent.state import AgentState, ReviewItem, ReviewState, Subtask
+from cellxp.domain.audit import AGENT_ACTOR, AuditEventType
 from cellxp.domain.clock import utc_now_iso
-from cellxp.domain.enums import ReviewDecision, ReviewGateStatus
+from cellxp.domain.enums import ReviewDecision, ReviewGateStatus, RunStatus
 
 if TYPE_CHECKING:
     from cellxp.storage.audit_repository import AuditRepository
@@ -45,8 +44,15 @@ def make_human_review_gate(
             a for a in artifacts
             if getattr(a, "actionable", False) and a.id not in reviewed_subjects
         ]
+        pending_subtasks = [
+            subtask
+            for raw in state.get("subtasks", [])
+            if (subtask := Subtask.model_validate(raw)).is_actionable
+            and subtask.id not in reviewed_subjects
+            and not any(getattr(artifact, "subtask_id", None) == subtask.id for artifact in artifacts)
+        ]
 
-        if not pending_artifacts:
+        if not pending_artifacts and not pending_subtasks:
             # Nothing actionable; gate is a no-op.
             return {"review": existing_review}
 
@@ -54,6 +60,7 @@ def make_human_review_gate(
         new_items: list[ReviewItem] = list(existing_review.items)
         for artifact in pending_artifacts:
             item = ReviewItem(
+                id=f"review-{artifact.id}",
                 subject_ref=artifact.id,
                 reason="Actionable output requires human review before release.",
                 risks=[],
@@ -75,9 +82,35 @@ def make_human_review_gate(
                     },
                 )
 
+        for subtask in pending_subtasks:
+            item = ReviewItem(
+                id=f"review-{subtask.id}",
+                subject_ref=subtask.id,
+                reason=f"Actionable {subtask.capability} subtask requires human review.",
+                evidence_ids=[
+                    evidence.id
+                    for evidence in state.get("evidence", [])
+                    if evidence.subtask_id == subtask.id
+                ],
+                decision=ReviewDecision.PENDING,
+            )
+            new_items.append(item)
+            if audit_repo is not None:
+                audit_repo.append(
+                    event_type=AuditEventType.REVIEW_REQUESTED,
+                    actor=AGENT_ACTOR,
+                    run_id=run_id,
+                    subject_ref=subtask.id,
+                    payload={
+                        "review_item_id": item.id,
+                        "reason": item.reason,
+                        "capability": subtask.capability,
+                    },
+                )
+
         review = ReviewState(
             required=True,
-            status=ReviewGateStatus.AWAITING,
+            status=ReviewGateStatus.PENDING,
             items=new_items,
         )
 
@@ -132,7 +165,7 @@ def make_human_review_gate(
         gate_status = (
             ReviewGateStatus.APPROVED if any_approved and all_decided
             else ReviewGateStatus.REJECTED if all_decided
-            else ReviewGateStatus.AWAITING
+            else ReviewGateStatus.PENDING
         )
 
         final_review = ReviewState(
@@ -141,7 +174,7 @@ def make_human_review_gate(
             items=final_items,
             decided_at=decided_at if all_decided else None,
         )
-        return {"review": final_review}
+        return {"review": final_review, "status": RunStatus.RUNNING}
 
     return _run
 

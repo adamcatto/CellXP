@@ -12,6 +12,7 @@ from cellxp.agent.nodes import (
     critic,
     entity_resolver,
     evidence_integrator,
+    human_review_gate,
     input_normalizer,
     intent_classifier,
     planner,
@@ -144,12 +145,15 @@ def build_graph(
     graph = StateGraph(AgentState)
     graph.add_node("input_normalizer", input_normalizer.run)
     graph.add_node("intent_classifier", intent_classifier.run)
-    graph.add_node("risk_classifier", risk_classifier.make_risk_classifier(audit_repo))
+    graph.add_node("risk_classifier", cast(Any, risk_classifier.make_risk_classifier(audit_repo)))
     graph.add_node("entity_resolver", entity_resolver.run)
     graph.add_node("await_input", await_input)
     graph.add_node("planner", planner.run)
     graph.add_node("task_selector", task_selector.run)
     graph.add_node("evidence_integrator", evidence_integrator.run)
+    graph.add_node(
+        "human_review_gate", cast(Any, human_review_gate.make_human_review_gate(audit_repo))
+    )
     graph.add_node("critic", critic.run)
     graph.add_node("report_generator", report_generator.run)
 
@@ -177,11 +181,16 @@ def build_graph(
     graph.add_conditional_edges(
         "task_selector",
         route_task,
-        {**{name: name for name in CAPABILITY_NODES}, "critic": "critic"},
+        {
+            **{name: name for name in CAPABILITY_NODES},
+            "human_review_gate": "human_review_gate",
+            "critic": "critic",
+        },
     )
     for name in CAPABILITY_NODES:
         graph.add_edge(name, "evidence_integrator")
     graph.add_edge("evidence_integrator", "task_selector")
+    graph.add_edge("human_review_gate", "critic")
     graph.add_edge("critic", "report_generator")
     graph.add_edge("report_generator", END)
     return graph.compile(checkpointer=checkpointer)

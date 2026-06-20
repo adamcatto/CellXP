@@ -92,8 +92,9 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   edit-spec guards, actionable artifacts, subgraph, and deterministic unit coverage; production
   scoring/off-target adapters remain deployment work) · depends-on: N5 · M3.
 - **X6 — Human-review gate.** `human_review_gate` node + genome-editing session type (strict posture)
-  (FR-25, FR-26, FR-39) · R1; enforced before any build-ready export · *committed* · depends-on:
-  X5, N7 · M3.
+  (FR-25, FR-26, FR-39) · R1; enforced before any build-ready export · *shipped* (supervisor
+  routing, durable approval resume with stable review IDs, actionable artifact/subtask coverage,
+  and executable strict session defaults) · depends-on: X5, N7 · M3.
 - **X7 — Inverse-design oracle.** desired effect → forward-model score → candidate edits → CRISPR
   feasibility (FR-18c) · first composed actionable loop · *committed* · depends-on: X5, X6 · M3.
 
