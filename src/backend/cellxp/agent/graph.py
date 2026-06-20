@@ -46,6 +46,7 @@ CAPABILITY_NODES = (
     "origami_subgraph",
     "rag_subgraph",
     "visualization_subgraph",
+    "inverse_design_subgraph",
 )
 
 

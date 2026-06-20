@@ -96,7 +96,9 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   routing, durable approval resume with stable review IDs, actionable artifact/subtask coverage,
   and executable strict session defaults) · depends-on: X5, N7 · M3.
 - **X7 — Inverse-design oracle.** desired effect → forward-model score → candidate edits → CRISPR
-  feasibility (FR-18c) · first composed actionable loop · *committed* · depends-on: X5, X6 · M3.
+  feasibility (FR-18c) · first composed actionable loop · *shipped* (typed bounded optimizer,
+  injectable joint oracle/feasibility backend, weighted/Pareto ranking, partial-target reporting,
+  actionable subgraph and supervisor routing, deterministic tests) · depends-on: X5, X6 · M3.
 
 ### Later
 <!-- Directional themes we're confident about; no commitment to the "how" yet. -->

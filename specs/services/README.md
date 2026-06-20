@@ -29,6 +29,7 @@ Every service contract MUST honor the persistence substrate defined in `specs/da
 | `structure_service.md` | protein/nucleic-acid/complex/ligand-aware structure + contact maps + protein design | ESMFold/Boltz/RFdiffusion/LigandMPNN behind one boundary |
 | `gwas_service.md` | trait associations, QTL lookup, LD, fine-mapping, colocalization | statistical-genetics evidence |
 | `crispr_service.md` | guide design, base/prime editing, off-target enumeration, edit outcomes | **actionable**, review-gated |
+| `inverse_design_service.md` | bounded forward-oracle + CRISPR edit optimization | **actionable**, review-gated |
 | `origami_service.md` | scaffold routing, staple generation, validation, simulation, cadnano/scadnano export | **actionable**, review-gated |
 | `rag_service.md` | literature/database retrieval, chunking, embedding, citation extraction | supplies citable evidence to the report generator |
 | `visualization_service.md` | data→artifact normalization, composition, tile prep, exports | the data side of every interactive pane in `specs/interface/` |
@@ -84,6 +85,7 @@ operation signature.
 | `variant_effect` | alphagenome, reference, binding (optional), structure (optional) |
 | `gwas` | gwas, reference, rag |
 | `crispr` | crispr, reference, alphagenome (inverse-design oracle), binding (off-target context) |
+| `inverse_design` | inverse_design, alphagenome, crispr, binding |
 | `structure` | structure, reference, rag |
 | `binding` | binding, reference, alphagenome |
 | `annotation` | reference, rag |

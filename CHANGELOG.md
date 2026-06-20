@@ -21,6 +21,10 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-20** — X7 model-guided inverse edit design (FR-18c, IDS-1..5): add a bounded desired-
+  effect → proposal → forward-score → CRISPR-feasibility loop, weighted and Pareto candidate ranking,
+  explicit partial-target gaps, compounded evidence/provenance, actionable supervisor routing through
+  X6 review, normative service/subgraph specs, and deterministic service/planner/subgraph tests.
 - **2026-06-20** — X6 human review enforcement (FR-25, FR-26, FR-39): wire actionable outputs to
   the audited LangGraph review interrupt before report generation, use replay-stable review IDs for
   durable approval resume, cover actionable artifacts and subtasks, and add executable strict

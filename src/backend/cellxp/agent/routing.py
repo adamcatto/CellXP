@@ -16,6 +16,7 @@ _DESTINATIONS = {
     "origami": "origami_subgraph",
     "rag": "rag_subgraph",
     "visualization": "visualization_subgraph",
+    "inverse_design": "inverse_design_subgraph",
 }
 
 

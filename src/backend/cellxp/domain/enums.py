@@ -135,6 +135,7 @@ class SubtaskType(str, Enum):
     ORIGAMI = "origami"
     RAG = "rag"
     VISUALIZATION = "visualization"
+    INVERSE_DESIGN = "inverse_design"
 
 
 class TaskStatus(str, Enum):

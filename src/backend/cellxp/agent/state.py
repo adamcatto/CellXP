@@ -280,6 +280,7 @@ class AgentState(TypedDict, total=False):
     errors: Annotated[list[RunError], add]
     status: RunStatus
     budget: Budget
+    target_effect: dict[str, Any]
 
 
 __all__ = [

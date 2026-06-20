@@ -25,6 +25,7 @@ Parent specs: `specs/agent/graph_spec.md` §5, `specs/agent/state_schema.md`,
 | variant_effect | `variant_effect.md` | no | AlphaGenome / Evo 2 (catalog §1) | FR-13 |
 | gwas | `gwas.md` | no | GWAS Catalog, Open Targets, SuSiE (§9) | FR-14 |
 | crispr | `crispr.md` | **yes** | guide design + off-target (§10) | FR-15 |
+| inverse_design | `inverse_design.md` | **yes** | forward oracle + CRISPR feasibility (§11) | FR-18c |
 | annotation | `annotation.md` | no | Bakta/Pyrodigal, AlphaGenome (§7) | FR-16 |
 | binding | `binding.md` | no | AlphaGenome heads, ChromBPNet, FIMO (§6) | FR-17 |
 | structure | `structure.md` | no | ESMFold, Boltz-2 (§3/§4/§5) | FR-18 |
@@ -32,7 +33,7 @@ Parent specs: `specs/agent/graph_spec.md` §5, `specs/agent/state_schema.md`,
 | rag | `rag.md` | no | PubMed, retriever (§17) | FR-20 |
 | visualization | `visualization.md` | no | visualization service | FR-21 |
 
-> Composed/systems-level work (inverse edit design, variant→GRN, strain engineering) is **not** a new
-> subgraph — it is a multi-subtask plan traversing several of these (`task_patterns.md` §2–§6,
-> `routing_policy.md` §7). Protein/metabolite/network capabilities (`FR-18a/b/c/d`) are realized by
+> Composed/systems-level work may be an internally composed subgraph (the shipped bounded
+> `inverse_design` loop) or a multi-subtask plan traversing several capabilities (`task_patterns.md`
+> §2–§6, `routing_policy.md` §7). Protein/metabolite/network capabilities (`FR-18a/b/d`) are realized by
 > extending `structure`/`annotation`/`binding` subgraphs + future `design`/`systems` subgraphs.

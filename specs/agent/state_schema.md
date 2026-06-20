@@ -94,6 +94,7 @@ class AgentState(TypedDict, total=False):
     errors: Annotated[list[RunError], add]                # non-fatal failures (§13)
     status: RunStatus                                     # lifecycle (§14)
     budget: Budget                                        # token/time/cost ceilings (§15)
+    target_effect: dict[str, Any]                         # explicit FR-18c desired-effect objective
 ```
 
 Each substructure is specified below. Types are Pydantic v2 models unless noted; all are

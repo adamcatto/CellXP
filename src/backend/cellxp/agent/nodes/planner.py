@@ -59,19 +59,17 @@ def run(state: AgentState) -> dict[str, object]:
         )
         subtasks = [effect, gwas, structure]
     elif primary is IntentType.INVERSE_EDIT_DESIGN:
-        effect = Subtask(
-            type=SubtaskType.VARIANT_EFFECT,
-            capability=SubtaskType.VARIANT_EFFECT.value,
-            inputs=shared_inputs,
-        )
+        target_effect = state.get("target_effect") or {
+            "readout": "unspecified",
+            "direction": "shift",
+        }
         edit = Subtask(
-            type=SubtaskType.CRISPR,
-            capability=SubtaskType.CRISPR.value,
-            inputs=shared_inputs,
-            depends_on=[effect.id],
+            type=SubtaskType.INVERSE_DESIGN,
+            capability=SubtaskType.INVERSE_DESIGN.value,
+            inputs={**shared_inputs, "target_effect": target_effect},
             is_actionable=True,
         )
-        subtasks = [effect, edit]
+        subtasks = [edit]
     elif primary is IntentType.SYSTEMS_ANALYSIS:
         annotation = Subtask(
             type=SubtaskType.ANNOTATION,
@@ -100,7 +98,11 @@ def run(state: AgentState) -> dict[str, object]:
 
     old_plan = state.get("plan")
     revision = Plan.model_validate(old_plan).revision + 1 if old_plan else 0
-    kind = PlanKind.ATOMIC if len(subtasks) == 1 else PlanKind.COMPOSED
+    kind = (
+        PlanKind.COMPOSED
+        if primary is IntentType.INVERSE_EDIT_DESIGN or len(subtasks) != 1
+        else PlanKind.ATOMIC
+    )
     plan = Plan(
         kind=kind,
         created_by="planner",
