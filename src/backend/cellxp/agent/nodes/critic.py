@@ -1,2 +1,7 @@
-def run(state):
-    return {"evidence": [{"node": "critic", "status": "stub"}]}
+"""N3 terminal self-check hook; substantive evidence critique lands with N5."""
+
+from cellxp.agent.state import AgentState
+
+
+def run(state: AgentState) -> dict[str, object]:
+    return {}
