@@ -21,6 +21,11 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-20** — X1 GWAS/QTL backend (FR-14, GWS-1..5, PROV-1): add the registered
+  `GwasService` with typed association, LD, SuSiE fine-mapping, and coloc contracts; an injectable
+  backend protocol; explicit human-resource organism/assembly guards and EMPTY/UNSUPPORTED/FAILURE
+  outcomes; persisted table/locus artifacts and cited provenance; a reference-validation-first
+  `gwas` subgraph; and 25 unit tests covering all operations and subgraph paths.
 - **2026-06-20** — X2 literature-grounding capability (FR-20, RAG-1..5): five-operation
   `RagService` with an injectable retrieval/vector backend, explicit no-backend and zero-hit
   outcomes, reference-catalog guards, chunk/embedding provenance, resolvable evidence citation

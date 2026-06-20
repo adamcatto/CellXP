@@ -1,6 +1,8 @@
 # GWAS / QTL Service
 
-> Status: Draft v0.1. Logical service contract for statistical-genetics lookup and analysis. Impl:
+> Status: Draft v0.1; typed service boundary and injectable backend implemented for X1
+> (2026-06-20); production data/tool adapters remain deferred. Logical service contract for
+> statistical-genetics lookup and analysis. Impl:
 > `src/backend/cellxp/services/gwas/`. Methodology:
 > `specs/biology/gwas_qtl_lookup.md`. Catalog:
 > `documentation/reference/external_models_and_services.md` §8, §9.
@@ -81,3 +83,14 @@ sample size/study power, PIP, coloc H4, LD-panel fit, and source directness.
 
 `specs/biology/gwas_qtl_lookup.md` · `specs/services/reference_genome_service.md` ·
 `specs/data/provenance_model.md` · `specs/interface/genome_browser.md`.
+
+## 10. Verification
+
+Unit coverage for GWS-1..5, PROV-1, organism/assembly guards, all four operations, and subgraph
+success/failure paths lives in `tests/unit/test_gwas_service.py` and
+`tests/unit/test_gwas_subgraph.py`. Run it with:
+
+```bash
+PYTHONPATH=src/backend python -m pytest \
+  tests/unit/test_gwas_service.py tests/unit/test_gwas_subgraph.py -q
+```

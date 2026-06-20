@@ -73,7 +73,9 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
 <!-- Committed and sequenced, not started. Theme/epic granularity. -->
 
 - **X1 — GWAS/QTL.** service + subgraph + locus-inspector pane (FR-14) · associations, LD, fine-map,
-  coloc · *committed* · depends-on: N5 · M2.
+  coloc · *in-progress* (typed `GwasService` with injectable backend, four operations, human-data
+  coverage guards, provenance/artifacts, GWAS subgraph, and 25 unit tests complete; production
+  GWAS/QTL adapters and locus-inspector pane deferred) · depends-on: N5 · M2.
 - **X2 — RAG.** service + vector index + report-resolvable citations (FR-20) · literature grounding;
   R3 citation validity · *in-progress* (five-operation `RagService`, injectable retrieval/vector
   backend contract, RAG subgraph, resolvable evidence citation maps, and 17 unit tests complete;

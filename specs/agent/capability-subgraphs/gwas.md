@@ -1,6 +1,7 @@
 # gwas Subgraph
 
-> Status: Draft v0.1. Capability: GWAS/QTL (`FR-14`). Parent: `graph_spec.md` §5. Impl:
+> Status: Draft v0.1; X1 backend subgraph implemented with injectable services (2026-06-20).
+> Capability: GWAS/QTL (`FR-14`). Parent: `graph_spec.md` §5. Impl:
 > `agent/subgraphs/gwas.py`, `services/gwas/`. Methodology: `specs/biology/gwas_qtl_lookup.md`.
 > Not actionable.
 
@@ -33,6 +34,8 @@ data for this organism" rather than mismatched results.
 
 - Default trait scope; which fine-mapper config.
 - Cross-population LD handling.
+- The frozen artifact taxonomy currently provides `locus_plot` and generic `feature_table`, but not
+  the service contract's named association, credible-set, coloc, and LD table/matrix types (A13).
 
 ## Related
 

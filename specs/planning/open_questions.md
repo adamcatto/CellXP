@@ -156,6 +156,19 @@ change that no longer leaves room for ambiguity.
   `src/backend/cellxp/domain/enums.py`.
 - **Status.** `open`.
 
+### A13 — GWAS statistical-artifact taxonomy
+
+- **Question.** Should the frozen artifact catalog add first-class `association_table`,
+  `credible_set_table`, `coloc_table`, and `ld_matrix` types, or should GWAS continue using the
+  generic `feature_table` plus `locus_plot`?
+- **Trade-off.** First-class types give renderers precise contracts and match GWS-4, but expanding a
+  frozen shared enum requires a coordinated contract cycle and increases pane taxonomy (R7).
+- **Leaning.** Add the four types in the next coordinated artifact-contract cycle; use
+  `feature_table` during X1 so the implementation does not mutate Wave 0 contracts.
+- **Affects.** `specs/services/gwas_service.md` §5, `specs/interface/artifact_model.md` §4,
+  `specs/interface/interactive_panes.md`, X1 locus-inspector rendering.
+- **Status.** `open`.
+
 ## B. Per-spec open questions (index)
 
 The authoritative wording for each item lives in the cited spec's own *Open questions*
