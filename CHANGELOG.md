@@ -21,6 +21,11 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-20** — X2 literature-grounding capability (FR-20, RAG-1..5): five-operation
+  `RagService` with an injectable retrieval/vector backend, explicit no-backend and zero-hit
+  outcomes, reference-catalog guards, chunk/embedding provenance, resolvable evidence citation
+  maps, citation-context artifacts, and a RAG subgraph with Steps on every execution path; 17 unit
+  tests use mock backends and perform no external calls.
 - **2026-06-19** — N7 safety M1 (FR-33, FR-34): append-only, SHA-256 hash-chained audit log;
   `AuditEntry`/`Actor` domain models with `verify()` and `_compute_entry_hash` (AL-4);
   `AuditLog` ORM table with composite indexes on `(run_id, at)`, `(session_id, at)`,

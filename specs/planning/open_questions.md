@@ -142,6 +142,20 @@ change that no longer leaves room for ambiguity.
 - **Affects.** `documentation/adr/`, all spec areas.
 - **Status.** `leaning above-criterion`.
 
+### A12 — First-class citation-set artifact type
+
+- **Question.** Should the next coordinated artifact-contract cycle add `citation_table` to the
+  frozen `ArtifactType` enum, matching `rag_service.md` §5, or should citation sets remain report
+  artifacts containing a resolvable citation map?
+- **Trade-off.** A first-class type enables a dedicated renderer and makes the service spec literal;
+  adding it now would violate the Wave 0 contract freeze, while `report` preserves citation
+  resolution without changing shared contracts.
+- **Leaning.** Add `citation_table` in the next coordinated contract cycle; X2 uses a non-actionable
+  `report` artifact until then.
+- **Affects.** `specs/services/rag_service.md` §5, `specs/interface/artifact_model.md` §4,
+  `src/backend/cellxp/domain/enums.py`.
+- **Status.** `open`.
+
 ## B. Per-spec open questions (index)
 
 The authoritative wording for each item lives in the cited spec's own *Open questions*

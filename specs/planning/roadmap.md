@@ -75,7 +75,9 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
 - **X1 — GWAS/QTL.** service + subgraph + locus-inspector pane (FR-14) · associations, LD, fine-map,
   coloc · *committed* · depends-on: N5 · M2.
 - **X2 — RAG.** service + vector index + report-resolvable citations (FR-20) · literature grounding;
-  R3 citation validity · *committed* · depends-on: N5 · M2.
+  R3 citation validity · *in-progress* (five-operation `RagService`, injectable retrieval/vector
+  backend contract, RAG subgraph, resolvable evidence citation maps, and 17 unit tests complete;
+  live source adapters and concrete vector-store backend deferred) · depends-on: N5 · M2.
 - **X3 — Structure.** ESMFold service + Mol\*-class 3D pane + linked viewports (FR-18) · folded-protein
   evidence · *in-progress* (StructureService with ESMFold/Boltz-2/Orca/DNAshapeR backend protocol +
   `predict_structure`/`predict_contacts`/`predict_dna_shape`, structure subgraph, 61 tests complete;
