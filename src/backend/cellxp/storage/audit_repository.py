@@ -36,7 +36,15 @@ def _to_orm(entry: AuditEntry) -> AuditLog:
 
 
 def _from_orm(row: AuditLog) -> AuditEntry:
-    at_str = row.at.isoformat() if isinstance(row.at, datetime) else str(row.at)
+    at = row.at
+    if isinstance(at, datetime):
+        # SQLite drops timezone info; restore UTC so the ISO string matches the original
+        # form used when the hash was computed (+00:00 suffix).
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=timezone.utc)
+        at_str = at.isoformat()
+    else:
+        at_str = str(at)
     return AuditEntry.model_validate(
         {
             "id": row.id,

@@ -37,7 +37,7 @@ def test_run_id_is_universal_fk():
 
 def test_append_only_tables_marked():
     assert APPEND_ONLY_TABLES == frozenset(
-        {"messages", "steps", "evidence_items", "artifacts", "run_errors"}
+        {"messages", "steps", "evidence_items", "artifacts", "run_errors", "audit_log"}
     )
 
 
