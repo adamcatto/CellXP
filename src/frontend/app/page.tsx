@@ -1,3 +1,7 @@
-export default function Page() {
-  return <main><h1>CellXP</h1><p>Genome AI copilot workspace.</p></main>;
+// Root landing page — redirects to /chat for the workspace.
+
+import { redirect } from 'next/navigation';
+
+export default function RootPage() {
+  redirect('/chat');
 }
