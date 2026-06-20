@@ -15,7 +15,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, Uuid
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from cellxp.domain.enums import (
@@ -261,6 +261,35 @@ class Macro(Base):
     created_at: Mapped[datetime] = mapped_column(TimestampTZ, default=utc_now)
 
 
+class AuditLog(Base):
+    """Immutable, hash-chained audit trail (audit_log.md §3, AL-2, AL-4).
+
+    Every row is insert-only; no UPDATE or DELETE in normal operation. The ``hash`` column forms
+    a tamper-evident chain: each entry's hash covers all its own fields plus ``prev_hash``, so
+    any retroactive edit breaks every successor.
+    """
+
+    __tablename__ = "audit_log"
+    __append_only__ = True
+
+    __table_args__ = (
+        Index("ix_audit_log_run_id_at", "run_id", "at"),
+        Index("ix_audit_log_session_id_at", "session_id", "at"),
+        Index("ix_audit_log_event_type_at", "event_type", "at"),
+    )
+
+    id: Mapped[str] = _id_col()
+    event_type: Mapped[str] = mapped_column(String, nullable=False)
+    actor: Mapped[dict[str, Any]] = mapped_column(JSONType, nullable=False)
+    run_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=False)
+    session_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=False)
+    subject_ref: Mapped[str | None] = mapped_column(String, nullable=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONType, default=dict)
+    at: Mapped[datetime] = mapped_column(TimestampTZ, default=utc_now, nullable=False)
+    prev_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
 # Tables whose rows are insert-only in normal operation (RS-2, PROV-3). The repository layer
 # checks this set; corrections insert a new row with `supersedes`.
 APPEND_ONLY_TABLES: frozenset[str] = frozenset(
@@ -270,5 +299,5 @@ APPEND_ONLY_TABLES: frozenset[str] = frozenset(
 __all__ = [
     "Base", "User", "WorkspaceSession", "Run", "Message", "Subtask", "Step", "EvidenceItem",
     "Artifact", "ArtifactEvidence", "Clarification", "ReviewItem", "RunError", "Macro",
-    "APPEND_ONLY_TABLES",
+    "AuditLog", "APPEND_ONLY_TABLES",
 ]
