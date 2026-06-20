@@ -33,7 +33,32 @@ def run(state: AgentState) -> dict[str, object]:
     shared_inputs = normalized.model_dump(mode="json")
     subtasks: list[Subtask] = []
 
-    if primary is IntentType.INVERSE_EDIT_DESIGN:
+    composed_evidence = {
+        IntentType.VARIANT_EFFECT,
+        IntentType.GWAS_QTL,
+        IntentType.STRUCTURE,
+    }.issubset(intents)
+
+    if composed_evidence:
+        effect = Subtask(
+            type=SubtaskType.VARIANT_EFFECT,
+            capability=SubtaskType.VARIANT_EFFECT.value,
+            inputs=shared_inputs,
+        )
+        gwas = Subtask(
+            type=SubtaskType.GWAS,
+            capability=SubtaskType.GWAS.value,
+            inputs=shared_inputs,
+            depends_on=[effect.id],
+        )
+        structure = Subtask(
+            type=SubtaskType.STRUCTURE,
+            capability=SubtaskType.STRUCTURE.value,
+            inputs={**shared_inputs, "source": "variant_effect", "kind": "protein"},
+            depends_on=[gwas.id],
+        )
+        subtasks = [effect, gwas, structure]
+    elif primary is IntentType.INVERSE_EDIT_DESIGN:
         effect = Subtask(
             type=SubtaskType.VARIANT_EFFECT,
             capability=SubtaskType.VARIANT_EFFECT.value,

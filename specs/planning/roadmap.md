@@ -85,7 +85,8 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   `predict_structure`/`predict_contacts`/`predict_dna_shape`, structure subgraph, 61 tests complete;
   real model backends and the Mol\*-class 3D pane deferred) · depends-on: N5 · M2.
 - **X4 — Composed evidence pattern.** variant → GWAS → fold → report + calibration eval · the M2
-  user-visible payoff · *committed* · depends-on: X1, X2, X3 · M2.
+  user-visible payoff · *shipped* (ordered dependency plan, cross-subtask evidence accounting,
+  planner tests, golden query, and worked calibration example) · depends-on: X1, X2, X3 · M2.
 - **X5 — CRISPR design.** service + subgraph + guide-pool & off-target panes (FR-15) · first actionable
   capability · *committed* · depends-on: N5 · M3.
 - **X6 — Human-review gate.** `human_review_gate` node + genome-editing session type (strict posture)

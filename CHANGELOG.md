@@ -21,6 +21,9 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-20** — X4 composed evidence pattern: deterministically plan variant-effect → GWAS →
+  structure dependencies, record cross-subtask evidence coverage, and add planner regression tests
+  plus a golden query and worked confidence-calibration example for the composed report.
 - **2026-06-20** — X1 GWAS/QTL backend (FR-14, GWS-1..5, PROV-1): add the registered
   `GwasService` with typed association, LD, SuSiE fine-mapping, and coloc contracts; an injectable
   backend protocol; explicit human-resource organism/assembly guards and EMPTY/UNSUPPORTED/FAILURE
