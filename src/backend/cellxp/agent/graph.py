@@ -19,6 +19,7 @@ from cellxp.agent.nodes import (
     risk_classifier,
     task_selector,
 )
+from cellxp.storage.audit_repository import AuditRepository
 from cellxp.agent.routing import route_after_entities, route_after_risk, route_task
 from cellxp.agent.state import (
     AgentState,
@@ -133,12 +134,17 @@ def build_graph(
     *,
     capability_nodes: Mapping[str, Node] | None = None,
     checkpointer: Any | None = None,
+    audit_repo: AuditRepository | None = None,
 ):
-    """Build the supervisor; tests/services may inject capability subgraphs and a checkpointer."""
+    """Build the supervisor; tests/services may inject capability subgraphs and a checkpointer.
+
+    When `audit_repo` is provided, safety BLOCK/RESTRICT decisions are written to the audit log
+    by the risk_classifier node (AL-1, N7 Safety M1).
+    """
     graph = StateGraph(AgentState)
     graph.add_node("input_normalizer", input_normalizer.run)
     graph.add_node("intent_classifier", intent_classifier.run)
-    graph.add_node("risk_classifier", risk_classifier.run)
+    graph.add_node("risk_classifier", risk_classifier.make_risk_classifier(audit_repo))
     graph.add_node("entity_resolver", entity_resolver.run)
     graph.add_node("await_input", await_input)
     graph.add_node("planner", planner.run)
