@@ -40,8 +40,16 @@ respects assembly + circularity.
 
 ## Open questions
 
-- ESMFold vs Boltz-2 default per input size/complexity.
-- Where protein design lives (extend here vs new `design` subgraph).
+- ESMFold vs Boltz-2 default per input size/complexity. *(X3 decision: single protein
+  monomer → ESMFold; any ligand, multiple chains, `complex`, or `nucleic_acid` → Boltz-2;
+  a monomer exceeding the ESMFold length ceiling returns a validation error pending a
+  chunking/Boltz-2 reroute strategy. See `select_structure_model` in `services/structure/`.)*
+- Auto-reroute oversized ESMFold monomers to Boltz-2 / a chunking strategy instead of
+  returning a validation error (X3 returns a validation error for now).
+- Bare-interval genomic structure defaults to `contacts`; a `dna_shape` request needs an
+  explicit subtask `kind` hint — revisit whether the planner should disambiguate.
+- Where protein design lives (extend here vs new `design` subgraph). *(X3 scope is
+  prediction only; generative design FR-18a stays review-gated, deferred to X6.)*
 
 ## Related
 
