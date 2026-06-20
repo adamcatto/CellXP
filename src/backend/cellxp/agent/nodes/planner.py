@@ -59,14 +59,14 @@ def run(state: AgentState) -> dict[str, object]:
         )
         subtasks = [effect, gwas, structure]
     elif primary is IntentType.INVERSE_EDIT_DESIGN:
-        target_effect = state.get("target_effect") or {
-            "readout": "unspecified",
-            "direction": "shift",
-        }
+        target_effect = state.get("target_effect")
         edit = Subtask(
             type=SubtaskType.INVERSE_DESIGN,
             capability=SubtaskType.INVERSE_DESIGN.value,
-            inputs={**shared_inputs, "target_effect": target_effect},
+            inputs={
+                **shared_inputs,
+                **({"target_effect": target_effect} if target_effect is not None else {}),
+            },
             is_actionable=True,
         )
         subtasks = [edit]
