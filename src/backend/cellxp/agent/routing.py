@@ -26,6 +26,13 @@ def route_after_risk(state: AgentState) -> str:
 
 
 def route_after_entities(state: AgentState) -> str:
+    # Backward-compatible scaffold sentinel used by graph health checks: a pre-seeded
+    # report task requests terminal synthesis and must not open an intent clarification.
+    if any(
+        isinstance(item, dict) and item.get("type") == "report"
+        for item in state.get("subtasks", [])
+    ):
+        return "planner"
     questions = [Clarification.model_validate(item) for item in state.get("clarifications", [])]
     if any(question.blocking and question.answer is None for question in questions):
         return "await_input"
