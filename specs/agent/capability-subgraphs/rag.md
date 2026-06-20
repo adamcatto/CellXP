@@ -2,6 +2,8 @@
 
 > Status: Draft v0.1. Capability: literature grounding / RAG (`FR-20`). Parent: `graph_spec.md` §5.
 > Impl: `agent/subgraphs/rag.py`, `services/rag/`. Not actionable.
+> Implementation checkpoint (2026-06-20): subgraph factory and default no-backend node implemented;
+> live source adapters remain deployment work.
 
 ## Purpose
 

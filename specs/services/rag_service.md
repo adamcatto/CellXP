@@ -5,6 +5,11 @@
 > `src/backend/cellxp/services/rag/`. Data contracts:
 > `specs/data/vector_index.md`, `specs/data/provenance_model.md`. Catalog:
 > `documentation/reference/external_models_and_services.md` §17.
+>
+> **Implementation checkpoint (2026-06-20):** The five-operation service contract, injectable
+> `RagBackend`, reference-catalog guards, resolvable citation maps, vector-chunk provenance, and
+> no-backend/empty/failure outcomes are implemented. Live source adapters and a concrete vector
+> store remain deployment work; the default service makes no external calls.
 
 ## 1. Purpose
 
@@ -84,3 +89,12 @@ service or a dedicated embedding provider, but the embedding model/version is al
 
 `specs/data/vector_index.md` · `specs/agent/evidence_integration.md` ·
 `documentation/explanation/evidence_and_confidence.md` · `specs/interface/artifact_model.md`.
+
+## 11. Verification
+
+Unit coverage for RAG-1..5 and PROV-1 lives in `tests/unit/test_rag_service.py` and
+`tests/unit/test_rag_subgraph.py`. It uses injectable mock backends and performs no real I/O:
+
+```bash
+python -m pytest tests/unit/test_rag_service.py tests/unit/test_rag_subgraph.py -q
+```
