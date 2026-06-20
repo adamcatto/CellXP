@@ -88,7 +88,9 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   user-visible payoff · *shipped* (ordered dependency plan, cross-subtask evidence accounting,
   planner tests, golden query, and worked calibration example) · depends-on: X1, X2, X3 · M2.
 - **X5 — CRISPR design.** service + subgraph + guide-pool & off-target panes (FR-15) · first actionable
-  capability · *committed* · depends-on: N5 · M3.
+  capability · *shipped* (typed four-operation service, injectable backend, organism/assembly and
+  edit-spec guards, actionable artifacts, subgraph, and deterministic unit coverage; production
+  scoring/off-target adapters remain deployment work) · depends-on: N5 · M3.
 - **X6 — Human-review gate.** `human_review_gate` node + genome-editing session type (strict posture)
   (FR-25, FR-26, FR-39) · R1; enforced before any build-ready export · *committed* · depends-on:
   X5, N7 · M3.
