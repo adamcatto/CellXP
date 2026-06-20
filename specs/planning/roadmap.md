@@ -58,7 +58,10 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   complete; real model backends and Ensembl entity-resolution deferred) ·
   depends-on: N3, N4 · M1.
 - **N6 — Frontend M1.** chat + progressive streaming UI, genome-browser pane v1, run inspector
-  (FR-21, FR-27, FR-30) · the user-visible surface · *committed* · depends-on: N2 (contracts only) · M1.
+  (FR-21, FR-27, FR-30) · the user-visible surface · *in-progress* (wire types, REST+SSE client,
+  streaming accumulator, chat thread, genome browser, run inspector, workspace layout, and all
+  app pages implemented; full backend integration deferred until N5 ships) ·
+  depends-on: N2 (contracts only) · M1.
 - **N7 — Safety M1.** `risk_classifier` on every run + audit log of refusals/consequential events
   (FR-33, FR-34) · R1 structural defense · *in-progress* (early gate implemented; audit integration
   remains) · depends-on: N2 · M1.

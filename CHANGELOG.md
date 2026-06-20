@@ -21,6 +21,17 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-19** — N6 frontend M1 (FR-21, FR-27, FR-30): TypeScript wire types mirroring the full
+  REST+SSE contract; REST client (`lib/api.ts`); SSE streaming client with `applyRunEvent`
+  accumulator (`lib/streaming.ts`); artifact helpers and genome coordinate utilities; UI
+  primitives (Button, Card, Dialog, Tabs); full chat thread with progressive streaming — thinking
+  disclosure, activity/tool-call log, artifact bubbles, clarification cards, and review-gate
+  cards (CHT-1..10); chat composer with slash and `@`-mention autocomplete (CHT-2..4); genome
+  browser pane v1 — Canvas-based track renderer, gene model track, variant table, pan/zoom/keyboard
+  navigation, coordinate chrome (GBR-1..10); run inspector pane with steps timeline, evidence
+  list, and artifact grid (FR-30); artifact pane dock with type-dispatch renderer; three-column
+  resizable workspace layout with sidebar, keyboard shortcuts (WSP-1..10); app pages: `/chat`,
+  `/runs/[runId]`, `/artifacts/[artifactId]`.
 - **2026-06-20** — N5 variant-effect vertical slice (FR-13, AGS-1..5, BIS-1..5, FR-24):
   `AlphaGenomeService` with `ModelBackend` protocol, organism-appropriate oracle selection
   (AlphaGenome for mammalian, Evo 2 for other clades), and complete provenance on all calls;
