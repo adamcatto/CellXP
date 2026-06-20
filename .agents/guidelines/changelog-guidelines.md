@@ -22,6 +22,9 @@ no-ops (typo fixes, formatting) unless meaningful.
 
 - Put it under the right category in `[Unreleased]`: **Added / Changed / Deprecated / Removed /
   Fixed / Security**.
+- Prefix every bullet with the **land date** in ISO form: `- **YYYY-MM-DD** — …`. Use the date the
+  change lands on the default branch (merge day), not when work started.
+- Within a category, list **newest dates first**.
 - One line, imperative-ish, present tense; reference the spec/file or `FR-*`/ADR where useful.
 - Be specific: "Add human-review gate spec (`specs/agent/human_review_policy.md`)" — not "update docs".
 - Group related files; don't list 20 near-identical lines (e.g. "Add per-node specs
@@ -29,7 +32,9 @@ no-ops (typo fixes, formatting) unless meaningful.
 
 ## Releasing a version
 
-1. Change `## [Unreleased]` → `## [X.Y.Z] - YYYY-MM-DD`; add a fresh empty `[Unreleased]` above it.
+1. Change `## [Unreleased]` → `## [X.Y.Z] - YYYY-MM-DD` (release date on the section header); add a
+   fresh empty `[Unreleased]` above it. Keep per-entry `**YYYY-MM-DD**` prefixes inside the released
+   section — they record when each item landed during development.
 2. Choose the bump per SemVer: **MAJOR** breaking contract change, **MINOR** new capability/spec
    (back-compatible), **PATCH** fixes/clarifications.
 3. Update the link refs at the bottom (`[Unreleased]`, `[X.Y.Z]`).

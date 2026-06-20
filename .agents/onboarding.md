@@ -64,7 +64,7 @@ Every folder below has a `README.md` index where noted — **read the README bef
 - **Requirement IDs are stable:** `FR-*` (functional), `NFR-*` (non-functional), `CR-*` (constraint), plus `HARN-*`/`CTX-*`/`PT-*`. Reference them; don't renumber casually.
 - **Decisions** go in `documentation/adr/` (one per decision, numbered).
 - **Planning:** committed/near-term → `specs/planning/roadmap.md`; speculative → `specs/planning/future-additions.md`. See either file's header for the promotion gate + status vocabulary.
-- **Changelog:** update `CHANGELOG.md` for notable changes, following `.agents/guidelines/changelog-guidelines.md` (Keep a Changelog; edit the `[Unreleased]` section).
+- **Changelog:** update `CHANGELOG.md` for notable changes, following `.agents/guidelines/changelog-guidelines.md` (Keep a Changelog; edit the `[Unreleased]` section; prefix entries with `**YYYY-MM-DD**`).
 - **Feature documentation:** every added, changed, deprecated, or removed feature must synchronize
   its specs, documentation, planning, tests/how-to-run instructions, indexes, and changelog as
   applicable; follow `.agents/guidelines/feature-documentation.md`.
