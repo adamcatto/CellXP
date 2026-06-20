@@ -21,6 +21,29 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-19** — N7 safety M1 (FR-33, FR-34): append-only, SHA-256 hash-chained audit log;
+  `AuditEntry`/`Actor` domain models with `verify()` and `_compute_entry_hash` (AL-4);
+  `AuditLog` ORM table with composite indexes on `(run_id, at)`, `(session_id, at)`,
+  `(event_type, at)`; `AuditRepository` with an insert-only `append()` path that threads
+  `prev_hash` from the partition tail, a `query()` filter, and a `verify_chain()` walker;
+  `make_risk_classifier(audit_repo)` factory wires `safety.refused` / `safety.restricted`
+  audit entries on BLOCK/RESTRICT decisions with capped query digests (AL-3); full
+  `human_review_gate` implementation with `review.requested` / `review.decided` /
+  `actionable.emitted` audit writes ready for X6 graph wiring; 16 unit tests covering all
+  AL-1..6 requirements; `build_graph(audit_repo=…)` injection point.
+- **2026-06-19** — X3 structure capability (FR-18, STS-1..5, FR-24): `StructureService`
+  (`services/structure/`) with an injectable `StructureBackend` protocol and three prediction
+  operations — `predict_structure` (ESMFold monomer / Boltz-2 complex+ligand+NA, with
+  service-derived pLDDT-style confidence bands and low-confidence spans), `predict_contacts`
+  (Orca chromatin contact map), and `predict_dna_shape` (DNAshapeR track); deterministic
+  transforms for task classification, ESMFold/Boltz-2 model selection, and confidence
+  derivation; `structure` subgraph factory orchestrating task classification → reference
+  validation (RGS-1, genomic kinds) → oracle → `structure_3d`/`contact_map`/`genome_track`
+  artifacts with run-trace Steps on every path; no-backend operations return UNSUPPORTED
+  rather than crashing, and pure prediction is never actionable (generative design FR-18a
+  deferred to X6). 61 unit tests covering classification, model selection, confidence
+  transforms, organism/assembly guards, oversized-sequence and alphabet-mismatch validation,
+  artifact emission, and FR-24 run-trace completeness.
 - **2026-06-19** — N6 frontend M1 (FR-21, FR-27, FR-30): TypeScript wire types mirroring the full
   REST+SSE contract; REST client (`lib/api.ts`); SSE streaming client with `applyRunEvent`
   accumulator (`lib/streaming.ts`); artifact helpers and genome coordinate utilities; UI

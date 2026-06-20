@@ -63,8 +63,11 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   app pages implemented; full backend integration deferred until N5 ships) ·
   depends-on: N2 (contracts only) · M1.
 - **N7 — Safety M1.** `risk_classifier` on every run + audit log of refusals/consequential events
-  (FR-33, FR-34) · R1 structural defense · *in-progress* (early gate implemented; audit integration
-  remains) · depends-on: N2 · M1.
+  (FR-33, FR-34) · R1 structural defense · *shipped* (AuditEntry domain model + SHA-256 hash
+  chain; AuditLog ORM table + AuditRepository; safety.refused/restricted wired into
+  risk_classifier; human_review_gate implemented with review.requested/decided/actionable.emitted;
+  16 unit tests covering AL-1..6; X6 will wire the gate into the graph for actionable outputs)
+  · depends-on: N2 · M1.
 
 ### Next
 <!-- Committed and sequenced, not started. Theme/epic granularity. -->
@@ -74,7 +77,9 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
 - **X2 — RAG.** service + vector index + report-resolvable citations (FR-20) · literature grounding;
   R3 citation validity · *committed* · depends-on: N5 · M2.
 - **X3 — Structure.** ESMFold service + Mol\*-class 3D pane + linked viewports (FR-18) · folded-protein
-  evidence · *committed* · depends-on: N5 · M2.
+  evidence · *in-progress* (StructureService with ESMFold/Boltz-2/Orca/DNAshapeR backend protocol +
+  `predict_structure`/`predict_contacts`/`predict_dna_shape`, structure subgraph, 61 tests complete;
+  real model backends and the Mol\*-class 3D pane deferred) · depends-on: N5 · M2.
 - **X4 — Composed evidence pattern.** variant → GWAS → fold → report + calibration eval · the M2
   user-visible payoff · *committed* · depends-on: X1, X2, X3 · M2.
 - **X5 — CRISPR design.** service + subgraph + guide-pool & off-target panes (FR-15) · first actionable
