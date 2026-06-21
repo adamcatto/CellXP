@@ -189,6 +189,26 @@ class SequenceBackend(Protocol):
         ...
 
 
+@runtime_checkable
+class EntityBackend(Protocol):
+    """External identifier resolver (for example Ensembl REST)."""
+
+    name: str
+    version: str
+
+    def resolve(self, request: EntityResolveRequest, assembly: str) -> EntityResolveResult: ...
+
+
+@runtime_checkable
+class LiftoverBackend(Protocol):
+    """Assembly-aware interval mapping backend."""
+
+    name: str
+    version: str
+
+    def map(self, request: LiftoverRequest) -> LiftoverResult: ...
+
+
 # ---------------------------------------------------------------------------
 # Built-in assembly catalog
 # ---------------------------------------------------------------------------
@@ -367,10 +387,14 @@ class ReferenceGenomeService(Service):
         assembly_catalog: dict[str, AssemblyInfo] | None = None,
         species_profiles: dict[str, SpeciesProfile] | None = None,
         sequence_backend: SequenceBackend | None = None,
+        entity_backend: EntityBackend | None = None,
+        liftover_backend: LiftoverBackend | None = None,
     ) -> None:
         self._catalog = assembly_catalog if assembly_catalog is not None else ASSEMBLY_CATALOG
         self._profiles = species_profiles if species_profiles is not None else SPECIES_PROFILES
         self._seq_backend = sequence_backend
+        self._entity_backend = entity_backend
+        self._liftover_backend = liftover_backend
 
     # ------------------------------------------------------------------
     # list_supported_references
@@ -440,18 +464,40 @@ class ReferenceGenomeService(Service):
                 steps=[_done_step("resolve_entity", started)],
             )
 
-        # rsID → dbSNP backend required
-        if request.identifier.lower().startswith("rs"):
+        if self._entity_backend is None:
+            kind = "rsID/dbSNP" if request.identifier.lower().startswith("rs") else "gene/accession"
             return ServiceResult.unsupported(
-                "rsID resolution requires a dbSNP backend; none is configured",
+                f"{kind} resolution requires an Ensembl or NCBI backend; none is configured",
                 steps=[_done_step("resolve_entity", started)],
             )
-
-        # Gene symbol / accession → Ensembl/NCBI backend required
-        return ServiceResult.unsupported(
-            "gene-symbol and accession resolution require an Ensembl or NCBI backend; "
-            "none is configured",
-            steps=[_done_step("resolve_entity", started)],
+        try:
+            result = self._entity_backend.resolve(request, assembly)
+        except Exception as exc:  # noqa: BLE001
+            return ServiceResult.failed(
+                RunError(kind="BackendError", message=str(exc)),
+                steps=[_failed_step("resolve_entity", started, error=str(exc))],
+            )
+        finished = utc_now_iso()
+        if result.entity is None and not result.candidates:
+            return ServiceResult.empty(
+                f"identifier {request.identifier!r} was not found",
+                steps=[_backend_step("resolve_entity", started, finished, self._entity_backend)],
+            )
+        return ServiceResult.succeeded(
+            result,
+            steps=[_backend_step("resolve_entity", started, finished, self._entity_backend)],
+            evidence=[EvidenceItem(
+                source=self._entity_backend.name,
+                source_kind=SourceKind.DATABASE,
+                claim=f"Resolved {request.identifier!r} against {assembly}",
+                confidence=Confidence(band=ConfidenceBand.HIGH),
+                provenance=Provenance(
+                    tool=self._entity_backend.name,
+                    tool_version=self._entity_backend.version,
+                    inputs=request.model_dump() | {"resolved_assembly": assembly},
+                    timestamp=finished,
+                ),
+            )],
         )
 
     # ------------------------------------------------------------------
@@ -702,10 +748,41 @@ class ReferenceGenomeService(Service):
                     steps=[_done_step("liftover", started)],
                 )
 
-        return ServiceResult.unsupported(
-            f"liftover from {request.source_assembly!r} to {request.target_assembly!r} "
-            f"requires a chain-file backend (CrossMap); none is configured",
-            steps=[_done_step("liftover", started)],
+        if self._liftover_backend is None:
+            return ServiceResult.unsupported(
+                f"liftover from {request.source_assembly!r} to {request.target_assembly!r} "
+                f"requires an Ensembl or chain-file mapping backend; none is configured",
+                steps=[_done_step("liftover", started)],
+            )
+        try:
+            result = self._liftover_backend.map(request)
+        except Exception as exc:  # noqa: BLE001
+            return ServiceResult.failed(
+                RunError(kind="BackendError", message=str(exc)),
+                steps=[_failed_step("liftover", started, error=str(exc))],
+            )
+        finished = utc_now_iso()
+        return ServiceResult.succeeded(
+            result,
+            steps=[_backend_step("liftover", started, finished, self._liftover_backend)],
+            evidence=[EvidenceItem(
+                source=self._liftover_backend.name,
+                source_kind=SourceKind.DATABASE,
+                claim=(f"Mapped {result.mapped_count}/{len(result.segments)} segments from "
+                       f"{request.source_assembly} to {request.target_assembly}"),
+                confidence=Confidence(band=ConfidenceBand.HIGH),
+                provenance=Provenance(
+                    tool=self._liftover_backend.name,
+                    tool_version=self._liftover_backend.version,
+                    inputs={
+                        "organism": request.organism,
+                        "source_assembly": request.source_assembly,
+                        "target_assembly": request.target_assembly,
+                        "intervals": [item.model_dump() for item in request.intervals],
+                    },
+                    timestamp=finished,
+                ),
+            )],
         )
 
     # ------------------------------------------------------------------
@@ -759,4 +836,16 @@ def _failed_step(name: str, started: str, *, error: str) -> Step:
         started_at=started,
         finished_at=utc_now_iso(),
         error=error,
+    )
+
+
+def _backend_step(name: str, started: str, finished: str, backend: Any) -> Step:
+    return Step(
+        name=name,
+        tool=backend.name,
+        tool_version=backend.version,
+        weight="light",
+        status=TaskStatus.DONE,
+        started_at=started,
+        finished_at=finished,
     )

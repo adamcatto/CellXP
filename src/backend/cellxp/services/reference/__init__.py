@@ -11,6 +11,8 @@ from .genome import (
     ContigInfo,
     EntityResolveRequest,
     EntityResolveResult,
+    EntityBackend,
+    LiftoverBackend,
     ReferenceCatalog,
     ReferenceGenomeService,
     ResolvedEntity,
@@ -22,6 +24,7 @@ from .genome import (
     VariantValidationResult,
 )
 from .liftover import LiftoverRequest, LiftoverResult, LiftoverSegment
+from .ensembl import EnsemblRestBackend
 
 __all__ = [
     # genome service + catalog
@@ -32,6 +35,9 @@ __all__ = [
     "ContigInfo",
     "SpeciesProfile",
     "SequenceBackend",
+    "EntityBackend",
+    "LiftoverBackend",
+    "EnsemblRestBackend",
     # request / result types
     "EntityResolveRequest",
     "EntityResolveResult",

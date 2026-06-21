@@ -42,6 +42,13 @@ Light operations: entity lookup, sequence extraction, contig normalization, vari
 small-interval annotation lookup. Heavy operations: whole-genome annotation, eukaryotic gene finding,
 antiSMASH, InterProScan/eggNOG, EC prediction, and large liftover batches.
 
+The production HTTP adapter uses Ensembl REST for gene/Ensembl accession lookup, dbSNP `rs` mapping,
+and supported cross-assembly mappings. Ensembl's 1-based inclusive coordinates are converted at the
+adapter boundary to the internal 0-based half-open representation. Deployments may inject a local
+chain-file backend instead; absence of either backend is reported as `unsupported`, while upstream
+HTTP failures are recoverable service failures. Live API tests are opt-in; unit tests use an injected
+HTTP transport and do not require network access.
+
 ## 5. Outputs & Artifacts
 
 | Output | Artifact type | Storage |
