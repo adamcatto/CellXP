@@ -7,7 +7,6 @@ internally; strand handling is explicit; no silent conversions.
 
 from __future__ import annotations
 
-from cellxp.domain.enums import Strand
 from cellxp.domain.errors import CoordinateError
 from cellxp.domain.models import Variant
 from cellxp.services.reference.genome import AssemblyInfo

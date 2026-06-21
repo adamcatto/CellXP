@@ -13,7 +13,6 @@ from __future__ import annotations
 from cellxp.agent.state import RunError, Step
 from cellxp.domain.clock import utc_now_iso
 from cellxp.domain.enums import ConfidenceBand, SourceKind, TaskStatus
-from cellxp.domain.errors import CoordinateError
 from cellxp.domain.evidence import Confidence, EvidenceItem, Provenance
 from cellxp.services.base import Service, ServiceResult
 from cellxp.services.registry import registry
@@ -26,14 +25,12 @@ from .schemas import (
     SpliceEffectResult,
     TrackPredictionRequest,
     TrackPredictionResult,
-    VariantEffect,
     VariantEffectRequest,
     VariantEffectResult,
     alphagenome_applicable,
     organism_class_for,
     select_oracle,
 )
-from .transforms import variant_id
 
 
 @registry.register
@@ -102,7 +99,7 @@ class AlphaGenomeService(Service):
                 confidence=Confidence(band=ConfidenceBand.MEDIUM),
                 provenance=Provenance(
                     tool=oracle,
-                    tool_version="unknown",
+                    tool_version=_backend_version(self._backend),
                     inputs={
                         "organism": request.organism,
                         "assembly": request.assembly,
@@ -114,7 +111,10 @@ class AlphaGenomeService(Service):
         ]
         return ServiceResult.succeeded(
             raw,
-            steps=[_done_step("score_variants", started, tool=oracle, finished=finished)],
+            steps=[_done_step(
+                "score_variants", started, tool=oracle, finished=finished,
+                tool_version=_backend_version(self._backend),
+            )],
             evidence=evidence,
         )
 
@@ -150,7 +150,10 @@ class AlphaGenomeService(Service):
 
         return ServiceResult.succeeded(
             raw,
-            steps=[_done_step("score_sequences", started, tool="model_backend")],
+            steps=[_done_step(
+                "score_sequences", started, tool="model_backend",
+                tool_version=_backend_version(self._backend),
+            )],
         )
 
     # ------------------------------------------------------------------
@@ -186,7 +189,10 @@ class AlphaGenomeService(Service):
 
         return ServiceResult.succeeded(
             raw,
-            steps=[_done_step("predict_tracks", started, tool=oracle)],
+            steps=[_done_step(
+                "predict_tracks", started, tool=oracle,
+                tool_version=_backend_version(self._backend),
+            )],
         )
 
     # ------------------------------------------------------------------
@@ -221,7 +227,10 @@ class AlphaGenomeService(Service):
 
         return ServiceResult.succeeded(
             raw,
-            steps=[_done_step("score_splicing", started, tool="spliceai")],
+            steps=[_done_step(
+                "score_splicing", started, tool="spliceai",
+                tool_version=_backend_version(self._backend),
+            )],
         )
 
 
@@ -230,15 +239,27 @@ class AlphaGenomeService(Service):
 # ---------------------------------------------------------------------------
 
 
-def _done_step(name: str, started: str, *, tool: str, finished: str | None = None) -> Step:
+def _done_step(
+    name: str,
+    started: str,
+    *,
+    tool: str,
+    finished: str | None = None,
+    tool_version: str | None = None,
+) -> Step:
     return Step(
         name=name,
         tool=tool,
+        tool_version=tool_version,
         weight="light",
         status=TaskStatus.DONE,
         started_at=started,
         finished_at=finished or utc_now_iso(),
     )
+
+
+def _backend_version(backend: ModelBackend) -> str:
+    return str(getattr(backend, "version", "unknown"))
 
 
 def _failed_step(name: str, started: str, *, tool: str, error: str) -> Step:

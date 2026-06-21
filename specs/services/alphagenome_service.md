@@ -51,6 +51,12 @@ Every model call emits:
 - one or more `EvidenceItem`s for salient model readouts;
 - one or more `ArtifactRef`s for track, delta, or table payloads.
 
+The production transport is a typed HTTP client for independently deployed workers. It exposes
+versioned `/v1/score-variants`, `/v1/score-sequences`, `/v1/predict-tracks`, and
+`/v1/score-splicing` operations, with optional bearer authentication, bounded request timeouts, and
+Pydantic validation of every response. An absent endpoint leaves the service explicitly unsupported;
+HTTP and response-contract errors become recoverable backend failures.
+
 ## 5. Outputs & Artifacts
 
 Small summaries MAY be inline JSON. Large arrays and track payloads MUST be written to object
