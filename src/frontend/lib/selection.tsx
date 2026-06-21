@@ -40,6 +40,17 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>;
 }
 
+/** Opt a pane into or out of the shared bus without unmounting its local viewer state. */
+export function SelectionScope({ enabled, children }: { enabled: boolean; children: React.ReactNode }) {
+  const parent = useContext(SelectionContext);
+  const value = useMemo<SelectionContextValue>(() => enabled ? parent : {
+    selection: null,
+    publish: noop,
+    clear: noop,
+  }, [enabled, parent]);
+  return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>;
+}
+
 /** Workspace-local ephemeral selection bus. Safe to use outside a provider (it becomes inert). */
 export function useWorkspaceSelection(): SelectionContextValue {
   return useContext(SelectionContext);

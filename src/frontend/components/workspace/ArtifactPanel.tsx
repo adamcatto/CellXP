@@ -6,7 +6,7 @@ import { api } from '../../lib/api';
 import { artifactIcon, artifactLabel, isGenomicArtifact } from '../../lib/artifacts';
 import { GenomeBrowser } from '../genome/GenomeBrowser';
 import { Tabs, TabPanel } from '../ui/Tabs';
-import { SelectionProvider } from '../../lib/selection';
+import { SelectionProvider, SelectionScope } from '../../lib/selection';
 import { LocusInspector } from '../plots/LocusInspector';
 import { StructureViewer3D } from '../structure/StructureViewer3D';
 import { GuidePoolDesigner } from '../tables/GuidePoolDesigner';
@@ -137,6 +137,7 @@ interface ArtifactRendererProps {
 
 function ArtifactRenderer({ manifest, defaultViewport }: ArtifactRendererProps) {
   const { type } = manifest;
+  const [linked, setLinked] = useState(false);
 
   // Pane chrome — coordinates + provenance + confidence header
   const coordFrame = manifest.coordinate_frame;
@@ -178,6 +179,25 @@ function ArtifactRenderer({ manifest, defaultViewport }: ArtifactRendererProps) 
             ⚠ transformed
           </span>
         )}
+        <button
+          type="button"
+          aria-pressed={linked}
+          aria-label={linked ? 'Unlink pane selections' : 'Link pane selections'}
+          title={linked ? 'Selections are shared with other linked panes' : 'Link selections with other panes'}
+          onClick={() => setLinked(value => !value)}
+          style={{
+            marginLeft: manifest.exports?.length ? 0 : 'auto',
+            border: '1px solid var(--border)',
+            borderRadius: 4,
+            background: linked ? 'var(--accent)' : 'var(--bg-overlay)',
+            color: linked ? '#fff' : 'var(--text-muted)',
+            cursor: 'pointer',
+            fontSize: 11,
+            padding: '2px 6px',
+          }}
+        >
+          ↗ {linked ? 'Linked' : 'Link'}
+        </button>
         {/* Export link */}
         {manifest.exports && manifest.exports.length > 0 && (
           <a
@@ -200,6 +220,7 @@ function ArtifactRenderer({ manifest, defaultViewport }: ArtifactRendererProps) 
       </div>
 
       {/* Body */}
+      <SelectionScope enabled={linked}>
       <div style={{ flex: 1, overflow: 'auto' }}>
         {type === 'guide_table' ? (
           <GuidePoolDesigner manifest={manifest} />
@@ -234,6 +255,7 @@ function ArtifactRenderer({ manifest, defaultViewport }: ArtifactRendererProps) 
           <GenericArtifactRenderer manifest={manifest} />
         )}
       </div>
+      </SelectionScope>
     </div>
   );
 }
