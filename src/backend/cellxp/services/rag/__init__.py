@@ -19,6 +19,8 @@ from .schemas import (
     SearchResult,
 )
 from .service import RagService
+from .pubmed import NcbiLiteratureClient
+from .retriever import LocalRagBackend, TextEmbedder
 
 __all__ = [
     "RagService",
@@ -38,4 +40,7 @@ __all__ = [
     "ContextRequest",
     "ContextSnippet",
     "ContextBundle",
+    "NcbiLiteratureClient",
+    "LocalRagBackend",
+    "TextEmbedder",
 ]
