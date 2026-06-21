@@ -241,6 +241,17 @@ test-live:
 
 Until markers are registered, `make test` runs all of `tests/` (current behavior).
 
+Deterministic golden-result shape gates can run against recorded JSONL snapshots without an LLM
+judge or live model access:
+
+```bash
+python evals/run_evals.py evaluate /path/to/results.jsonl --output /tmp/gate-report.json
+```
+
+Each result record contains `query_id` and `snapshot`. This checks required artifacts, evidence
+sources, concrete model identity, review/clarification/refusal behavior, and composed capability
+order. Biological correctness and prose-quality rubric scoring remain separate T6 review signals.
+
 ## CI workflows (mapping)
 
 | Workflow | Tiers | Notes |
