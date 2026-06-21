@@ -6,6 +6,8 @@ import { api } from '../../lib/api';
 import { artifactIcon, artifactLabel, isGenomicArtifact } from '../../lib/artifacts';
 import { GenomeBrowser } from '../genome/GenomeBrowser';
 import { Tabs, TabPanel } from '../ui/Tabs';
+import { SelectionProvider } from '../../lib/selection';
+import { LocusInspector } from '../plots/LocusInspector';
 
 // ---------------------------------------------------------------------------
 // Artifact pane dock — workspace_interface.md §4
@@ -60,6 +62,7 @@ export function ArtifactPanel({ artifacts, initialArtifactId, defaultViewport }:
   }));
 
   return (
+    <SelectionProvider>
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Tabs tabs={tabs} activeId={activeId} onChange={setActiveId} />
       <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -73,6 +76,7 @@ export function ArtifactPanel({ artifacts, initialArtifactId, defaultViewport }:
         ))}
       </div>
     </div>
+    </SelectionProvider>
   );
 }
 
@@ -194,7 +198,9 @@ function ArtifactRenderer({ manifest, defaultViewport }: ArtifactRendererProps) 
 
       {/* Body */}
       <div style={{ flex: 1, overflow: 'auto' }}>
-        {isGenomicArtifact(type) && defaultViewport ? (
+        {type === 'locus_plot' ? (
+          <LocusInspector manifest={manifest} />
+        ) : isGenomicArtifact(type) && defaultViewport ? (
           <GenomeBrowser
             initialViewport={coordFrame
               ? {

@@ -1,1 +1,1 @@
-export function GwasLocusPlot() { return <div>GwasLocusPlot</div>; }
+export { LocusInspector as GwasLocusPlot } from './LocusInspector';

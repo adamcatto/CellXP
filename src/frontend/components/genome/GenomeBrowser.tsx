@@ -14,6 +14,7 @@ import {
 } from '../../lib/genome';
 import { TrackViewer, type TrackPayload } from './TrackViewer';
 import { GeneModelTrack, type Transcript } from './GeneModelTrack';
+import { useWorkspaceSelection } from '../../lib/selection';
 
 // ---------------------------------------------------------------------------
 // Coordinate ruler
@@ -157,6 +158,7 @@ export function GenomeBrowser({
   const [localTracks, setLocalTracks] = useState<TrackDescriptor[]>(tracks);
   const [locusInput, setLocusInput] = useState('');
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const { selection, publish } = useWorkspaceSelection();
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(800);
 
@@ -173,6 +175,31 @@ export function GenomeBrowser({
 
   // Sync external track list
   useEffect(() => { setLocalTracks(tracks); }, [tracks]);
+
+  // Linked panes center this viewport on compatible genomic selections.
+  useEffect(() => {
+    if (!selection || selection.coordinate_frame.kind !== 'genomic') return;
+    const selectedAssembly = selection.coordinate_frame.assembly;
+    if (selectedAssembly && selectedAssembly !== viewport.assembly) return;
+    const contig = String(selection.payload.contig ?? selection.coordinate_frame.contig ?? '');
+    if (!contig) return;
+    if (selection.kind === 'interval') {
+      const start = Number(selection.payload.start);
+      const end = Number(selection.payload.end);
+      if (Number.isFinite(start) && Number.isFinite(end) && end > start) {
+        setViewport(current => ({ ...current, contig, start, end }));
+      }
+    } else if (selection.kind === 'variant') {
+      const pos = Number(selection.payload.pos);
+      if (Number.isFinite(pos)) {
+        setViewport(current => {
+          const span = viewportSpan(current);
+          const start = Math.max(0, Math.round(pos - span / 2));
+          return { ...current, contig, start, end: start + span };
+        });
+      }
+    }
+  }, [selection, viewport.assembly]);
 
   const updateViewport = useCallback((vp: GenomeViewport) => {
     setViewport(vp);
@@ -416,6 +443,17 @@ export function GenomeBrowser({
                   viewport={viewport}
                   width={containerWidth}
                   onFeatureClick={ivl => {
+                    publish({
+                      kind: 'interval',
+                      artifact_id: track.artifact_id,
+                      coordinate_frame: track.coordinate_frame,
+                      payload: {
+                        contig: viewport.contig,
+                        start: ivl.start,
+                        end: ivl.end,
+                        strand: ivl.strand,
+                      },
+                    });
                     onFeatureAction?.('feature_click', {
                       track_id: track.id,
                       interval: ivl,
