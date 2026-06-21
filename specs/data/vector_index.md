@@ -5,6 +5,10 @@
 > pgvector/Chroma dev → managed vector DB prod). Implementation: `storage/vector_store.py`; consumers:
 > `services/rag/*`, `specs/agent/capability-subgraphs/rag.md`. Every retrieved chunk must carry the
 > citation provenance defined in `provenance_model.md`.
+>
+> **Implementation checkpoint (2026-06-21):** `storage/rag_vector_index.py` implements the protocol
+> as a persistent local SQLite cosine index. It is intended for development and small corpora;
+> production-scale managed and pgvector adapters remain pluggable deployment work.
 
 ## 1. Purpose & scope
 
@@ -16,12 +20,13 @@ contract, and how retrieved chunks become cited evidence. Does **not** define re
 ## 2. Interface (backend-agnostic)
 
 ```python
-class VectorIndex(Protocol):
+class RagVectorIndex(Protocol):
     def upsert(self, chunks: list[Chunk]) -> None: ...
     def query(self, embedding: list[float], *, k: int,
-              namespace: str, filter: dict | None = None) -> list[ScoredChunk]: ...
+              embedding_model: str, namespace: str,
+              filters: dict | None = None) -> list[ScoredChunk]: ...
     def delete(self, ids: list[str] | None = None, *, namespace: str,
-               filter: dict | None = None) -> None: ...
+               filters: dict | None = None) -> int: ...
 
 class Chunk(BaseModel):
     id: str
@@ -48,6 +53,11 @@ class ChunkMetadata(BaseModel):
 
 Consumers depend only on the Protocol (pluggability, `NFR-11`).
 
+The local implementation names these models `RagVectorChunk`, `RagScoredChunk`, and
+`RagChunkMetadata` to avoid collision with generic domain names. `embedding_model` is the comparison
+key and includes model and version (`model@version`). A namespace rejects inserts or queries with a
+different model key or vector dimensionality until it is rebuilt.
+
 ## 3. What gets indexed
 
 - **Literature** — abstracts/passages from PubMed/biorxiv and provided papers (`services/rag/pubmed.py`).
@@ -73,6 +83,8 @@ local-first isolation.
   different models are not comparable. Changing the model requires a **re-embed migration** of the
   affected namespace(s); mixed-model results within one query are disallowed.
 - Distance metric: cosine (default); fixed per namespace.
+- The SQLite backend scores vectors in process. This provides deterministic persistence without an
+  optional native dependency, but is not intended for large production corpora.
 
 ## 6. Retrieval → evidence flow
 
@@ -93,6 +105,8 @@ evidence pipeline (`evidence_integration.md`).
   (`relational_schema.md` §7) but for the index.
 - Private/session corpora are deletable via the session-deletion path and audited
   (`provenance_model.md` §8).
+- `LocalRagBackend` requires private documents to use a `private/` or `session/` namespace. Wiring
+  session deletion to audit persistence remains owned by the storage/session integration layer.
 
 ## 8. Requirements (testable)
 
@@ -110,9 +124,25 @@ evidence pipeline (`evidence_integration.md`).
 - Default local embedding model + dimensionality (quality vs local footprint).
 - Hybrid (BM25 + vector) search ownership: index vs retriever service.
 - Per-session private corpora isolation mechanism (separate namespaces vs separate indexes).
+- Production-scale backend selection and its shared protocol-conformance fixture.
 
 ## 10. Related specs
 
 `specs/agent/capability-subgraphs/rag.md` · `services/rag/*` · `provenance_model.md` ·
 `evidence_and_confidence.md` · `evidence_integration.md` · `object_storage.md` ·
 `llm_service.md` · `documentation/community-notes/`.
+
+## 11. Verification
+
+The deterministic T1 index contract covers provenance, idempotent upsert, cosine ranking,
+namespace/filter isolation, persistence, deletion, model migration guards, and dimension guards:
+
+```bash
+python -m pytest tests/unit/test_rag_sqlite_vector_index.py -q
+```
+
+The ingestion-to-context citation round trip is covered by:
+
+```bash
+python -m pytest tests/unit/test_rag_local_backend.py -q
+```

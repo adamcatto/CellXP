@@ -6,10 +6,12 @@
 > `specs/data/vector_index.md`, `specs/data/provenance_model.md`. Catalog:
 > `documentation/reference/external_models_and_services.md` §17.
 >
-> **Implementation checkpoint (2026-06-20):** The five-operation service contract, injectable
+> **Implementation checkpoint (2026-06-21):** The five-operation service contract, injectable
 > `RagBackend`, reference-catalog guards, resolvable citation maps, vector-chunk provenance, and
-> no-backend/empty/failure outcomes are implemented. Live source adapters and a concrete vector
-> store remain deployment work; the default service makes no external calls.
+> no-backend/empty/failure outcomes are implemented. `NcbiLiteratureClient` provides concrete
+> PubMed search/retrieval and PMC full-text retrieval through NCBI E-utilities, while
+> `LocalRagBackend` composes it with an injected embedder and vector index. The default service still
+> makes no external calls: deployments explicitly construct and inject the backend.
 
 ## 1. Purpose
 
@@ -36,6 +38,18 @@ integration nodes.
 Supported sources include PubMed/PMC, bioRxiv/medRxiv, Ensembl/UCSC/NCBI, UniProt, Reactome, KEGG,
 GO, ChEMBL/ChEBI where configured, and local user-provided documents. Each source adapter declares
 release/date, access method, citation format, and terms/limits.
+
+### 3.1 Implemented NCBI adapter
+
+`NcbiLiteratureClient` uses the NCBI E-utilities `esearch` and `efetch` endpoints. PubMed search
+returns DOI-or-PMID citations and abstract snippets in relevance order. Direct PubMed retrieval
+returns abstract chunks; direct PMC retrieval returns accessible abstract/full-text chunks. HTTP
+transport is constructor-injected so deployments own timeouts, retries, rate limiting, API-key
+parameters, and network policy. Other sources in §3 remain adapter extension points.
+
+PubMed records may contain metadata and abstracts only. PMC retrieval is attempted only for explicit
+PMC identifiers. Remote HTTP/XML errors propagate to the service's recoverable backend-failure
+result rather than producing citations.
 
 ## 4. Inputs
 
@@ -66,6 +80,10 @@ Chunks persisted for reuse MUST follow `specs/data/vector_index.md`: namespace, 
 chunk hash, source metadata, and provenance link. The service MAY delegate embeddings to the LLM
 service or a dedicated embedding provider, but the embedding model/version is always recorded.
 
+The implemented local composition requires an injected `TextEmbedder`. `IndexRequest` model and
+version must match it. Private documents are rejected unless their namespace begins with
+`private/` or `session/`, preventing accidental insertion into a shared literature corpus.
+
 ## 8. Failure Modes
 
 - no hits: valid empty context with query metadata;
@@ -93,8 +111,14 @@ service or a dedicated embedding provider, but the embedding model/version is al
 ## 11. Verification
 
 Unit coverage for RAG-1..5 and PROV-1 lives in `tests/unit/test_rag_service.py` and
-`tests/unit/test_rag_subgraph.py`. It uses injectable mock backends and performs no real I/O:
+`tests/unit/test_rag_subgraph.py`. Adapter and composition tests live in
+`tests/unit/test_rag_ncbi_adapters.py` and `tests/unit/test_rag_local_backend.py`. They use mock HTTP
+transport, deterministic embeddings, and an in-memory SQLite index; the default suite performs no
+network I/O:
 
 ```bash
-python -m pytest tests/unit/test_rag_service.py tests/unit/test_rag_subgraph.py -q
+python -m pytest tests/unit/test_rag_service.py tests/unit/test_rag_subgraph.py \
+  tests/unit/test_rag_ncbi_adapters.py tests/unit/test_rag_local_backend.py -q
 ```
+
+Live NCBI smoke checks, when added, MUST use the `live` marker and remain opt-in.
