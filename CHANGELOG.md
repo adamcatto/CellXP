@@ -21,6 +21,9 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-21** — Add idempotent development bootstrap and configured Ollama model-download scripts,
+  network-free regression tests, Make targets, and a maintenance guideline for evolving setup as
+  dependencies, services, and model adapters land.
 - **2026-06-20** — X7 model-guided inverse edit design (FR-18c, IDS-1..5): add a bounded desired-
   effect → proposal → forward-score → CRISPR-feasibility loop, weighted and Pareto candidate ranking,
   explicit partial-target gaps, compounded evidence/provenance, actionable supervisor routing through

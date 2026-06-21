@@ -15,6 +15,7 @@ guideline disagree on intent, the spec wins; when they disagree on mechanics, fi
 | `changelog-guidelines.md` | maintaining `CHANGELOG.md` |
 | `atomic-commits.md` | staging and committing only the files you touched (path-scoped commits) |
 | `testing.md` | writing and running the test pyramid (pytest, Playwright, evals, CI triggers) |
+| `setup-scripts.md` | maintaining bootstrap, dependency initialization, and model downloads |
 
 Stack relationship (see `documentation/explanation/harness_and_context_engineering.md` §A4):
 **LangGraph** (graph runtime) → **LangChain `create_agent`** (minimal harness) → **deepagents**

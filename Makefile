@@ -2,7 +2,13 @@ PYTHONPATH := src/backend
 PYTHON ?= python
 PNPM ?= pnpm
 
-.PHONY: dev-api dev-frontend worker test lint typecheck frontend-build eval-smoke render-graph
+.PHONY: setup download-models dev-api dev-frontend worker test lint typecheck frontend-build eval-smoke render-graph
+
+setup:
+	./scripts/setup.sh
+
+download-models:
+	./scripts/download_models.sh
 
 dev-api:
 	PYTHONPATH=$(PYTHONPATH) uvicorn cellxp.api.main:app --reload

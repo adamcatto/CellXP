@@ -199,6 +199,24 @@ CellXP/
 - NVM/Corepack (the frontend pins Node 22.9.0 and pnpm 10.17.0)
 - Docker (for Postgres, Redis, Ollama)
 
+### Automated setup
+
+From a clean checkout, bootstrap the development environments, infrastructure, and configured local
+reasoning models with:
+
+```bash
+./scripts/setup.sh
+conda activate cellxp
+```
+
+The script is idempotent and preserves an existing `.env`. Run `./scripts/setup.sh --help` for
+component skip flags or `--dry-run`. To pull models separately, run
+`./scripts/download_models.sh`; it reads `LLM_MODEL` and future `LLM_MODEL_<ROLE>` overrides from
+`.env`. Domain foundation-model downloads will be added only as their concrete adapters and pinned
+weight revisions land.
+
+The manual steps below are equivalent and remain useful for troubleshooting.
+
 ### 1. Start infrastructure
 
 ```bash
