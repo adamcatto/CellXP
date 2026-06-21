@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from cellxp.agent.state import AgentState
-from cellxp.domain.audit import AGENT_ACTOR, AuditEntry, AuditEventType
+from cellxp.domain.audit import AGENT_ACTOR, AuditEventType
 from cellxp.domain.enums import RiskDecision
 from cellxp.domain.safety import RiskAssessment
 

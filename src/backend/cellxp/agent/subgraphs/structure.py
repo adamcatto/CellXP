@@ -20,6 +20,7 @@ Steps emitted (FR-24 run-trace completeness):
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Any
 
 from cellxp.agent.state import (
     AgentState,
@@ -31,7 +32,7 @@ from cellxp.agent.state import (
 )
 from cellxp.domain.clock import utc_now_iso
 from cellxp.domain.enums import TaskStatus
-from cellxp.services.base import ServiceOutcome
+from cellxp.services.base import ServiceOutcome, ServiceResult
 from cellxp.services.reference.genome import ReferenceGenomeService
 from cellxp.services.structure.schemas import (
     ContactMapRequest,
@@ -167,8 +168,11 @@ def build_subgraph(
 
         # --- Step 3: predict (heavy) ---
         predict_started = utc_now_iso()
+        result: ServiceResult[Any]
         if kind in _GENOMIC_KINDS:
             organism = inputs.organism or "Homo sapiens"
+            assert interval is not None
+            assert inputs.assembly is not None
             if kind == "contacts":
                 result = struct_svc.predict_contacts(
                     ContactMapRequest(

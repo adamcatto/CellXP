@@ -14,7 +14,6 @@ Coverage:
 
 from __future__ import annotations
 
-import pytest
 
 from cellxp.domain.enums import OrganismClass, Strand, TaskStatus, Topology
 from cellxp.domain.models import GenomicInterval, Variant

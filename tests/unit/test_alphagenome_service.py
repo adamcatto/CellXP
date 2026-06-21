@@ -10,7 +10,6 @@ from cellxp.domain.models import Variant
 from cellxp.services.alphagenome.client import AlphaGenomeService
 from cellxp.services.alphagenome.schemas import (
     AssayDelta,
-    ModelBackend,
     SequenceScoringRequest,
     SequenceScoringResult,
     SpliceEffectRequest,

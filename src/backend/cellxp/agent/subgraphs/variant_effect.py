@@ -27,10 +27,11 @@ from cellxp.agent.state import (
     Subtask,
 )
 from cellxp.domain.clock import utc_now_iso
+from cellxp.domain.artifacts import ArtifactRef
 from cellxp.domain.enums import OrganismClass, TaskStatus
+from cellxp.domain.evidence import EvidenceItem
 from cellxp.services.alphagenome.client import AlphaGenomeService
 from cellxp.services.alphagenome.schemas import VariantEffectRequest, select_oracle
-from cellxp.services.alphagenome.transforms import variant_id
 from cellxp.services.base import ServiceOutcome
 from cellxp.services.binding.delta import BindingDeltaRequest
 from cellxp.services.binding.service import BindingService
@@ -94,8 +95,8 @@ def build_subgraph(
         variant = inputs.variants[0]
 
         steps: list[Step] = []
-        evidence = []
-        artifacts = []
+        evidence: list[EvidenceItem] = []
+        artifacts: list[ArtifactRef] = []
         errors: list[RunError] = []
 
         # --- Step 1: extract variant context + validate (light) ---
@@ -110,7 +111,11 @@ def build_subgraph(
                 )
             )
             steps.extend(val.steps)
-            if val.outcome is ServiceOutcome.OK and not val.value.valid:
+            if (
+                val.outcome is ServiceOutcome.OK
+                and val.value is not None
+                and not val.value.valid
+            ):
                 active.status = TaskStatus.FAILED
                 msg = f"variant validation failed: {val.value.fail_reason}"
                 steps.append(

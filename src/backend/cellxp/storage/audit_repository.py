@@ -13,7 +13,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from cellxp.domain.audit import AuditEntry, Actor, AuditEventType, _compute_entry_hash
+from cellxp.domain.audit import AuditEntry, Actor
 from cellxp.storage.models import AuditLog
 
 

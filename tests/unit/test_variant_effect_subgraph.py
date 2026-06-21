@@ -9,18 +9,16 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
 
 from cellxp.agent.nodes.evidence_integrator import run as evidence_integrator_run
 from cellxp.agent.state import (
     AgentState,
     ExecutionCursor,
     NormalizedInputs,
-    Plan,
     Subtask,
 )
 from cellxp.agent.subgraphs.variant_effect import build_subgraph
-from cellxp.domain.enums import ConfidenceBand, OrganismClass, PlanKind, SubtaskType, TaskStatus
+from cellxp.domain.enums import ConfidenceBand, SubtaskType, TaskStatus
 from cellxp.domain.evidence import Confidence
 from cellxp.domain.models import Variant
 from cellxp.services.alphagenome.client import AlphaGenomeService
@@ -30,10 +28,8 @@ from cellxp.services.alphagenome.schemas import (
     VariantEffectRequest,
     VariantEffectResult,
 )
-from cellxp.services.base import ServiceOutcome
 from cellxp.services.binding.delta import BindingDelta, BindingDeltaRequest, BindingDeltaResult
 from cellxp.services.binding.service import BindingService
-from cellxp.services.reference.genome import ReferenceGenomeService
 
 
 # ---------------------------------------------------------------------------

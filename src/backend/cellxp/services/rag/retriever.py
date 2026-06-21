@@ -23,6 +23,7 @@ from .schemas import (
     ContextBundle,
     ContextRequest,
     ContextSnippet,
+    IndexDocument,
     IndexRequest,
     IndexResult,
     RetrieveRequest,
@@ -107,7 +108,7 @@ class LocalRagBackend:
                 f"not {request.embedding_version!r}"
             )
         model_key = _embedding_key(self._embedder.model, self._embedder.version)
-        chunks: list[tuple[object, str, str]] = []
+        chunks: list[tuple[IndexDocument, str, str]] = []
         for document in request.documents:
             if document.private and not document.namespace.startswith(("private/", "session/")):
                 raise ValueError("private documents require a private/ or session/ namespace")

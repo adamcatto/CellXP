@@ -18,12 +18,11 @@ from cellxp.domain.audit import (
     AGENT_ACTOR,
     AuditEntry,
     AuditEventType,
-    _compute_entry_hash,
 )
-from cellxp.domain.enums import ReviewDecision, ReviewGateStatus
+from cellxp.domain.enums import ReviewDecision
 from cellxp.domain.ids import new_id
 from cellxp.storage.audit_repository import AuditRepository
-from cellxp.storage.database import make_session_factory, session_scope
+from cellxp.storage.database import make_session_factory
 from cellxp.storage.models import APPEND_ONLY_TABLES, AuditLog, Base
 
 
@@ -172,7 +171,7 @@ def test_al1_block_writes_safety_refused(factory):
     repo, session = _repo(factory)
     run = make_risk_classifier(repo)
     state = {"user_query": "weaponize the toxin", "run_id": new_id()}
-    result = run(state)
+    run(state)
     session.commit()
 
     entries = repo.query(event_type=AuditEventType.SAFETY_REFUSED)
