@@ -7,10 +7,12 @@
 > For the planning model and where things go, see "How planning is organized" below. For *how this
 > work parallelizes across simultaneous agent sessions*, see "Execution waves" at the end.
 >
-> **Implementation checkpoint (2026-06-20):** Wave 0 is complete. N3 in-progress (spine complete;
-> automated graph coverage deferred). N4 in-progress (catalog + 6 operations + 69 tests; backends
-> deferred). N5 in-progress (AlphaGenomeService, BindingService, variant_effect subgraph, 53 tests;
-> real model backends deferred). N6/N7 and X1–X7 are next.
+> **Implementation checkpoint (2026-06-21):** Wave 0 and contract implementations through X7 have
+> landed. The closure wave adds an executable local session/run API with ordered SSE, Ensembl
+> resolution/liftover, remote AlphaGenome/Evo 2 worker transport, concrete PubMed/PMC + SQLite-vector
+> RAG, M2/M3 scientific panes, and deterministic golden-result shape gates. Remaining work is
+> deployment integration: pinned model workers/weights, production GWAS/CRISPR/structure adapters,
+> durable API persistence/queue dispatch, browser/live-model tests, and biological/safety gate runs.
 
 ## How planning is organized
 
@@ -45,22 +47,26 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   downstream slice imports; structurally mitigates R2 (coordinates) and R3 (provenance) ·
   *shipped* · depends-on: N1 · M1.
 - **N3 — Core orchestration pipeline.** normalizer → intent → risk → entity → planner → clarify
-  (FR-1..FR-7) · the agent loop all subgraphs hang off · *in-progress* (implementation complete;
-  automated graph coverage deferred) · depends-on: N2 · M1.
+  (FR-1..FR-7) · the agent loop all subgraphs hang off · *in-progress* (implementation, real graph
+  integration coverage, and a process-local v1 API with SSE/replay/pause-resume complete; durable
+  repository/queue wiring and browser coverage remain) · depends-on: N2 · M1.
 - **N4 — Reference genome service.** GRCh38 + ≥1 prokaryote with circular handling (RGS-1..RGS-5) ·
-  coordinate source of truth; R2/R4 mitigation · *in-progress* (catalog + 6 operations + 69 tests
-  complete; Ensembl/dbSNP entity resolution and CrossMap liftover backends deferred to N5 phase) ·
+  coordinate source of truth; R2/R4 mitigation · *shipped* (catalog + 6 operations, Ensembl
+  gene/dbSNP resolution and cross-assembly mapping, circular handling, and deterministic tests;
+  upstream availability remains a deployment concern) ·
   depends-on: N2 · M1.
 - **N5 — Variant-effect vertical slice.** `variant_effect` subgraph + AlphaGenome service + binding
   evidence + evidence integration + report/run-trace (FR-12, FR-13, FR-14 binding subset, FR-22..24) ·
   proves the architecture end-to-end; first proven contract before fan-out · *in-progress*
-  (AlphaGenomeService + BindingService + variant_effect subgraph + evidence_integrator + 53 tests
-  complete; real model backends and Ensembl entity-resolution deferred) ·
+  (AlphaGenomeService + BindingService + variant_effect subgraph + evidence integration, Ensembl
+  resolution, strict remote AlphaGenome/Evo 2 worker transport, and model-call provenance complete;
+  pinned worker images/weights and live-model acceptance remain) ·
   depends-on: N3, N4 · M1.
 - **N6 — Frontend M1.** chat + progressive streaming UI, genome-browser pane v1, run inspector
   (FR-21, FR-27, FR-30) · the user-visible surface · *in-progress* (wire types, REST+SSE client,
-  streaming accumulator, chat thread, genome browser, run inspector, workspace layout, and all
-  app pages implemented; full backend integration deferred until N5 ships) ·
+  streaming accumulator, chat thread, genome browser, run inspector, workspace layout, locus and
+  linked structure panes, guide/off-target panes, and app pages implemented; browser journeys,
+  candidate persistence, and full Mol* mmCIF dependency remain) ·
   depends-on: N2 (contracts only) · M1.
 - **N7 — Safety M1.** `risk_classifier` on every run + audit log of refusals/consequential events
   (FR-33, FR-34) · R1 structural defense · *shipped* (AuditEntry domain model + SHA-256 hash
@@ -74,23 +80,26 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
 
 - **X1 — GWAS/QTL.** service + subgraph + locus-inspector pane (FR-14) · associations, LD, fine-map,
   coloc · *in-progress* (typed `GwasService` with injectable backend, four operations, human-data
-  coverage guards, provenance/artifacts, GWAS subgraph, and 25 unit tests complete; production
-  GWAS/QTL adapters and locus-inspector pane deferred) · depends-on: N5 · M2.
+  coverage guards, provenance/artifacts, GWAS subgraph, tests, and locus-inspector pane complete;
+  production GWAS/QTL adapters remain) · depends-on: N5 · M2.
 - **X2 — RAG.** service + vector index + report-resolvable citations (FR-20) · literature grounding;
   R3 citation validity · *in-progress* (five-operation `RagService`, injectable retrieval/vector
-  backend contract, RAG subgraph, resolvable evidence citation maps, and 17 unit tests complete;
-  live source adapters and concrete vector-store backend deferred) · depends-on: N5 · M2.
+  backend contract, RAG subgraph, citation maps, PubMed/PMC adapter, persistent SQLite vector index,
+  and local ingestion/retrieval composition complete; production-scale index and selected embedding
+  model remain deployment choices) · depends-on: N5 · M2.
 - **X3 — Structure.** ESMFold service + Mol\*-class 3D pane + linked viewports (FR-18) · folded-protein
   evidence · *in-progress* (StructureService with ESMFold/Boltz-2/Orca/DNAshapeR backend protocol +
-  `predict_structure`/`predict_contacts`/`predict_dna_shape`, structure subgraph, 61 tests complete;
-  real model backends and the Mol\*-class 3D pane deferred) · depends-on: N5 · M2.
+  `predict_structure`/`predict_contacts`/`predict_dna_shape`, structure subgraph, tests, and linked
+  PDB 3D/confidence pane with Mol* seam complete; real workers, Mol*/mmCIF, and live acceptance
+  remain) · depends-on: N5 · M2.
 - **X4 — Composed evidence pattern.** variant → GWAS → fold → report + calibration eval · the M2
   user-visible payoff · *shipped* (ordered dependency plan, cross-subtask evidence accounting,
   planner tests, golden query, and worked calibration example) · depends-on: X1, X2, X3 · M2.
 - **X5 — CRISPR design.** service + subgraph + guide-pool & off-target panes (FR-15) · first actionable
   capability · *shipped* (typed four-operation service, injectable backend, organism/assembly and
-  edit-spec guards, actionable artifacts, subgraph, and deterministic unit coverage; production
-  scoring/off-target adapters remain deployment work) · depends-on: N5 · M3.
+  edit-spec guards, actionable artifacts, subgraph, deterministic coverage, and guide/off-target
+  panes; production scoring adapters and persisted pool composition remain deployment work) ·
+  depends-on: N5 · M3.
 - **X6 — Human-review gate.** `human_review_gate` node + genome-editing session type (strict posture)
   (FR-25, FR-26, FR-39) · R1; enforced before any build-ready export · *shipped* (supervisor
   routing, durable approval resume with stable review IDs, actionable artifact/subtask coverage,

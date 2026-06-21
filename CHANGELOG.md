@@ -13,6 +13,8 @@ category).
 ## [Unreleased]
 
 ### Changed
+- **2026-06-21** — Make terminal reports explicitly disclose when an evidence-producing plan returns
+  no evidence, and replace placeholder GWAS/variant integration tests with real supervisor flows.
 - **2026-06-19** — Require per-entry land dates on `[Unreleased]` changelog bullets (`**YYYY-MM-DD** —`); update
   `changelog-guidelines.md`, backfill existing entries, and document the format in `CHANGELOG.md` /
   `.agents/onboarding.md`.
@@ -21,6 +23,15 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-21** — Add executable v1 session/run APIs with graph-backed clarification resume,
+  ordered/replayable SSE, request deduplication, revision guards, reproduction, and HTTP e2e tests.
+- **2026-06-21** — Add Ensembl gene/dbSNP resolution and cross-assembly mapping, strict remote
+  AlphaGenome/Evo 2 worker transport, and complete model-call provenance.
+- **2026-06-21** — Add PubMed/PMC retrieval, a persistent local SQLite vector index, and
+  citation-preserving local RAG ingestion/retrieval composition.
+- **2026-06-21** — Add linked locus and structure views plus review-safe guide-pool/off-target panes.
+- **2026-06-21** — Add deterministic golden-result gate scoring for artifacts, evidence, models,
+  review/clarification/refusal behavior, and composed capability order.
 - **2026-06-21** — Add idempotent development bootstrap and configured Ollama model-download scripts,
   network-free regression tests, Make targets, and a maintenance guideline for evolving setup as
   dependencies, services, and model adapters land.
