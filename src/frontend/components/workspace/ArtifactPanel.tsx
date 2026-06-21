@@ -9,6 +9,8 @@ import { Tabs, TabPanel } from '../ui/Tabs';
 import { SelectionProvider } from '../../lib/selection';
 import { LocusInspector } from '../plots/LocusInspector';
 import { StructureViewer3D } from '../structure/StructureViewer3D';
+import { GuidePoolDesigner } from '../tables/GuidePoolDesigner';
+import { OffTargetPane } from '../tables/OffTargetPane';
 
 // ---------------------------------------------------------------------------
 // Artifact pane dock — workspace_interface.md §4
@@ -199,7 +201,11 @@ function ArtifactRenderer({ manifest, defaultViewport }: ArtifactRendererProps) 
 
       {/* Body */}
       <div style={{ flex: 1, overflow: 'auto' }}>
-        {type === 'structure_3d' ? (
+        {type === 'guide_table' ? (
+          <GuidePoolDesigner manifest={manifest} />
+        ) : type === 'off_target_table' ? (
+          <OffTargetPane manifest={manifest} />
+        ) : type === 'structure_3d' ? (
           <StructureViewer3D manifest={manifest} />
         ) : type === 'locus_plot' ? (
           <LocusInspector manifest={manifest} />
