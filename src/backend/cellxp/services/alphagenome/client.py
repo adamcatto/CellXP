@@ -10,6 +10,11 @@ rather than crashing (same philosophy as the reference genome service).
 
 from __future__ import annotations
 
+import hashlib
+import json
+
+from pydantic import BaseModel
+
 from cellxp.agent.state import RunError, Step
 from cellxp.domain.clock import utc_now_iso
 from cellxp.domain.enums import ConfidenceBand, SourceKind, TaskStatus
@@ -91,22 +96,16 @@ class AlphaGenomeService(Service):
             )
 
         finished = utc_now_iso()
+        provenance = _call_provenance(
+            request, raw, tool=oracle, version=_backend_version(self._backend), timestamp=finished
+        )
         evidence = [
             EvidenceItem(
                 source=oracle,
                 source_kind=SourceKind.MODEL,
                 claim=f"Variant effect predicted for {len(raw.per_variant)} variant(s) via {oracle}",
                 confidence=Confidence(band=ConfidenceBand.MEDIUM),
-                provenance=Provenance(
-                    tool=oracle,
-                    tool_version=_backend_version(self._backend),
-                    inputs={
-                        "organism": request.organism,
-                        "assembly": request.assembly,
-                        "n_variants": len(request.variants),
-                    },
-                    timestamp=finished,
-                ),
+                provenance=provenance,
             )
         ]
         return ServiceResult.succeeded(
@@ -148,11 +147,19 @@ class AlphaGenomeService(Service):
                 steps=[_failed_step("score_sequences", started, tool="model_backend", error=str(exc))],
             )
 
+        finished = utc_now_iso()
+        version = _backend_version(self._backend)
         return ServiceResult.succeeded(
             raw,
             steps=[_done_step(
                 "score_sequences", started, tool="model_backend",
-                tool_version=_backend_version(self._backend),
+                tool_version=version, finished=finished,
+            )],
+            evidence=[_model_evidence(
+                claim=f"Scored {len(request.sequences)} sequence(s)",
+                confidence=raw.confidence or Confidence(band=ConfidenceBand.MEDIUM),
+                request=request, result=raw, tool="model_backend", version=version,
+                timestamp=finished,
             )],
         )
 
@@ -187,11 +194,19 @@ class AlphaGenomeService(Service):
                 steps=[_failed_step("predict_tracks", started, tool=oracle, error=str(exc))],
             )
 
+        finished = utc_now_iso()
+        version = _backend_version(self._backend)
         return ServiceResult.succeeded(
             raw,
             steps=[_done_step(
                 "predict_tracks", started, tool=oracle,
-                tool_version=_backend_version(self._backend),
+                tool_version=version, finished=finished,
+            )],
+            evidence=[_model_evidence(
+                claim=f"Predicted {len(raw.tracks)} track(s) via {oracle}",
+                confidence=raw.confidence or Confidence(band=ConfidenceBand.MEDIUM),
+                request=request, result=raw, tool=oracle, version=version,
+                timestamp=finished,
             )],
         )
 
@@ -225,11 +240,19 @@ class AlphaGenomeService(Service):
                 steps=[_failed_step("score_splicing", started, tool="spliceai", error=str(exc))],
             )
 
+        finished = utc_now_iso()
+        version = _backend_version(self._backend)
         return ServiceResult.succeeded(
             raw,
             steps=[_done_step(
                 "score_splicing", started, tool="spliceai",
-                tool_version=_backend_version(self._backend),
+                tool_version=version, finished=finished,
+            )],
+            evidence=[_model_evidence(
+                claim="Predicted splice effect via spliceai",
+                confidence=raw.confidence,
+                request=request, result=raw, tool="spliceai", version=version,
+                timestamp=finished,
             )],
         )
 
@@ -260,6 +283,53 @@ def _done_step(
 
 def _backend_version(backend: ModelBackend) -> str:
     return str(getattr(backend, "version", "unknown"))
+
+
+def _model_evidence(
+    *,
+    claim: str,
+    confidence: Confidence,
+    request: BaseModel,
+    result: BaseModel,
+    tool: str,
+    version: str,
+    timestamp: str,
+) -> EvidenceItem:
+    return EvidenceItem(
+        source=tool,
+        source_kind=SourceKind.MODEL,
+        claim=claim,
+        confidence=confidence,
+        provenance=_call_provenance(
+            request, result, tool=tool, version=version, timestamp=timestamp
+        ),
+    )
+
+
+def _call_provenance(
+    request: BaseModel,
+    result: BaseModel,
+    *,
+    tool: str,
+    version: str,
+    timestamp: str,
+) -> Provenance:
+    request_json = request.model_dump_json()
+    result_json = result.model_dump_json()
+    inputs = request.model_dump(mode="json", exclude={"sequences"})
+    if isinstance(request, SequenceScoringRequest):
+        inputs["sequence_hashes"] = [
+            hashlib.sha256(sequence.encode()).hexdigest() for sequence in request.sequences
+        ]
+        inputs["n_sequences"] = len(request.sequences)
+    return Provenance(
+        tool=tool,
+        tool_version=version,
+        inputs=json.loads(json.dumps(inputs, sort_keys=True)),
+        timestamp=timestamp,
+        input_hash=hashlib.sha256(request_json.encode()).hexdigest(),
+        output_hash=hashlib.sha256(result_json.encode()).hexdigest(),
+    )
 
 
 def _failed_step(name: str, started: str, *, tool: str, error: str) -> Step:

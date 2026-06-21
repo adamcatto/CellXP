@@ -51,6 +51,8 @@ def test_variant_request_uses_versioned_endpoint_and_validates_response() -> Non
     assert result.value.per_variant[0].confidence.score == 0.7
     assert result.steps[0].tool_version == "alphagenome-2026-01"
     assert result.evidence[0].provenance.tool_version == "alphagenome-2026-01"
+    assert result.evidence[0].provenance.input_hash is not None
+    assert result.evidence[0].provenance.output_hash is not None
 
 
 @pytest.mark.parametrize(
@@ -94,6 +96,24 @@ def test_bad_worker_payload_is_recoverable_service_failure() -> None:
     ))
     assert result.outcome is ServiceOutcome.FAILURE
     assert result.error is not None and result.error.kind == "BackendError"
+
+
+def test_sequence_evidence_hashes_input_without_exposing_sequence() -> None:
+    backend = HttpModelBackend(
+        "https://ignored.test",
+        client=_client(lambda request: httpx.Response(200, json={
+            "scores": [0.2], "model": "evo2",
+        })),
+        version="evo2-rev",
+    )
+    result = AlphaGenomeService(model_backend=backend).score_sequences(SequenceScoringRequest(
+        sequences=["ACGT"], organism="Escherichia coli",
+    ))
+    assert result.outcome is ServiceOutcome.OK
+    provenance = result.evidence[0].provenance
+    assert "sequences" not in provenance.inputs
+    assert len(provenance.inputs["sequence_hashes"][0]) == 64
+    assert provenance.tool_version == "evo2-rev"
 
 
 def test_direct_backend_surfaces_contract_validation_error() -> None:
