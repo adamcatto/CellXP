@@ -8,6 +8,7 @@ import { GenomeBrowser } from '../genome/GenomeBrowser';
 import { Tabs, TabPanel } from '../ui/Tabs';
 import { SelectionProvider } from '../../lib/selection';
 import { LocusInspector } from '../plots/LocusInspector';
+import { StructureViewer3D } from '../structure/StructureViewer3D';
 
 // ---------------------------------------------------------------------------
 // Artifact pane dock — workspace_interface.md §4
@@ -198,7 +199,9 @@ function ArtifactRenderer({ manifest, defaultViewport }: ArtifactRendererProps) 
 
       {/* Body */}
       <div style={{ flex: 1, overflow: 'auto' }}>
-        {type === 'locus_plot' ? (
+        {type === 'structure_3d' ? (
+          <StructureViewer3D manifest={manifest} />
+        ) : type === 'locus_plot' ? (
           <LocusInspector manifest={manifest} />
         ) : isGenomicArtifact(type) && defaultViewport ? (
           <GenomeBrowser
