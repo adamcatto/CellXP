@@ -1,0 +1,368 @@
+"""Process-local v1 runtime used by the single-user development deployment.
+
+The durable repository will replace this adapter in regime 2. Keeping lifecycle logic behind this
+small interface lets HTTP contract tests run without Postgres, Redis, Ollama, or model downloads.
+"""
+
+from __future__ import annotations
+
+import json
+from copy import deepcopy
+from dataclasses import dataclass, field
+from threading import RLock
+from typing import Any
+
+from fastapi import HTTPException
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.types import Command
+
+from cellxp.agent.graph import build_graph
+from cellxp.agent.state import Clarification, Report, ReviewState
+from cellxp.api.schemas import (
+    CreateRunRequest,
+    CreateRunResponse,
+    CreateSessionRequest,
+    PatchSessionRequest,
+    RunEvent,
+    SessionDefaults,
+    SessionSummary,
+)
+from cellxp.domain.clock import utc_now_iso
+from cellxp.domain.enums import RunStatus
+from cellxp.domain.ids import new_id
+
+
+@dataclass
+class RunRecord:
+    snapshot: dict[str, Any]
+    request: CreateRunRequest
+    events: list[tuple[str, RunEvent]] = field(default_factory=list)
+    graph: Any | None = None
+
+
+class LocalRuntime:
+    """Thread-safe, owner-local runtime with explicit idempotency and ordered events."""
+
+    def __init__(self) -> None:
+        self._lock = RLock()
+        self.sessions: dict[str, SessionSummary] = {}
+        self.runs: dict[str, RunRecord] = {}
+        self._dedupe: dict[tuple[str, str], str] = {}
+
+    def reset(self) -> None:
+        with self._lock:
+            self.sessions.clear()
+            self.runs.clear()
+            self._dedupe.clear()
+
+    def create_session(self, request: CreateSessionRequest) -> SessionSummary:
+        now = utc_now_iso()
+        session = SessionSummary(
+            id=new_id(), type=request.type, title=request.title, defaults=request.defaults,
+            revision=0, created_at=now, updated_at=now,
+        )
+        with self._lock:
+            self.sessions[session.id] = session
+        return session.model_copy(deep=True)
+
+    def list_sessions(self) -> list[SessionSummary]:
+        with self._lock:
+            return [item.model_copy(deep=True) for item in self.sessions.values()]
+
+    def get_session(self, session_id: str) -> SessionSummary:
+        with self._lock:
+            session = self.sessions.get(session_id)
+            if session is None:
+                raise HTTPException(status_code=404, detail="session not found")
+            return session.model_copy(deep=True)
+
+    def patch_session(self, session_id: str, request: PatchSessionRequest) -> SessionSummary:
+        with self._lock:
+            session = self.sessions.get(session_id)
+            if session is None:
+                raise HTTPException(status_code=404, detail="session not found")
+            if session.revision != request.expected_revision:
+                raise HTTPException(status_code=409, detail="session revision conflict")
+            if request.title is not None:
+                session.title = request.title
+            if request.defaults is not None:
+                merged = session.defaults.model_dump(exclude_none=True)
+                merged.update(request.defaults)
+                session.defaults = SessionDefaults.model_validate(merged)
+            session.revision += 1
+            session.updated_at = utc_now_iso()
+            return session.model_copy(deep=True)
+
+    def delete_session(self, session_id: str) -> None:
+        with self._lock:
+            if session_id not in self.sessions:
+                raise HTTPException(status_code=404, detail="session not found")
+            del self.sessions[session_id]
+            for run_id in [
+                key for key, value in self.runs.items()
+                if value.snapshot["session_id"] == session_id
+            ]:
+                del self.runs[run_id]
+
+    def create_run(
+        self,
+        session_id: str,
+        request: CreateRunRequest,
+        *,
+        reproduces_run_id: str | None = None,
+    ) -> CreateRunResponse:
+        session = self.get_session(session_id)
+        key = (session_id, request.client_request_id)
+        with self._lock:
+            if existing := self._dedupe.get(key):
+                return self._response(self.runs[existing].snapshot)
+
+        run_id = new_id()
+        now = utc_now_iso()
+        snapshot: dict[str, Any] = {
+            "id": run_id,
+            "session_id": session_id,
+            "status": RunStatus.QUEUED.value,
+            "message": request.message,
+            "steps": [], "evidence": [], "artifacts": [], "errors": [],
+            "overrides": deepcopy(request.overrides),
+            "provider": "ollama", "model": request.overrides.get("model", "gemma4:4b"),
+            "created_at": now, "updated_at": now,
+        }
+        if reproduces_run_id:
+            snapshot["reproduces_run_id"] = reproduces_run_id
+        record = RunRecord(snapshot=snapshot, request=request)
+        with self._lock:
+            self.runs[run_id] = record
+            self._dedupe[key] = run_id
+            stored = self.sessions[session_id]
+            stored.run_count += 1
+            stored.updated_at = now
+        self._emit(record, "run.status", {"status": "queued"})
+        self._execute(record, session)
+        return self._response(record.snapshot)
+
+    def _execute(self, record: RunRecord, session: SessionSummary) -> None:
+        snapshot = record.snapshot
+        snapshot["status"] = RunStatus.RUNNING.value
+        self._emit(record, "run.status", {"status": "running"})
+        graph = build_graph(checkpointer=InMemorySaver())
+        record.graph = graph
+        query = record.request.message or "Analyze the supplied inputs."
+        if record.request.inputs:
+            query = f"{query}\nInputs: " + json.dumps(
+                [item.model_dump(mode="json") for item in record.request.inputs]
+            )
+        defaults = session.defaults.model_dump(exclude_none=True)
+        context_parts = [defaults.get("organism"), defaults.get("assembly")]
+        if any(context_parts):
+            query = f"{query}\nSession context: {' '.join(item for item in context_parts if item)}"
+        state: dict[str, Any] = {
+            "run_id": snapshot["id"],
+            "session_type": session.type,
+            "review_posture": defaults.get("review_posture", "standard"),
+            "user_query": query,
+        }
+        organism = record.request.overrides.get("organism") or defaults.get("organism")
+        assembly = record.request.overrides.get("assembly") or defaults.get("assembly")
+        if organism or assembly:
+            state["normalized_inputs"] = {"organism": organism, "assembly": assembly}
+        try:
+            output = graph.invoke(
+                state, {"configurable": {"thread_id": snapshot["id"]}}
+            )
+            self._apply_graph_output(record, output)
+        except Exception as exc:  # boundary converts internal failures to safe stable output
+            snapshot["status"] = RunStatus.FAILED.value
+            snapshot["errors"] = [{
+                "code": "run_failed", "message": "Run execution failed.", "fatal": True,
+                "at": utc_now_iso(),
+            }]
+            self._emit(record, "error.added", snapshot["errors"][0])
+            self._emit(record, "run.status", {"status": "failed"})
+            # Preserve the exception only for local debugging without exposing it over HTTP.
+            snapshot["_internal_error"] = type(exc).__name__
+
+    def _apply_graph_output(self, record: RunRecord, output: dict[str, Any]) -> None:
+        snapshot = record.snapshot
+        snapshot["steps"] = [self._step(snapshot["id"], item) for item in output.get("steps", [])]
+        snapshot["evidence"] = [
+            self._evidence(snapshot["id"], item) for item in output.get("evidence", [])
+        ]
+        snapshot["artifacts"] = [
+            self._artifact(snapshot["id"], item) for item in output.get("artifacts", [])
+        ]
+        snapshot["errors"] = [self._run_error(item) for item in output.get("errors", [])]
+        if plan := output.get("plan"):
+            snapshot["plan"] = self._json(plan)
+        status = str(getattr(output.get("status"), "value", output.get("status", "running")))
+        if output.get("__interrupt__"):
+            if status == RunStatus.AWAITING_REVIEW.value:
+                review = ReviewState.model_validate(output.get("review", {}))
+                pending = next(item for item in review.items if item.decision.value == "pending")
+                raw_pending = self._json(pending)
+                artifact = next(
+                    (
+                        item for item in snapshot["artifacts"]
+                        if item["id"] == raw_pending["subject_ref"]
+                    ),
+                    {
+                        "id": raw_pending["subject_ref"], "run_id": snapshot["id"],
+                        "type": "file", "title": "Actionable output", "status": "ready",
+                        "actionable": True, "review_status": "pending",
+                        "created_at": utc_now_iso(),
+                    },
+                )
+                snapshot["pending_review"] = {
+                    "id": raw_pending["id"], "run_id": snapshot["id"],
+                    "artifact_ref": artifact, "rationale": raw_pending["reason"],
+                    "risks": raw_pending["risks"],
+                }
+                self._emit(record, "review.requested", snapshot["pending_review"])
+            else:
+                clarification = next(
+                    Clarification.model_validate(item)
+                    for item in output.get("clarifications", [])
+                    if Clarification.model_validate(item).answer is None
+                )
+                snapshot["pending_clarification"] = self._json(clarification)
+                snapshot["pending_clarification"]["run_id"] = snapshot["id"]
+                status = RunStatus.AWAITING_INPUT.value
+                self._emit(record, "clarification.requested", snapshot["pending_clarification"])
+        if report := output.get("final_report"):
+            parsed = Report.model_validate(report)
+            snapshot["report"] = parsed.markdown
+            self._emit(record, "report.delta", {"token": parsed.markdown})
+        snapshot["status"] = status
+        snapshot["updated_at"] = utc_now_iso()
+        self._emit(record, "run.status", {"status": status})
+        if status == RunStatus.COMPLETED.value:
+            self._emit(record, "run.completed", {
+                "model": snapshot["model"], "provider": snapshot["provider"]
+            })
+
+    def resume(self, run_id: str, item_id: str, value: Any, expected_status: str) -> None:
+        record = self._record(run_id)
+        if record.snapshot["status"] != expected_status:
+            raise HTTPException(status_code=409, detail="run is not awaiting this interaction")
+        pending_key = "pending_review" if expected_status == "awaiting_review" else "pending_clarification"
+        pending = record.snapshot.get(pending_key)
+        if not pending or pending.get("id") != item_id:
+            raise HTTPException(status_code=409, detail="interaction is no longer pending")
+        graph = record.graph
+        if graph is None:
+            raise HTTPException(status_code=409, detail="run cannot be resumed")
+        output = graph.invoke(
+            Command(resume=value), {"configurable": {"thread_id": run_id}}
+        )
+        record.snapshot.pop(pending_key, None)
+        self._apply_graph_output(record, output)
+
+    def get_run(self, run_id: str) -> dict[str, Any]:
+        snapshot = deepcopy(self._record(run_id).snapshot)
+        snapshot.pop("_internal_error", None)
+        return snapshot
+
+    def list_runs(self, session_id: str) -> list[dict[str, Any]]:
+        self.get_session(session_id)
+        with self._lock:
+            return [
+                self.get_run(run_id) for run_id, record in self.runs.items()
+                if record.snapshot["session_id"] == session_id
+            ]
+
+    def cancel(self, run_id: str) -> None:
+        record = self._record(run_id)
+        if record.snapshot["status"] not in {"completed", "failed", "cancelled"}:
+            record.snapshot["status"] = "cancelled"
+            record.snapshot["updated_at"] = utc_now_iso()
+            self._emit(record, "run.status", {"status": "cancelled"})
+
+    def events_after(self, run_id: str, sequence: int) -> list[tuple[str, RunEvent]]:
+        record = self._record(run_id)
+        return [(kind, event) for kind, event in record.events if event.seq > sequence]
+
+    def _record(self, run_id: str) -> RunRecord:
+        with self._lock:
+            record = self.runs.get(run_id)
+            if record is None:
+                raise HTTPException(status_code=404, detail="run not found")
+            return record
+
+    def _emit(self, record: RunRecord, kind: str, data: dict[str, Any]) -> None:
+        event = RunEvent(
+            run_id=record.snapshot["id"], seq=len(record.events) + 1,
+            at=utc_now_iso(), data=deepcopy(data),
+        )
+        record.events.append((kind, event))
+
+    @staticmethod
+    def _response(snapshot: dict[str, Any]) -> CreateRunResponse:
+        run_id = snapshot["id"]
+        return CreateRunResponse(
+            run_id=run_id, session_id=snapshot["session_id"], status=snapshot["status"],
+            stream_url=f"/api/v1/runs/{run_id}/events", created_at=snapshot["created_at"],
+        )
+
+    @staticmethod
+    def _json(value: Any) -> dict[str, Any]:
+        if hasattr(value, "model_dump"):
+            return value.model_dump(mode="json")
+        return deepcopy(value)
+
+    @classmethod
+    def _run_error(cls, value: Any) -> dict[str, Any]:
+        raw = cls._json(value)
+        return {
+            "code": raw.get("kind", "run_error"), "message": raw.get("message", "Run error"),
+            "fatal": not raw.get("recoverable", True), "step_id": raw.get("step_id"),
+            "at": raw.get("at"),
+        }
+
+    @classmethod
+    def _step(cls, run_id: str, value: Any) -> dict[str, Any]:
+        raw = cls._json(value)
+        raw_status = str(raw.get("status", "queued"))
+        status = {"pending": "queued", "done": "completed"}.get(
+            raw_status, raw_status
+        )
+        return {
+            "id": raw["id"], "run_id": run_id, "subtask_id": raw.get("subtask_id"),
+            "tool": raw.get("tool") or raw["name"], "label": raw["name"], "status": status,
+            "tool_version": raw.get("tool_version"), "input_summary": None,
+            "output_summary": raw.get("output_ref"), "evidence_ids": [], "artifact_ids": [],
+            "started_at": raw.get("started_at"), "finished_at": raw.get("finished_at"),
+            "error": raw.get("error"),
+        }
+
+    @classmethod
+    def _evidence(cls, run_id: str, value: Any) -> dict[str, Any]:
+        raw = cls._json(value)
+        source_kind = str(raw.get("source_kind", "database"))
+        kinds = {
+            "model": "model_output", "database": "db_record",
+            "literature": "citation", "measurement": "db_record", "computation": "db_record",
+        }
+        confidence = raw.get("confidence", {})
+        return {
+            "id": raw["id"], "run_id": run_id,
+            "kind": kinds.get(source_kind, "db_record"),
+            "source": raw["source"], "summary": raw.get("claim"),
+            "confidence": {
+                "value": confidence.get("score"), "band": confidence.get("band"),
+                "notes": [confidence["basis"]] if confidence.get("basis") else [],
+            },
+            "retrieved_at": raw.get("provenance", {}).get("timestamp"),
+            "step_id": raw.get("step_id"),
+        }
+
+    @classmethod
+    def _artifact(cls, run_id: str, value: Any) -> dict[str, Any]:
+        raw = cls._json(value)
+        return {
+            **raw, "run_id": run_id, "status": "ready",
+            "review_status": "pending" if raw.get("actionable") else "not_required",
+        }
+
+
+runtime = LocalRuntime()
