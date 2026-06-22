@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "fixture": true,
+  "indexes": [
+    {"organism": "Homo sapiens", "assembly": "GRCh38", "topology": "linear", "files": []},
+    {"organism": "Escherichia coli", "assembly": "GCF_000005845.2", "topology": "circular", "files": []}
+  ]
+}

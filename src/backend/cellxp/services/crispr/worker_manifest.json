@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "worker_revision": "cellxp-crispr-worker-v1",
+  "sources": [
+    {
+      "name": "cas-offinder",
+      "version": "2.4.1",
+      "revision": "9816b94c20c4cba2e79b039e1e2a6dee684b7b66",
+      "archive_url": "https://github.com/snugel/cas-offinder/archive/9816b94c20c4cba2e79b039e1e2a6dee684b7b66.tar.gz",
+      "archive_sha256": "3505e2a6f37f4ca366cce0293c1ad1396ce2208ed44bfd2dde435df77dcc869b"
+    },
+    {
+      "name": "azimuth-rule-set-2",
+      "version": "2.0",
+      "revision": "73522accfde9d609563231efcc5f3b284af78566",
+      "archive_url": "https://github.com/MicrosoftResearch/Azimuth/archive/73522accfde9d609563231efcc5f3b284af78566.tar.gz",
+      "archive_sha256": "95534ab72bb706ab9b9c86a60090cc2c9b761f08d1b977e36d25f512dfe3dfb7"
+    },
+    {
+      "name": "crispor-cfd",
+      "version": "source-snapshot",
+      "revision": "c221aff4bf1270eabda98f6e654f639b4c48fd0b",
+      "archive_url": "https://github.com/maximilianh/crisporWebsite/archive/c221aff4bf1270eabda98f6e654f639b4c48fd0b.tar.gz",
+      "archive_sha256": "0e460e704008b06eb7be8d461c860d0e8b941831475c88877c3658a5de04ab88"
+    }
+  ]
+}

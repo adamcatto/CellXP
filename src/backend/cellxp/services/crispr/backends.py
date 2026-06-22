@@ -47,6 +47,11 @@ class HttpCrisprBackend:
     def predict_edit_outcomes(self, request: EditOutcomeRequest) -> EditOutcomeResult:
         return self._post("/v1/edit-outcomes", request, EditOutcomeResult)
 
+    def attest(self) -> dict[str, Any]:
+        response = self._client.get("/health")
+        response.raise_for_status()
+        return dict(response.json())
+
     def _post(self, path: str, request: BaseModel, result: type[T]) -> T:
         response = _request_with_retries(self._client, path, self.retries,
                                          json=request.model_dump(mode="json"))

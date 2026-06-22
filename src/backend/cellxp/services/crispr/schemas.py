@@ -76,7 +76,7 @@ class GuideScoringRequest(BaseModel):
     guides: list[str] = Field(min_length=1)
     organism: str
     assembly: str
-    model: str = "rule_set_2"
+    model: str = "auto"
 
 
 class GuideScoringResult(BaseModel):
