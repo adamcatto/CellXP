@@ -37,7 +37,10 @@ class GwasService(Service):
 
     name = "gwas"
 
-    def __init__(self, *, backend: GwasBackend | None = None) -> None:
+    def __init__(self, *, backend: GwasBackend | None = None, configure: bool = True) -> None:
+        if backend is None and configure:
+            from .backends import gwas_backend_from_environment
+            backend = gwas_backend_from_environment()
         self._backend = backend
 
     def lookup_associations(self, request: GwasRequest) -> ServiceResult[GwasResult]:

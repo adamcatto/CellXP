@@ -20,6 +20,9 @@ from .schemas import (
     LdResult,
 )
 from .service import GwasService
+from .backends import (
+    DeterministicGwasBackend, EbiGwasQtlBackend, HttpGwasBackend, gwas_backend_from_environment,
+)
 
 __all__ = [
     "Association",
@@ -38,4 +41,8 @@ __all__ = [
     "LdPair",
     "LdRequest",
     "LdResult",
+    "DeterministicGwasBackend",
+    "EbiGwasQtlBackend",
+    "HttpGwasBackend",
+    "gwas_backend_from_environment",
 ]
