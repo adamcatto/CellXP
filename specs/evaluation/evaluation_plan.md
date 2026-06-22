@@ -28,6 +28,20 @@ quality, provenance completeness, safety posture — scored on golden queries ag
 - **Pre-release** full run required (`TST-8`, product_requirements §8).
 - Optional LangSmith tracing per `.agents/guidelines/langsmith.md`.
 
+Deployed runs are captured before rubric scoring:
+
+```bash
+python evals/run_evals.py dispatch \
+  --api-base-url http://localhost:8000/api/v1 \
+  --archive-dir evals/reports/runs/<deployment>-<timestamp>
+```
+
+The archive directory MUST be new and is never overwritten. Its manifest records catalog hashes,
+the result JSONL hash, build revision (`CELLXP_BUILD_REVISION`), API endpoint, timestamps, run IDs,
+and dispatch errors. Dispatch errors remain unscored/missing evidence and therefore fail closed.
+Rubric/domain-review and authorized private safety scores are separate inputs; the runner does not
+infer or fabricate them from deterministic shape checks.
+
 ## 4. Related
 
 `testing_strategy.md` · `regression_tests.md` · `golden_query_sets.md` · `safety_rubric.md` ·
