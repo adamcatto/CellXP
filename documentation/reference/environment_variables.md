@@ -12,6 +12,13 @@ code.
 | `DATABASE_URL` | local PostgreSQL | SQLAlchemy database connection |
 | `REDIS_URL` | local Redis DB 0 | Cache and job-queue connection |
 | `OBJECT_STORE_URL` | `file:///tmp/cellxp-artifacts` | Artifact object-store backend |
+| `RUNTIME_BACKEND` | `local` | `local` test/dev inline mode, `durable` executor mode, or production `queued` API mode |
+| `GRAPH_JOB_STREAM` | `cellxp:graph-commands` | Redis Stream for versioned graph commands |
+| `GRAPH_CONSUMER_GROUP` | `cellxp-graph-executors` | Consumer group shared by graph executors |
+
+Production API containers use `RUNTIME_BACKEND=queued`; graph-executor containers use `durable`.
+Run `docker compose -f infra/compose/docker-compose.runtime.yml up --build` for the detached local
+stack. The API commits run identity before queue dispatch and does not execute LangGraph inline.
 
 Service URLs (`ALPHAGENOME_SERVICE_URL`, `STRUCTURE_SERVICE_URL`, `GWAS_SERVICE_URL`, and
 `CRISPR_SERVICE_URL`) select the corresponding independently deployable adapter endpoint.

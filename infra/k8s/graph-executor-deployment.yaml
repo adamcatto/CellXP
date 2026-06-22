@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cellxp-graph-executor
+  labels:
+    app.kubernetes.io/name: cellxp-graph-executor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cellxp-graph-executor
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cellxp-graph-executor
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: graph-executor
+          image: cellxp/api:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "cellxp.jobs.graph_worker"]
+          env:
+            - name: RUNTIME_BACKEND
+              value: durable
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef: {name: cellxp-runtime, key: database-url}
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef: {name: cellxp-runtime, key: redis-url}
+            - name: GRAPH_JOB_STREAM
+              value: cellxp:graph-commands
+            - name: GRAPH_CONSUMER_GROUP
+              value: cellxp-graph-executors
+          resources:
+            requests: {cpu: "500m", memory: 1Gi}
+            limits: {cpu: "2", memory: 4Gi}

@@ -17,7 +17,7 @@ dev-frontend:
 	cd src/frontend && pnpm dev
 
 worker:
-	PYTHONPATH=$(PYTHONPATH) python -m cellxp.jobs.worker
+	PYTHONPATH=$(PYTHONPATH) python -m cellxp.jobs.graph_worker
 
 test:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m pytest -m "not slow and not live and not gpu and not eval"
