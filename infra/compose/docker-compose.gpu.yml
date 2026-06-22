@@ -1,1 +1,37 @@
-services: {}
+services:
+  structure-worker:
+    build:
+      context: ../..
+      dockerfile: infra/docker/worker.Dockerfile
+    image: cellxp/structure-worker:boltz-2.2.1-esmfold-v1
+    init: true
+    shm_size: "16gb"
+    restart: unless-stopped
+    ports:
+      - "8102:8102"
+    environment:
+      STRUCTURE_DEVICE: cuda
+      STRUCTURE_JOB_TIMEOUT_SECONDS: ${STRUCTURE_JOB_TIMEOUT_SECONDS:-1800}
+      MODEL_CACHE_DIR: /models
+      OBJECT_STORE_URL: file:///artifacts
+      ESMFOLD_REVISION: 75a3841ee059df2bf4d56688166c8fb459ddd97a
+    volumes:
+      - structure-models:/models
+      - cellxp-artifacts:/artifacts
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8102/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  structure-models:
+  cellxp-artifacts:
