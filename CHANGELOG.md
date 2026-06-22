@@ -23,6 +23,10 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-22** — Move production LangGraph start/resume/cancel execution out of FastAPI into
+  dedicated Redis Streams graph executors with idempotent commands, retry/reclaim/dead-letter
+  handling, durable snapshots/events, production capability composition, and compose/Kubernetes
+  deployment manifests.
 - **2026-06-22** — Add durable Postgres API/run persistence and LangGraph checkpoints, Redis Streams
   job transport, S3-compatible object storage, Playwright chat/clarification/review journeys, and a
   fail-closed M1–M3 release-gate report that distinguishes missing evidence from a passing gate.

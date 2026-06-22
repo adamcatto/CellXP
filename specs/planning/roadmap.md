@@ -49,10 +49,10 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   downstream slice imports; structurally mitigates R2 (coordinates) and R3 (provenance) ·
   *shipped* · depends-on: N1 · M1.
 - **N3 — Core orchestration pipeline.** normalizer → intent → risk → entity → planner → clarify
-  (FR-1..FR-7) · the agent loop all subgraphs hang off · *in-progress* (implementation, graph
+  (FR-1..FR-7) · the agent loop all subgraphs hang off · *shipped* (implementation, graph
   integration coverage, ordered SSE/replay/pause-resume, durable Postgres repository/checkpoint
-  wiring, and browser coverage complete; moving graph execution off the API process through the
-  Redis queue remains) · depends-on: N2 · M1.
+  wiring, browser coverage, idempotent Redis graph commands, and separately deployable graph
+  executors complete) · depends-on: N2 · M1.
 - **N4 — Reference genome service.** GRCh38 + ≥1 prokaryote with circular handling (RGS-1..RGS-5) ·
   coordinate source of truth; R2/R4 mitigation · *shipped* (catalog + 6 operations, Ensembl
   gene/dbSNP resolution and cross-assembly mapping, circular handling, and deterministic tests;
