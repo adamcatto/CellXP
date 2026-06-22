@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     object_store_url: str = "file:///tmp/cellxp-artifacts"
     job_stream: str = "cellxp:jobs"
     job_consumer_group: str = "cellxp-workers"
+    graph_job_stream: str = "cellxp:graph-commands"
+    graph_consumer_group: str = "cellxp-graph-executors"
 
     def prepare_local_paths(self) -> None:
         """Create parent directories needed by configured local durable backends."""

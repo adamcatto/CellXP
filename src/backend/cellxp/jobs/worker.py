@@ -23,5 +23,10 @@ def run_worker(
         handler = handlers.get(job.task)
         if handler is None:
             raise KeyError(f"no handler registered for job task {job.task!r}")
-        handler(job.payload)
-        queue.acknowledge(job)
+        try:
+            handler(job.payload)
+        except Exception:
+            if not queue.retry(job):
+                raise
+        else:
+            queue.acknowledge(job)

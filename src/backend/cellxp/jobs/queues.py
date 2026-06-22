@@ -19,6 +19,7 @@ class Job:
     task: str
     payload: dict[str, Any]
     attempts: int = 0
+    max_attempts: int = 3
 
 
 class RedisJobQueue:
@@ -40,11 +41,21 @@ class RedisJobQueue:
             if "BUSYGROUP" not in str(exc):
                 raise
 
-    def enqueue(self, task: str, payload: dict[str, Any], *, job_id: str | None = None) -> str:
+    def enqueue(
+        self, task: str, payload: dict[str, Any], *, job_id: str | None = None,
+        attempts: int = 0, max_attempts: int = 3,
+    ) -> str:
         job_id = job_id or new_id()
+        # A stable command id is the dispatch fence across API retries and outbox recovery.
+        dedupe_key = f"{self.stream}:dedupe:{job_id}"
+        if hasattr(self.client, "set") and not self.client.set(
+            dedupe_key, "1", nx=True, ex=7 * 24 * 60 * 60
+        ):
+            return job_id
         self.client.xadd(self.stream, {
             "job_id": job_id, "task": task,
-            "payload": json.dumps(payload, separators=(",", ":")), "attempts": "0",
+            "payload": json.dumps(payload, separators=(",", ":")),
+            "attempts": str(attempts), "max_attempts": str(max_attempts),
         })
         return job_id
 
@@ -64,10 +75,24 @@ class RedisJobQueue:
         return Job(
             id=fields["job_id"], stream_id=stream_id, task=fields["task"],
             payload=json.loads(fields["payload"]), attempts=int(fields.get("attempts", 0)),
+            max_attempts=int(fields.get("max_attempts", 3)),
         )
 
     def acknowledge(self, job: Job) -> None:
         self.client.xack(self.stream, self.group, job.stream_id)
+
+    def retry(self, job: Job) -> bool:
+        """Acknowledge and redeliver a failed command while its retry budget remains."""
+        self.acknowledge(job)
+        if job.attempts + 1 >= job.max_attempts:
+            return False
+        # A retry is a distinct delivery but preserves the logical job id in its payload.
+        retry_id = f"{job.id}:retry:{job.attempts + 1}"
+        self.enqueue(
+            job.task, job.payload, job_id=retry_id,
+            attempts=job.attempts + 1, max_attempts=job.max_attempts,
+        )
+        return True
 
     def depth(self) -> int:
         return int(self.client.xlen(self.stream))
