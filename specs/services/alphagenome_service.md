@@ -57,6 +57,12 @@ versioned `/v1/score-variants`, `/v1/score-sequences`, `/v1/predict-tracks`, and
 Pydantic validation of every response. An absent endpoint leaves the service explicitly unsupported;
 HTTP and response-contract errors become recoverable backend failures.
 
+AlphaGenome and Evo 2 are separate worker classes. A routed transport sends mammalian
+variant/track and splice requests to AlphaGenome, sequence scoring to Evo 2, and non-mammalian
+variant/track requests to Evo 2. Each worker exposes readiness and an immutable version manifest.
+Artifacts acquired by CellXP MUST match the manifest SHA-256 before readiness. Deterministic fixture
+mode is contract-test-only and MUST NOT count as live-model acceptance.
+
 ## 5. Outputs & Artifacts
 
 Small summaries MAY be inline JSON. Large arrays and track payloads MUST be written to object
