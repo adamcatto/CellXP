@@ -121,6 +121,10 @@ class CreateRunResponse(BaseModel):
 At least one of `message` or `inputs` is required. Referenced artifacts MUST belong to the same
 authorized workspace unless an explicit copy/import operation has occurred. A duplicate
 `client_request_id` within a session returns the original run rather than dispatching twice.
+The endpoint commits the queued run and one durable `run.status=queued` event, enqueues an
+idempotent graph-executor command, and returns `202` without executing LangGraph in the API process.
+Queue unavailability returns `503`; a committed run that could not be enqueued remains recoverable
+by the command outbox/reconciler and MUST NOT be dispatched twice.
 
 The run snapshot is a durable, bounded representation of `AgentState`: message/report text,
 normalized metadata, plan/subtasks, compact step/evidence/artifact summaries, pending interactions,
@@ -233,6 +237,8 @@ platform UI client.
   untrusted.
 - **API-9** API and generated TypeScript client compatibility MUST be covered by schema/contract tests.
 - **API-10** Errors MUST be actionable and safe, with stable codes and no secrets/raw stack traces.
+- **API-11** Run start/resume/cancel endpoints MUST return without executing graph or heavy domain
+  work inline; production execution is performed by Redis-backed workers.
 
 ## 12. Related
 

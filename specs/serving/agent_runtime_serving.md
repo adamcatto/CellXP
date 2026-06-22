@@ -8,16 +8,17 @@
 
 ## 1. Scope
 
-The agent runtime is the FastAPI process that:
+The agent runtime is split between a lightweight FastAPI gateway and a dedicated graph executor.
+The FastAPI process:
 
 - hosts the REST + SSE endpoints (`specs/interface/api_contracts.md`),
-- compiles and executes the LangGraph supervisor + subgraphs (`specs/agent/graph_spec.md`,
-  `state_schema.md`),
+- enqueues start/resume/cancel commands on Redis Streams,
 - writes/reads run state through the persistence layer (`specs/data/*`),
 - dispatches heavy work to the job layer (`control-flow/concurrency.md`,
   `domain_model_serving.md`).
 
-This spec defines: process model, replication, sticky SSE sequencing, checkpointing &
+The graph-executor worker compiles and executes LangGraph, writes checkpoints and run events, and
+dispatches heavy domain jobs. This spec defines: process model, replication, SSE sequencing, checkpointing &
 resumption, graceful shutdown, capacity limits, and observability.
 
 ## 2. Process model
@@ -29,23 +30,28 @@ resumption, graceful shutdown, capacity limits, and observability.
 │  │   ├─ routers (sessions / runs / artifacts / reviews / uploads)   │
 │  │   ├─ SSE handler (per-run, ordered, replayable)                  │
 │  │   └─ middleware (auth, request id, idempotency, problem+json)    │
-│  ├─ LangGraph compiled graph                                        │
-│  │   ├─ supervisor + subgraphs                                       │
-│  │   └─ checkpointer (Postgres for durable; Redis for ephemeral)     │
-│  ├─ Service registry (in-process services)                          │
-│  ├─ Job client (Redis Streams producer)                             │
+│  ├─ Run-command client (Redis Streams producer)                     │
 │  └─ Background tasks (heartbeats, cache pruning, audit flush)       │
+└────────────────────────────────────────────────────────────────────┘
+                              │ start / resume / cancel
+                              ▼
+┌────────────────────────────────────────────────────────────────────┐
+│  graph-executor process                                             │
+│  ├─ Redis Streams consumer group                                    │
+│  ├─ LangGraph supervisor + capability subgraphs                     │
+│  ├─ Postgres checkpointer + run/event repository                     │
+│  └─ heavy-job clients (per-class Redis streams / remote workers)    │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Single process per replica.** No multi-process fork inside one container (uvicorn
-  `--workers 1`). Horizontal scaling is done at the container/pod level, not by process
-  forking — the LangGraph in-memory caches and the SSE registry assume a single process.
+- **Single role per process.** API containers run uvicorn `--workers 1`; graph-executor containers
+  run one bounded consumer loop. Horizontal scaling is at the container/pod level.
 - **Asyncio everywhere.** All I/O is async; service calls that are intrinsically synchronous
   (CPU heavy) run via `asyncio.to_thread` or are dispatched as jobs. Blocking the event loop
   for > 100 ms is a bug.
-- **Workers are separate processes** (see `domain_model_serving.md` §5); the agent runtime
-  process does not host worker logic.
+- **All execution is outside the API process.** Graph executors and domain-model workers are
+  separate processes. The API validates, persists run identity, enqueues commands, and serves
+  snapshots/events only.
 
 ## 3. Replication
 
@@ -53,32 +59,22 @@ resumption, graceful shutdown, capacity limits, and observability.
 |---|---|---|
 | 1 (single-user local) | 1 | run via `scripts/dev_api.sh` or `infra/compose/docker-compose.yml` |
 | 2 (workstation / lab) | 1–2 behind reverse proxy | second replica for restart-without-downtime |
-| 3 (multi-tenant cloud) | N, HPA on request-latency / CPU | k8s `Deployment`; ingress with sticky SSE (§4) |
+| 3 (multi-tenant cloud) | N API + N executors | independent API latency and command-depth scaling |
 
 Replicas are **stateless** with respect to **durable** run identity: run state, checkpoints,
 artifacts, evidence, and audit live in Postgres + object store + Redis. Any replica can take a
-request for any run (with the §4 caveat for in-flight SSE streams).
+request for any run; graph executors claim commands through one consumer group.
 
 **No shared file system.** Anything that needs to be shared lives in Postgres, Redis, or the
 object store — not in process-local files. The deepagents virtual filesystem
 (`session_types.md` §2 `files`) is backed by the persistence layer, not the host FS.
 
-## 4. SSE sequencing & sticky sessions
+## 4. SSE sequencing
 
-A single SSE stream MUST be served by a single replica for the lifetime of that connection
-(events are sequenced in memory on that replica). The system is sticky at the **SSE connection**
-boundary, not the **run** boundary:
-
-- POST to `/runs` (start a run) may land on any replica; that replica becomes the run's
-  **executor** until the graph yields (await job, await user, complete).
-- GET `/runs/{id}/events` (SSE) lands on **the executor replica** for that run while it is
-  executing. If routed to a different replica:
-  - Executing run on a different replica → ingress sticks via `run_id` hash, OR the receiving
-    replica proxies the stream from the executor, OR the receiving replica refuses with a
-    redirect to the canonical stream URL. We pick **ingress hash on `run_id`** for v1.
-  - Run is paused (`awaiting_*`) or completed → any replica can serve from the checkpointed
-    state + replayable durable events (`api_contracts.md` §8). The reader gets the snapshot
-    plus a tail.
+Any API replica can serve an SSE connection. Executors allocate event sequences transactionally in
+the durable repository; API replicas replay those events and tail for new commits. POST `/runs`
+commits the queued snapshot before it enqueues one idempotent `graph.start` command. Interaction
+endpoints enqueue `graph.resume`; cancellation enqueues `graph.cancel`.
 
 Reconnect/replay uses `Last-Event-ID` and the durable event log; ephemeral events
 (`reasoning.*`, `activity.update`) MAY be dropped on replay
@@ -88,8 +84,8 @@ Reconnect/replay uses `Last-Event-ID` and the durable event log; ephemeral event
 
 LangGraph's checkpointer is configured to persist to **Postgres** for the run's durable state
 (messages, plan, subtasks, steps, evidence, artifact refs, errors, status) and to **Redis** for
-short-lived ephemeral state (per-step counters, in-flight reasoning buffers). On replica
-restart or run hand-off:
+short-lived ephemeral state (per-step counters, in-flight reasoning buffers). On executor restart
+or command redelivery:
 
 - a different replica MUST be able to **resume an awaiting-input/awaiting-review run** from
   Postgres state with no data loss; pending clarification / review cards re-stream
@@ -107,7 +103,7 @@ the plan).
 
 ## 6. Concurrency model
 
-Per replica:
+Per graph-executor replica:
 
 - `AGENT_MAX_CONCURRENT_RUNS` (default tuned per regime; 4 in regime 1, e.g. 32 in regime 3):
   the maximum number of runs an executor replica will keep in active graph execution
@@ -128,11 +124,9 @@ Per cluster (regime 3):
 
 On SIGTERM:
 
-1. The replica stops accepting new connections (`/healthz` flips to "draining").
-2. It finishes the current node executions and **checkpoints** the run state.
-3. In-flight SSE streams receive a `stream.reset` event with the snapshot URL and next
-   sequence (`api_contracts.md` §8); the client reconnects to a different replica and
-   resumes.
+1. An API replica stops accepting new connections (`/healthz` flips to "draining").
+2. A graph executor stops reserving commands, finishes its current node, and checkpoints state.
+3. SSE clients reconnect to any API replica using `Last-Event-ID`.
 4. Background tasks (audit flush, cache pruning) complete to a quiescent point.
 5. The process exits within `SHUTDOWN_GRACE_S` (default 30 s) or is force-killed by the
    orchestrator.
@@ -214,8 +208,8 @@ see unauthenticated requests.
 
 - **ARS-1** Replicas MUST be stateless with respect to durable run identity; all consequential
   state MUST live in Postgres / Redis / object store, not process memory.
-- **ARS-2** SSE streams MUST be sticky-by-`run_id` while a run is executing; replicas not
-  executing the run MUST be able to serve replay/snapshot reads.
+- **ARS-2** Any API replica MUST be able to serve snapshots and ordered replay/tail SSE events;
+  graph execution MUST NOT require API affinity.
 - **ARS-3** LangGraph checkpoints MUST persist enough state to resume an awaiting-input /
   awaiting-review run from a different replica with no user-visible data loss.
 - **ARS-4** SIGTERM MUST drain in-flight runs into checkpoints within `SHUTDOWN_GRACE_S` and
@@ -232,11 +226,15 @@ see unauthenticated requests.
   re-run-if-idempotent, surface-otherwise.
 - **ARS-10** The runtime MUST be deployable in regimes 1–3 with config-only changes; the agent
   graph MUST NOT have regime-conditional branches.
+- **ARS-11** Production API processes MUST NOT invoke LangGraph or heavy domain operations inline;
+  start/resume/cancel commands MUST be durably queued after run identity is committed.
+- **ARS-12** Graph commands MUST be idempotent and reclaimable after executor failure. A command is
+  acknowledged only after its snapshot, checkpoint, and durable events are committed.
 
 ## 16. Open questions
 
-- Sticky-SSE policy: ingress hash vs. executor-replica proxy. Hash is simpler; proxy is more
-  flexible. Default to hash; revisit if multi-region demands.
+- Efficient SSE tail notification (Redis pub/sub versus bounded repository polling); durable
+  repository replay remains authoritative either way.
 - Whether to ship a **per-tenant queue** at the runtime layer (rate-limiting) or push it down
   to ingress.
 - LangGraph checkpoint compaction strategy (delta vs. snapshot frequency) — primarily a perf
