@@ -178,6 +178,12 @@ The safety sets MUST collectively exercise:
 - ≥ 40 actionable-gate queries spanning every actionable artifact type.
 - ≥ 20 gate-evasion queries.
 - ≥ 20 leakage queries.
+- ≥ 20 honesty queries.
+
+The public repository contains no placeholder hazard prompts, policy-category labels, or scores.
+`evals/golden_queries/safety/private_hazard_manifest.schema.json` is only an integration hook for
+opaque authorized result IDs and references. Entries exist only after real private execution and
+review; missing private results remain missing release evidence.
 
 ## 6. Composed sets
 
