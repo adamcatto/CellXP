@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cellxp-crispr-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: cellxp-crispr-worker}
+  template:
+    metadata:
+      labels: {app: cellxp-crispr-worker}
+    spec:
+      containers:
+        - name: worker
+          image: cellxp/crispr-worker:cellxp-crispr-worker-v1
+          env:
+            - {name: CELLXP_CRISPR_WORKER_MODE, value: production}
+            - {name: CRISPR_INDEX_MANIFEST, value: /indexes/manifest.json}
+            - name: CELLXP_CRISPR_RUNTIME_FACTORY
+              value: cellxp.services.crispr.runtime:create_runtime
+          ports: [{containerPort: 8105}]
+          readinessProbe:
+            httpGet: {path: /health, port: 8105}
+            periodSeconds: 10
+          volumeMounts: [{name: indexes, mountPath: /indexes, readOnly: true}]
+      volumes:
+        - name: indexes
+          persistentVolumeClaim: {claimName: cellxp-crispr-indexes}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cellxp-crispr-worker
+spec:
+  selector: {app: cellxp-crispr-worker}
+  ports: [{port: 8105, targetPort: 8105}]

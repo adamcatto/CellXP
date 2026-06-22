@@ -1,0 +1,18 @@
+services:
+  crispr-worker:
+    build:
+      context: ../..
+      dockerfile: infra/docker/crispr-worker.Dockerfile
+    environment:
+      CELLXP_CRISPR_WORKER_MODE: production
+      CELLXP_CRISPR_RUNTIME_FACTORY: cellxp.services.crispr.runtime:create_runtime
+      CRISPR_INDEX_MANIFEST: /indexes/manifest.json
+    volumes:
+      - ${CRISPR_INDEX_DIR:?index directory required}:/indexes:ro
+    ports:
+      - "8105:8105"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8105/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
