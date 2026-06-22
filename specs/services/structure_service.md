@@ -44,6 +44,13 @@ summarization, and artifact packaging. Heavy operations include Boltz-2/ESMFold 
 RFdiffusion/LigandMPNN generation, docking/affinity prediction, Orca contact prediction, and large
 protein-function scans.
 
+The implemented structure worker uses pinned `facebook/esmfold_v1` revision
+`75a3841ee059df2bf4d56688166c8fb459ddd97a` and `boltz[cuda]==2.2.1`. ESMFold is lazy-loaded once
+and retained by the worker. Boltz-2 executes in an isolated subprocess with argv-only invocation, a
+deployment-configured hard timeout, local single-sequence MSA mode (no implicit sequence egress), and
+one GPU device. Coordinates are written through `ObjectStore` under content-addressed keys. The live
+T7 tests remain opt-in and model weights are never downloaded by default CI.
+
 ## 5. Outputs & Artifacts
 
 | Output | Artifact type | Actionable | Storage |

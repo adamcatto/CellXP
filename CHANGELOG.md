@@ -23,6 +23,9 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-22** — Add the production structure worker with pinned ESMFold/Boltz-2 acquisition,
+  bounded GPU inference, content-addressed PDB/mmCIF outputs, deployable manifests, complete model
+  provenance, and opt-in live smoke tests.
 - **2026-06-22** — Add opt-in GWAS Catalog/eQTL Catalogue adapters, typed statistical and CRISPR
   worker transports with bounded retries, honest offline fallbacks, and live smoke-test seams.
 - **2026-06-21** — Add executable v1 session/run APIs with graph-backed clarification resume,

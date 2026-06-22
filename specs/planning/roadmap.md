@@ -91,8 +91,9 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
 - **X3 — Structure.** ESMFold service + Mol\*-class 3D pane + linked viewports (FR-18) · folded-protein
   evidence · *in-progress* (StructureService with ESMFold/Boltz-2/Orca/DNAshapeR backend protocol +
   `predict_structure`/`predict_contacts`/`predict_dna_shape`, structure subgraph, tests, and linked
-  PDB 3D/confidence pane with Mol* seam complete; real workers, Mol*/mmCIF, and live acceptance
-  remain) · depends-on: N5 · M2.
+  PDB 3D/confidence pane with Mol* seam, pinned ESMFold/Boltz-2 GPU worker, immutable model-download
+  flow, mmCIF artifact production, and opt-in live smokes complete; release-gate live execution and
+  durable Redis dispatch remain) · depends-on: N5 · M2.
 - **X4 — Composed evidence pattern.** variant → GWAS → fold → report + calibration eval · the M2
   user-visible payoff · *shipped* (ordered dependency plan, cross-subtask evidence accounting,
   planner tests, golden query, and worked calibration example) · depends-on: X1, X2, X3 · M2.
