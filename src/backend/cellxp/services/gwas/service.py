@@ -163,7 +163,11 @@ def _evidence_for(
                     f"{association.trait} association reported in "
                     f"{association.study_accession}"
                 ),
-                value={"p_value": association.p_value, "beta": association.beta},
+                value={
+                    "p_value": association.p_value,
+                    "beta": association.beta,
+                    "association_score": association.association_score,
+                },
                 confidence=confidence,
                 provenance=Provenance(
                     tool=association.source,
@@ -179,20 +183,22 @@ def _evidence_for(
             for association in associations
         ]
 
-    source = getattr(value, "panel", None) or "gwas_backend"
+    result_provenance = getattr(value, "provenance", None) or Provenance()
+    source = getattr(value, "panel", None) or result_provenance.tool or "gwas_backend"
     return [
         EvidenceItem(
             source=source,
             source_kind=SourceKind.DATABASE if operation == "lookup_associations" else SourceKind.COMPUTATION,
             claim=f"GWAS/QTL {operation} produced statistical-genetics evidence",
             confidence=confidence,
-            provenance=Provenance(
-                tool=operation,
-                tool_version=source_release,
-                inputs={"organism": organism, "assembly": assembly},
-                timestamp=finished,
-                output_ref=getattr(value, "storage_ref", None),
-            ),
+            provenance=result_provenance.model_copy(update={
+                "tool": result_provenance.tool or operation,
+                "tool_version": result_provenance.tool_version or source_release,
+                "inputs": {**result_provenance.inputs, "organism": organism,
+                           "assembly": assembly},
+                "timestamp": finished,
+                "output_ref": getattr(value, "storage_ref", None),
+            }),
         )
     ]
 
