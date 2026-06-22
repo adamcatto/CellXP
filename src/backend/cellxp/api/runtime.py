@@ -13,9 +13,9 @@ from threading import RLock
 from typing import Any
 
 from fastapi import HTTPException
-from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 
+from cellxp.agent.checkpoint import checkpointer_from_database_url
 from cellxp.agent.graph import build_graph
 from cellxp.agent.state import Clarification, Report, ReviewState
 from cellxp.api.schemas import (
@@ -146,7 +146,7 @@ class LocalRuntime:
         snapshot = record.snapshot
         snapshot["status"] = RunStatus.RUNNING.value
         self._emit(record, "run.status", {"status": "running"})
-        graph = build_graph(checkpointer=InMemorySaver())
+        graph = build_graph(checkpointer=self._checkpointer())
         record.graph = graph
         query = record.request.message or "Analyze the supplied inputs."
         if record.request.inputs:
@@ -251,7 +251,8 @@ class LocalRuntime:
             raise HTTPException(status_code=409, detail="interaction is no longer pending")
         graph = record.graph
         if graph is None:
-            raise HTTPException(status_code=409, detail="run cannot be resumed")
+            graph = build_graph(checkpointer=self._checkpointer())
+            record.graph = graph
         output = graph.invoke(
             Command(resume=value), {"configurable": {"thread_id": run_id}}
         )
@@ -295,6 +296,9 @@ class LocalRuntime:
             at=utc_now_iso(), data=deepcopy(data),
         )
         record.events.append((kind, event))
+
+    def _checkpointer(self) -> Any:
+        return checkpointer_from_database_url(None)
 
     @staticmethod
     def _response(snapshot: dict[str, Any]) -> CreateRunResponse:
@@ -365,4 +369,92 @@ class LocalRuntime:
         }
 
 
-runtime = LocalRuntime()
+class DurableRuntime(LocalRuntime):
+    """Repository-backed runtime; only active graph execution remains replica-local."""
+
+    def __init__(self, database_url: str) -> None:
+        from cellxp.storage.api_repository import ApiRepository
+        from cellxp.storage.database import Base, make_session_factory
+
+        super().__init__()
+        self.database_url = database_url
+        self._factory = make_session_factory(database_url)
+        Base.metadata.create_all(bind=self._factory.kw["bind"])
+        self.repository = ApiRepository(self._factory)
+        self._hydrate()
+
+    def _hydrate(self) -> None:
+        self.sessions = {item.id: item for item in self.repository.sessions()}
+        for snapshot, request in self.repository.runs():
+            events = self.repository.events_after(snapshot["id"], 0)
+            self.runs[snapshot["id"]] = RunRecord(
+                snapshot=snapshot, request=request, events=events
+            )
+            self._dedupe[(snapshot["session_id"], request.client_request_id)] = snapshot["id"]
+
+    def create_session(self, request: CreateSessionRequest) -> SessionSummary:
+        result = super().create_session(request)
+        self.repository.create_session(result)
+        return result
+
+    def patch_session(self, session_id: str, request: PatchSessionRequest) -> SessionSummary:
+        result = super().patch_session(session_id, request)
+        self.repository.update_session(result)
+        return result
+
+    def delete_session(self, session_id: str) -> None:
+        if not self.repository.delete_session(session_id):
+            raise HTTPException(status_code=404, detail="session not found")
+        with self._lock:
+            self.sessions.pop(session_id, None)
+
+    def create_run(
+        self,
+        session_id: str,
+        request: CreateRunRequest,
+        *,
+        reproduces_run_id: str | None = None,
+    ) -> CreateRunResponse:
+        existing = self.repository.find_run(session_id, request.client_request_id)
+        if existing is not None:
+            return self._response(self._record(existing).snapshot)
+        response = super().create_run(
+            session_id, request, reproduces_run_id=reproduces_run_id
+        )
+        record = self._record(response.run_id)
+        self.repository.save_run(record.snapshot, record.request)
+        for kind, event in record.events:
+            self.repository.append_event(response.run_id, kind, event)
+        return response
+
+    def resume(self, run_id: str, item_id: str, value: Any, expected_status: str) -> None:
+        before = len(self._record(run_id).events)
+        super().resume(run_id, item_id, value, expected_status)
+        record = self._record(run_id)
+        self.repository.save_run(record.snapshot, record.request)
+        for kind, event in record.events[before:]:
+            self.repository.append_event(run_id, kind, event)
+
+    def cancel(self, run_id: str) -> None:
+        before = len(self._record(run_id).events)
+        super().cancel(run_id)
+        record = self._record(run_id)
+        self.repository.save_run(record.snapshot, record.request)
+        for kind, event in record.events[before:]:
+            self.repository.append_event(run_id, kind, event)
+
+    def _checkpointer(self) -> Any:
+        return checkpointer_from_database_url(self.database_url)
+
+
+def create_runtime() -> LocalRuntime:
+    from cellxp.config.settings import Settings
+
+    settings = Settings()
+    if settings.runtime_backend == "durable":
+        settings.prepare_local_paths()
+        return DurableRuntime(settings.database_url)
+    return LocalRuntime()
+
+
+runtime = create_runtime()

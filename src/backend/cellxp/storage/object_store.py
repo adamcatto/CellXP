@@ -15,7 +15,8 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
-from typing import BinaryIO, Protocol, runtime_checkable
+from io import BytesIO
+from typing import Any, BinaryIO, Protocol, runtime_checkable
 from urllib.parse import urlparse
 
 from pydantic import BaseModel
@@ -118,18 +119,14 @@ class FilesystemObjectStore:
         return self._path(key).exists()
 
     def url(self, key: str, *, expires_s: int | None = None) -> str:
-        """Local `file://` URL. Prod backends issue short-lived signed URLs (`object_storage.md`
-        §5); access control is enforced at the API, never by guessing paths."""
         if not self.exists(key):
             raise KeyError(f"no object at key {key!r}")
         return self._path(key).as_uri()
 
     def delete(self, key: str) -> None:
-        """Session/run-deletion path only (`provenance_model.md` §8); an audited event."""
         self._path(key).unlink(missing_ok=True)
 
     def _verify(self, key: str, data: bytes) -> None:
-        # Content-addressed objects carry their hash in the key; verify it on read (OS-3).
         if key.startswith(f"{CAS_PREFIX}/"):
             expected = key.split("/", 1)[1]
             actual = content_hash(data)
@@ -140,15 +137,87 @@ class FilesystemObjectStore:
                 )
 
 
+class S3ObjectStore:
+    """S3-compatible immutable object backend for shared regime-2/3 deployments."""
+
+    def __init__(
+        self, bucket: str, prefix: str = "", *, endpoint_url: str | None = None,
+        client: Any | None = None,
+    ) -> None:
+        if not bucket:
+            raise ValueError("S3 object-store URL must include a bucket")
+        if client is None:
+            import boto3
+
+            client = boto3.client("s3", endpoint_url=endpoint_url)
+        self.client = client
+        self.bucket = bucket
+        self.prefix = prefix.strip("/")
+
+    def _key(self, key: str) -> str:
+        if key.startswith("/") or ".." in key.split("/"):
+            raise ValueError(f"invalid object key: {key!r}")
+        return "/".join(part for part in (self.prefix, key) if part)
+
+    def put(self, data: bytes, *, content_type: str, key: str | None = None) -> ObjectRef:
+        digest = content_hash(data)
+        key = key or f"{CAS_PREFIX}/{digest}"
+        remote_key = self._key(key)
+        if self.exists(key):
+            if self.get(key) != data:
+                raise IntegrityError(f"refusing to overwrite immutable object: {key!r}", key=key)
+        else:
+            self.client.put_object(
+                Bucket=self.bucket, Key=remote_key, Body=data, ContentType=content_type,
+                Metadata={"sha256": digest},
+            )
+        return ObjectRef(key=key, content_type=content_type, size=len(data), hash=digest)
+
+    def get(self, key: str) -> bytes:
+        try:
+            data = self.client.get_object(Bucket=self.bucket, Key=self._key(key))["Body"].read()
+        except self.client.exceptions.NoSuchKey as exc:
+            raise KeyError(f"no object at key {key!r}") from exc
+        if key.startswith(f"{CAS_PREFIX}/") and content_hash(data) != key.split("/", 1)[1]:
+            raise IntegrityError(f"content hash mismatch for {key!r}", key=key)
+        return data
+
+    def open(self, key: str) -> BinaryIO:
+        return BytesIO(self.get(key))
+
+    def exists(self, key: str) -> bool:
+        try:
+            self.client.head_object(Bucket=self.bucket, Key=self._key(key))
+            return True
+        except self.client.exceptions.ClientError as exc:
+            if exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode") == 404:
+                return False
+            raise
+
+    def url(self, key: str, *, expires_s: int | None = None) -> str:
+        if not self.exists(key):
+            raise KeyError(f"no object at key {key!r}")
+        return self.client.generate_presigned_url(
+            "get_object", Params={"Bucket": self.bucket, "Key": self._key(key)},
+            ExpiresIn=expires_s or 900,
+        )
+
+    def delete(self, key: str) -> None:
+        self.client.delete_object(Bucket=self.bucket, Key=self._key(key))
+
+
 def object_store_from_url(url: str) -> ObjectStore:
     """Construct the configured backend from `OBJECT_STORE_URL` (`object_storage.md` §7).
 
-    Only `file://` is wired today; S3-compatible (`s3://`, `https://…`) is the prod backend and
-    raises `NotImplementedError` until added, so misconfiguration fails loudly.
+    `s3://bucket/prefix` uses AWS configuration. `endpoint_url` supports MinIO and other
+    S3-compatible services without changing callers.
     """
     scheme = urlparse(url).scheme or "file"
     if scheme == "file":
         return FilesystemObjectStore(url)
+    if scheme == "s3":
+        parsed = urlparse(url)
+        return S3ObjectStore(parsed.netloc, parsed.path)
     raise NotImplementedError(f"object store backend {scheme!r} not yet supported: {url!r}")
 
 

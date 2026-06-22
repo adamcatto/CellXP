@@ -6,6 +6,7 @@ from cellxp.domain.errors import IntegrityError
 from cellxp.storage.object_store import (
     FilesystemObjectStore,
     ObjectStore,
+    S3ObjectStore,
     cas_key,
     content_hash,
     object_store_from_url,
@@ -101,6 +102,19 @@ def test_from_url_file_scheme_builds_filesystem_store(tmp_path):
     assert isinstance(store, ObjectStore)  # runtime_checkable Protocol
 
 
-def test_from_url_unsupported_scheme_raises(tmp_path):
+def test_from_url_s3_scheme_builds_s3_store(monkeypatch):
+    class Boto:
+        @staticmethod
+        def client(name, endpoint_url=None):
+            return object()
+
+    monkeypatch.setitem(__import__("sys").modules, "boto3", Boto)
+    store = object_store_from_url("s3://bucket/prefix")
+    assert isinstance(store, S3ObjectStore)
+    assert store.bucket == "bucket"
+    assert store.prefix == "prefix"
+
+
+def test_from_url_unsupported_scheme_raises():
     with pytest.raises(NotImplementedError):
-        object_store_from_url("s3://bucket/prefix")
+        object_store_from_url("ftp://bucket/prefix")

@@ -87,6 +87,38 @@ class Run(Base):
     finished_at: Mapped[datetime | None] = mapped_column(TimestampTZ)
 
 
+class ApiRunState(Base):
+    """HTTP-facing run snapshot and creation request used for restart-safe API replay."""
+
+    __tablename__ = "api_run_states"
+
+    run_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("runs.id"), primary_key=True
+    )
+    client_request_id: Mapped[str] = mapped_column(String, nullable=False)
+    request: Mapped[dict[str, Any]] = mapped_column(JSONType, nullable=False)
+    snapshot: Mapped[dict[str, Any]] = mapped_column(JSONType, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(TimestampTZ, default=utc_now, onupdate=utc_now)
+
+    __table_args__ = (
+        Index("uq_api_run_session_request", "client_request_id", unique=False),
+    )
+
+
+class ApiRunEvent(Base):
+    """Ordered durable SSE event log; sequence is scoped to a run."""
+
+    __tablename__ = "api_run_events"
+
+    run_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("runs.id"), primary_key=True
+    )
+    sequence: Mapped[int] = mapped_column(Integer, primary_key=True)
+    kind: Mapped[str] = mapped_column(String, nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONType, nullable=False)
+    at: Mapped[datetime] = mapped_column(TimestampTZ, default=utc_now)
+
+
 class Message(Base):
     __tablename__ = "messages"
     __append_only__ = True
@@ -299,5 +331,6 @@ APPEND_ONLY_TABLES: frozenset[str] = frozenset(
 __all__ = [
     "Base", "User", "WorkspaceSession", "Run", "Message", "Subtask", "Step", "EvidenceItem",
     "Artifact", "ArtifactEvidence", "Clarification", "ReviewItem", "RunError", "Macro",
+    "ApiRunState", "ApiRunEvent",
     "AuditLog", "APPEND_ONLY_TABLES",
 ]
