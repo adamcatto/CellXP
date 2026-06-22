@@ -38,6 +38,33 @@ class _Backend:
         raise NotImplementedError
 
 
+class _ComposedBackend(_Backend):
+    def __init__(self) -> None:
+        self.operations: list[str] = []
+
+    def compute_ld(self, request):  # noqa: ANN001
+        from cellxp.services.gwas import LdPair, LdResult
+        self.operations.append("ld")
+        return LdResult(pairs=[LdPair(variant_a="rs1", variant_b="rs2", r2=.8)],
+                        population=request.population, panel="fixture")
+
+    def fine_map(self, request):  # noqa: ANN001
+        from cellxp.services.gwas import CredibleSet, CredibleVariant, FineMapResult
+        self.operations.append("fine-map")
+        return FineMapResult(credible_sets=[CredibleSet(
+            id="cs1", variants=[CredibleVariant(variant_id="rs1", pip=.8)],
+            region=request.interval, coverage=.95,
+        )], assumptions=["fixture"], input_datasets=[request.summary_stats_ref])
+
+    def coloc(self, request):  # noqa: ANN001
+        from cellxp.services.gwas import ColocBatchResult, ColocResult
+        self.operations.append("coloc")
+        return ColocBatchResult(results=[ColocResult(
+            trait=request.trait, tissue=request.tissues[0], h4=.9,
+            gwas_dataset=request.gwas_stats_ref, qtl_dataset=request.qtl_stats_ref,
+        )])
+
+
 def _subtask(**inputs: object) -> Subtask:
     return Subtask(
         type=SubtaskType.GWAS,
@@ -198,3 +225,19 @@ def test_no_active_subtask_returns_empty_update() -> None:
         normalized_inputs=NormalizedInputs().model_dump(),
     )
     assert build_subgraph()(state) == {}
+
+
+def test_requested_statistical_operations_execute_and_preserve_partial_success() -> None:
+    backend = _ComposedBackend()
+    node = build_subgraph(gwas_service=GwasService(backend=backend))
+    result = node(_state(
+        NormalizedInputs(organism="Homo sapiens", assembly="GRCh38", variants=[_human_variant()]),
+        _subtask(
+            traits=["height"], tissues=["liver"], ld_population="EUR",
+            do_finemap=True, summary_stats_ref="stats", ld_matrix_ref="ld",
+            do_coloc=True, gwas_stats_ref="gwas", qtl_stats_ref="qtl",
+        ),
+    ))
+    assert backend.operations == ["ld", "fine-map", "coloc"]
+    assert Subtask.model_validate(result["subtasks"][0]).status is TaskStatus.DONE
+    assert "errors" not in result

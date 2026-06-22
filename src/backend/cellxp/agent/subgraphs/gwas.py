@@ -11,7 +11,10 @@ from cellxp.domain.artifacts import ArtifactRef
 from cellxp.domain.enums import TaskStatus
 from cellxp.domain.evidence import EvidenceItem
 from cellxp.services.base import ServiceOutcome
-from cellxp.services.gwas import GeneReference, GwasRequest, GwasService
+from cellxp.services.gwas import (
+    ColocRequest, FineMapRequest, GeneReference, GwasRequest, GwasService, LdRequest,
+)
+from cellxp.domain.models import GenomicInterval, Variant
 from cellxp.services.reference import (
     EntityResolveRequest,
     ReferenceGenomeService,
@@ -190,6 +193,54 @@ def build_subgraph(
                 evidence=evidence,
                 artifacts=artifacts,
             )
+        partial_errors: list[RunError] = []
+        analysis_interval = _analysis_interval(subject, active.inputs)
+        population = active.inputs.get("ld_population")
+        if population and analysis_interval is not None:
+            ld_result = gwas_svc.compute_ld(LdRequest(
+                interval=analysis_interval, organism=organism, assembly=assembly,
+                population=str(population),
+                lead_variants=list(active.inputs.get("lead_variants", [])),
+            ))
+            _merge_partial(ld_result, active, "LD", steps, evidence, artifacts, partial_errors)
+
+        stats_ref = active.inputs.get("summary_stats_ref")
+        if active.inputs.get("do_finemap", bool(stats_ref)):
+            if analysis_interval is None or not stats_ref:
+                partial_errors.append(RunError(
+                    subtask_id=active.id, kind="MissingSummaryStatistics",
+                    message="fine-mapping skipped: interval and summary_stats_ref are required",
+                    recoverable=True,
+                ))
+            else:
+                fine_result = gwas_svc.fine_map(FineMapRequest(
+                    interval=analysis_interval, organism=organism, assembly=assembly,
+                    trait=_primary_trait(active.inputs), population=str(population) if population else None,
+                    summary_stats_ref=str(stats_ref),
+                    ld_matrix_ref=_optional_str(active.inputs.get("ld_matrix_ref")),
+                ))
+                _merge_partial(fine_result, active, "fine-mapping", steps, evidence, artifacts,
+                               partial_errors)
+
+        gwas_stats = active.inputs.get("gwas_stats_ref")
+        qtl_stats = active.inputs.get("qtl_stats_ref")
+        if active.inputs.get("do_coloc", bool(gwas_stats and qtl_stats)):
+            tissues = list(active.inputs.get("tissues") or [])
+            if analysis_interval is None or not gwas_stats or not qtl_stats or not tissues:
+                partial_errors.append(RunError(
+                    subtask_id=active.id, kind="MissingColocInputs",
+                    message=("colocalization skipped: interval, tissues, gwas_stats_ref, and "
+                             "qtl_stats_ref are required"),
+                    recoverable=True,
+                ))
+            else:
+                coloc_result = gwas_svc.coloc(ColocRequest(
+                    interval=analysis_interval, organism=organism, assembly=assembly,
+                    trait=_primary_trait(active.inputs), tissues=tissues,
+                    gwas_stats_ref=str(gwas_stats), qtl_stats_ref=str(qtl_stats),
+                ))
+                _merge_partial(coloc_result, active, "colocalization", steps, evidence, artifacts,
+                               partial_errors)
         steps.append(
             _step(active.id, "query_gwas_evidence", query_started, tool="gwas", weight="heavy")
         )
@@ -203,6 +254,8 @@ def build_subgraph(
             "evidence": evidence,
             "artifacts": artifacts,
         }
+        if partial_errors:
+            output["errors"] = partial_errors
         return output
 
     return _run
@@ -262,3 +315,39 @@ def _step(
 
 
 run = build_subgraph()
+
+
+def _analysis_interval(subject: object, inputs: dict[str, object]) -> GenomicInterval | None:
+    if isinstance(subject, GenomicInterval):
+        return subject
+    if isinstance(subject, Variant):
+        raw_flank = inputs.get("analysis_flank", 500_000)
+        flank = int(raw_flank) if isinstance(raw_flank, (str, int)) else 500_000
+        return GenomicInterval(
+            assembly=subject.assembly,
+            chrom=subject.chrom,
+            start=max(0, subject.pos - flank),
+            end=subject.pos + flank + max(1, len(subject.ref)),
+        )
+    return None
+
+
+def _primary_trait(inputs: dict[str, object]) -> str:
+    traits = inputs.get("traits")
+    return str(traits[0]) if isinstance(traits, list) and traits else "unspecified trait"
+
+
+def _optional_str(value: object) -> str | None:
+    return str(value) if value else None
+
+
+def _merge_partial(result, active, label, steps, evidence, artifacts, errors) -> None:  # noqa: ANN001
+    steps.extend(result.steps)
+    evidence.extend(item.model_copy(update={"subtask_id": active.id}) for item in result.evidence)
+    artifacts.extend(item.model_copy(update={"subtask_id": active.id}) for item in result.artifacts)
+    if result.outcome in {ServiceOutcome.FAILURE, ServiceOutcome.UNSUPPORTED}:
+        detail = result.error.message if result.error else result.detail or "unavailable"
+        errors.append(RunError(
+            subtask_id=active.id, kind="PartialGwasAnalysis",
+            message=f"{label} unavailable: {detail}", recoverable=True,
+        ))
