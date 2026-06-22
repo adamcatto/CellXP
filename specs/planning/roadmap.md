@@ -80,8 +80,9 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
 
 - **X1 — GWAS/QTL.** service + subgraph + locus-inspector pane (FR-14) · associations, LD, fine-map,
   coloc · *in-progress* (typed `GwasService` with injectable backend, four operations, human-data
-  coverage guards, provenance/artifacts, GWAS subgraph, tests, and locus-inspector pane complete;
-  production GWAS/QTL adapters remain) · depends-on: N5 · M2.
+  coverage guards, provenance/artifacts, GWAS subgraph, tests, locus-inspector pane, direct EBI
+  GWAS/eQTL adapter, and versioned statistical-worker transport complete; additional Open Targets,
+  LD-panel, and pinned SuSiE/coloc worker deployment remains) · depends-on: N5 · M2.
 - **X2 — RAG.** service + vector index + report-resolvable citations (FR-20) · literature grounding;
   R3 citation validity · *in-progress* (five-operation `RagService`, injectable retrieval/vector
   backend contract, RAG subgraph, citation maps, PubMed/PMC adapter, persistent SQLite vector index,
@@ -98,7 +99,8 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
 - **X5 — CRISPR design.** service + subgraph + guide-pool & off-target panes (FR-15) · first actionable
   capability · *shipped* (typed four-operation service, injectable backend, organism/assembly and
   edit-spec guards, actionable artifacts, subgraph, deterministic coverage, and guide/off-target
-  panes; production scoring adapters and persisted pool composition remain deployment work) ·
+  panes plus a versioned scoring/off-target worker transport; pinned worker deployment and persisted
+  pool composition remain deployment work) ·
   depends-on: N5 · M3.
 - **X6 — Human-review gate.** `human_review_gate` node + genome-editing session type (strict posture)
   (FR-25, FR-26, FR-39) · R1; enforced before any build-ready export · *shipped* (supervisor

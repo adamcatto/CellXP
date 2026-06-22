@@ -1,7 +1,7 @@
 # GWAS / QTL Service
 
-> Status: Draft v0.1; typed service boundary and injectable backend implemented for X1
-> (2026-06-20); production data/tool adapters remain deferred. Logical service contract for
+> Status: Draft v0.1; typed boundary plus production EBI/worker adapters implemented for X1
+> (2026-06-22). Logical service contract for
 > statistical-genetics lookup and analysis. Impl:
 > `src/backend/cellxp/services/gwas/`. Methodology:
 > `specs/biology/gwas_qtl_lookup.md`. Catalog:
@@ -45,6 +45,11 @@ The registry provides adapters for GWAS Catalog, Open Targets Genetics, eQTL Cat
 dbSNP, ClinVar, LD panels, SuSiE, coloc, PLINK/LDSC-class tools. Each adapter declares release,
 license/access mode, organism coverage, and citation metadata.
 
+The implemented `ebi` adapter queries GWAS Catalog and eQTL Catalogue v3 for normalized rsIDs. The
+`http` adapter delegates all four operations to a separately deployed, versioned worker so LD
+panels and statistical toolchains can be pinned independently. `deterministic` is an explicit
+offline empty-evidence fallback and never invents associations. Live access is opt-in.
+
 ## 5. Outputs & Artifacts
 
 | Output | Artifact type | Storage |
@@ -87,10 +92,14 @@ sample size/study power, PIP, coloc H4, LD-panel fit, and source directness.
 ## 10. Verification
 
 Unit coverage for GWS-1..5, PROV-1, organism/assembly guards, all four operations, and subgraph
-success/failure paths lives in `tests/unit/test_gwas_service.py` and
-`tests/unit/test_gwas_subgraph.py`. Run it with:
+success/failure paths lives in `tests/unit/test_gwas_service.py`,
+`tests/unit/test_gwas_subgraph.py`, and `tests/unit/test_gwas_production_backends.py`. Run it with:
 
 ```bash
 PYTHONPATH=src/backend python -m pytest \
   tests/unit/test_gwas_service.py tests/unit/test_gwas_subgraph.py -q
 ```
+
+The T2 live smoke is disabled by default. Run it with
+`CELLXP_RUN_LIVE_GWAS=1 GWAS_BACKEND=ebi python -m pytest -m live
+tests/integration/test_live_production_adapters.py -q`.

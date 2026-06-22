@@ -23,6 +23,8 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-22** — Add opt-in GWAS Catalog/eQTL Catalogue adapters, typed statistical and CRISPR
+  worker transports with bounded retries, honest offline fallbacks, and live smoke-test seams.
 - **2026-06-21** — Add executable v1 session/run APIs with graph-backed clarification resume,
   ordered/replayable SSE, request deduplication, revision guards, reproduction, and HTTP e2e tests.
 - **2026-06-21** — Add Ensembl gene/dbSNP resolution and cross-assembly mapping, strict remote

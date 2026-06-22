@@ -43,6 +43,12 @@ large genomes or batches.
 The service MUST stream progress through `step.started`, `activity.update`, and `step.finished`
 events because off-target scans can be long-running.
 
+The implemented `http` adapter delegates typed operations to a separately deployed worker expected
+to pin Rule Set 2, CFD, Cas-OFFinder, and outcome-model revisions. It validates worker responses and
+uses bounded retries for transient failures. The `deterministic` offline adapter provides only
+sequence-QC scores and empty search/outcome results; it never labels its heuristic as Rule Set 2 or
+claims genome-wide completeness.
+
 ## 5. Outputs & Artifacts
 
 | Output | Artifact type | Actionable | Storage |
@@ -90,3 +96,11 @@ be presented as exploratory.
 `specs/biology/crispr_design.md` · `specs/biology/inverse_edit_design.md` ·
 `specs/agent/human_review_policy.md` · `specs/data/audit_log.md` ·
 `specs/interface/artifact_model.md`.
+
+## 11. Verification
+
+Transport retry, schema validation, offline determinism, and environment selection are T1 tests in
+`tests/unit/test_crispr_production_backends.py`. Run
+`python -m pytest tests/unit/test_crispr_production_backends.py -q`. The opt-in T2 smoke requires a
+live worker: `CELLXP_RUN_LIVE_CRISPR=1 CRISPR_BACKEND=http CRISPR_SERVICE_URL=<url> python -m pytest
+-m live tests/integration/test_live_production_adapters.py -q`.
