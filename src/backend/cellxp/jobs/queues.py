@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from redis import Redis
 from redis.exceptions import ResponseError
@@ -49,8 +49,13 @@ class RedisJobQueue:
         return job_id
 
     def reserve(self, consumer: str, *, block_ms: int = 5000) -> Job | None:
-        rows = self.client.xreadgroup(
-            self.group, consumer, {self.stream: ">"}, count=1, block=block_ms,
+        # redis-py's return annotation is a union covering several command shapes. This call's
+        # concrete shape is fixed by XREADGROUP with one stream: [(stream, [(id, fields)])].
+        rows = cast(
+            list[tuple[str, list[tuple[str, dict[str, str]]]]],
+            self.client.xreadgroup(
+                self.group, consumer, {self.stream: ">"}, count=1, block=block_ms,
+            ),
         )
         if not rows:
             return None
