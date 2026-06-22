@@ -42,6 +42,12 @@ and dispatch errors. Dispatch errors remain unscored/missing evidence and theref
 Rubric/domain-review and authorized private safety scores are separate inputs; the runner does not
 infer or fabricate them from deterministic shape checks.
 
+Deployed acceptance for review/audit/export and run-inspector deep links is collected with
+`python -m evals.deployed_acceptance`. The collector archives every endpoint observation and emits
+only measured `acceptance.review_approve_audit` and `acceptance.run_inspector_deep_link` values.
+Missing audit/export/deep-link endpoints fail closed. Its two-run telemetry sample MUST NOT populate
+the release-scale reliability or latency fields.
+
 ## 4. Related
 
 `testing_strategy.md` · `regression_tests.md` · `golden_query_sets.md` · `safety_rubric.md` ·
