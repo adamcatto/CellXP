@@ -16,7 +16,7 @@ from fastapi import HTTPException
 from langgraph.types import Command
 
 from cellxp.agent.checkpoint import checkpointer_from_database_url
-from cellxp.agent.graph import build_graph
+from cellxp.agent.graph import build_graph, production_capability_nodes
 from cellxp.agent.state import Clarification, Report, ReviewState
 from cellxp.api.schemas import (
     CreateRunRequest,
@@ -140,14 +140,19 @@ class LocalRuntime:
             stored.updated_at = now
         self._emit(record, "run.status", {"status": "queued"})
         self._on_run_created(record)
-        self._execute(record, session)
+        self._dispatch_start(record, session)
         return self._response(record.snapshot)
+
+    def _dispatch_start(self, record: RunRecord, session: SessionSummary) -> None:
+        self._execute(record, session)
 
     def _execute(self, record: RunRecord, session: SessionSummary) -> None:
         snapshot = record.snapshot
         snapshot["status"] = RunStatus.RUNNING.value
         self._emit(record, "run.status", {"status": "running"})
-        graph = build_graph(checkpointer=self._checkpointer())
+        graph = build_graph(
+            checkpointer=self._checkpointer(), capability_nodes=production_capability_nodes()
+        )
         record.graph = graph
         query = record.request.message or "Analyze the supplied inputs."
         if record.request.inputs:
@@ -250,19 +255,27 @@ class LocalRuntime:
         pending = record.snapshot.get(pending_key)
         if not pending or pending.get("id") != item_id:
             raise HTTPException(status_code=409, detail="interaction is no longer pending")
+        self._dispatch_resume(record, item_id, value)
+
+    def _dispatch_resume(self, record: RunRecord, item_id: str, value: Any) -> None:
         graph = record.graph
         if graph is None:
-            graph = build_graph(checkpointer=self._checkpointer())
+            graph = build_graph(
+                checkpointer=self._checkpointer(), capability_nodes=production_capability_nodes()
+            )
             record.graph = graph
         output = graph.invoke(
-            Command(resume=value), {"configurable": {"thread_id": run_id}}
+            Command(resume=value),
+            {"configurable": {"thread_id": record.snapshot["id"]}},
         )
-        record.snapshot.pop(pending_key, None)
+        record.snapshot.pop("pending_review", None)
+        record.snapshot.pop("pending_clarification", None)
         self._apply_graph_output(record, output)
 
     def get_run(self, run_id: str) -> dict[str, Any]:
         snapshot = deepcopy(self._record(run_id).snapshot)
         snapshot.pop("_internal_error", None)
+        snapshot.pop("_queued_resume", None)
         return snapshot
 
     def list_runs(self, session_id: str) -> list[dict[str, Any]]:
@@ -397,6 +410,19 @@ class DurableRuntime(LocalRuntime):
             )
             self._dedupe[(snapshot["session_id"], request.client_request_id)] = snapshot["id"]
 
+    def refresh_run(self, run_id: str) -> RunRecord:
+        stored = self.repository.run(run_id)
+        if stored is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        snapshot, request = stored
+        record = RunRecord(
+            snapshot=snapshot, request=request,
+            events=self.repository.events_after(run_id, 0),
+        )
+        with self._lock:
+            self.runs[run_id] = record
+        return record
+
     def create_session(self, request: CreateSessionRequest) -> SessionSummary:
         result = super().create_session(request)
         self.repository.create_session(result)
@@ -460,13 +486,109 @@ class DurableRuntime(LocalRuntime):
             self._durable_checkpointer = checkpointer_from_database_url(self.database_url)
         return self._durable_checkpointer
 
+    def execute_queued(self, run_id: str) -> None:
+        record = self.refresh_run(run_id)
+        if record.snapshot["status"] != RunStatus.QUEUED.value:
+            return
+        before = len(record.events)
+        session = self.get_session(record.snapshot["session_id"])
+        self._execute(record, session)
+        self.repository.save_run(record.snapshot, record.request)
+        for kind, event in record.events[before:]:
+            self.repository.append_event(run_id, kind, event)
+
+    def resume_queued(self, run_id: str, item_id: str, value: Any, expected_status: str) -> None:
+        record = self.refresh_run(run_id)
+        if record.snapshot["status"] != expected_status:
+            raise HTTPException(status_code=409, detail="run is not awaiting this interaction")
+        pending_key = (
+            "pending_review" if expected_status == "awaiting_review" else "pending_clarification"
+        )
+        pending = record.snapshot.get(pending_key)
+        if not pending or pending.get("id") != item_id:
+            raise HTTPException(status_code=409, detail="interaction is no longer pending")
+        before = len(record.events)
+        self._dispatch_resume(record, item_id, value)
+        record.snapshot.pop("_queued_resume", None)
+        self.repository.save_run(record.snapshot, record.request)
+        for kind, event in record.events[before:]:
+            self.repository.append_event(run_id, kind, event)
+
+
+class QueuedRuntime(DurableRuntime):
+    """Production API runtime: persist identities and enqueue; never invoke LangGraph inline."""
+
+    def __init__(self, database_url: str, redis_url: str, stream: str, group: str) -> None:
+        from cellxp.jobs.queues import RedisJobQueue
+
+        super().__init__(database_url)
+        self.queue = RedisJobQueue.from_url(redis_url, stream=stream, group=group)
+        self.queue.setup()
+
+    def _dispatch_start(self, record: RunRecord, session: SessionSummary) -> None:
+        from cellxp.jobs.tasks import GRAPH_START, graph_command
+
+        del session
+        try:
+            self.queue.enqueue(
+                GRAPH_START, graph_command(record.snapshot["id"]),
+                job_id=f"start:{record.snapshot['id']}",
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail="graph queue unavailable") from exc
+
+    def resume(self, run_id: str, item_id: str, value: Any, expected_status: str) -> None:
+        from cellxp.jobs.tasks import GRAPH_RESUME, graph_command
+
+        record = self.refresh_run(run_id)
+        if record.snapshot["status"] != expected_status:
+            raise HTTPException(status_code=409, detail="run is not awaiting this interaction")
+        pending_key = "pending_review" if expected_status == "awaiting_review" else "pending_clarification"
+        pending = record.snapshot.get(pending_key)
+        if not pending or pending.get("id") != item_id:
+            raise HTTPException(status_code=409, detail="interaction is no longer pending")
+        record.snapshot["_queued_resume"] = {"item_id": item_id, "value": value}
+        self.repository.save_run(record.snapshot, record.request)
+        try:
+            self.queue.enqueue(
+                GRAPH_RESUME,
+                graph_command(
+                    run_id, item_id=item_id, value=value, expected_status=expected_status
+                ),
+                job_id=f"resume:{run_id}:{item_id}",
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail="graph queue unavailable") from exc
+
+    def cancel(self, run_id: str) -> None:
+        from cellxp.jobs.tasks import GRAPH_CANCEL, graph_command
+
+        self.refresh_run(run_id)
+        super().cancel(run_id)
+        self.queue.enqueue(
+            GRAPH_CANCEL, graph_command(run_id), job_id=f"cancel:{run_id}"
+        )
+
+    def _record(self, run_id: str) -> RunRecord:
+        return self.refresh_run(run_id)
+
+    def events_after(self, run_id: str, sequence: int) -> list[tuple[str, RunEvent]]:
+        if self.repository.run(run_id) is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        return self.repository.events_after(run_id, sequence)
+
 
 def create_runtime() -> LocalRuntime:
     from cellxp.config.settings import Settings
 
     settings = Settings()
-    if settings.runtime_backend == "durable":
+    if settings.runtime_backend in {"durable", "queued"}:
         settings.prepare_local_paths()
+        if settings.runtime_backend == "queued":
+            return QueuedRuntime(
+                settings.database_url, settings.redis_url,
+                settings.graph_job_stream, settings.graph_consumer_group,
+            )
         return DurableRuntime(settings.database_url)
     return LocalRuntime()
 

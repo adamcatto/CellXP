@@ -50,6 +50,25 @@ CAPABILITY_NODES = (
 )
 
 
+def production_capability_nodes() -> dict[str, Node]:
+    """Compose implemented capability nodes without making graph construction read environment."""
+    from cellxp.agent.subgraphs.crispr import run as crispr_run
+    from cellxp.agent.subgraphs.gwas import run as gwas_run
+    from cellxp.agent.subgraphs.inverse_design import run as inverse_design_run
+    from cellxp.agent.subgraphs.rag import run as rag_run
+    from cellxp.agent.subgraphs.structure import run as structure_run
+    from cellxp.agent.subgraphs.variant_effect import run as variant_effect_run
+
+    return {
+        "variant_effect_subgraph": variant_effect_run,
+        "gwas_subgraph": gwas_run,
+        "crispr_subgraph": crispr_run,
+        "structure_subgraph": structure_run,
+        "rag_subgraph": rag_run,
+        "inverse_design_subgraph": inverse_design_run,
+    }
+
+
 def _apply_clarification(state: AgentState, raw_answer: Any) -> dict[str, object]:
     questions = [
         Clarification.model_validate(item).model_copy(deep=True)

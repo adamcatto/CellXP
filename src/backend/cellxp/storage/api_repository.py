@@ -108,6 +108,13 @@ class ApiRepository:
                 for row in db.scalars(stmt)
             ]
 
+    def run(self, run_id: str) -> tuple[dict[str, Any], CreateRunRequest] | None:
+        with self.factory() as db:
+            row = db.get(orm.ApiRunState, run_id)
+            if row is None:
+                return None
+            return dict(row.snapshot), CreateRunRequest.model_validate(row.request)
+
     def append_event(self, run_id: str, kind: str, event: RunEvent) -> None:
         with self.factory.begin() as db:
             db.add(orm.ApiRunEvent(
