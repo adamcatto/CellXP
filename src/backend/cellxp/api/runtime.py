@@ -139,6 +139,7 @@ class LocalRuntime:
             stored.run_count += 1
             stored.updated_at = now
         self._emit(record, "run.status", {"status": "queued"})
+        self._on_run_created(record)
         self._execute(record, session)
         return self._response(record.snapshot)
 
@@ -300,6 +301,9 @@ class LocalRuntime:
     def _checkpointer(self) -> Any:
         return checkpointer_from_database_url(None)
 
+    def _on_run_created(self, record: RunRecord) -> None:
+        """Persistence hook invoked before graph execution starts."""
+
     @staticmethod
     def _response(snapshot: dict[str, Any]) -> CreateRunResponse:
         run_id = snapshot["id"]
@@ -378,6 +382,7 @@ class DurableRuntime(LocalRuntime):
 
         super().__init__()
         self.database_url = database_url
+        self._durable_checkpointer: Any | None = None
         self._factory = make_session_factory(database_url)
         Base.metadata.create_all(bind=self._factory.kw["bind"])
         self.repository = ApiRepository(self._factory)
@@ -423,9 +428,16 @@ class DurableRuntime(LocalRuntime):
         )
         record = self._record(response.run_id)
         self.repository.save_run(record.snapshot, record.request)
-        for kind, event in record.events:
+        for kind, event in record.events[1:]:
             self.repository.append_event(response.run_id, kind, event)
         return response
+
+    def _on_run_created(self, record: RunRecord) -> None:
+        # Establish durable run identity before invoking any graph node. A process crash can then
+        # be recovered from the graph checkpoint without losing the API-visible run.
+        self.repository.save_run(record.snapshot, record.request)
+        kind, event = record.events[-1]
+        self.repository.append_event(record.snapshot["id"], kind, event)
 
     def resume(self, run_id: str, item_id: str, value: Any, expected_status: str) -> None:
         before = len(self._record(run_id).events)
@@ -444,7 +456,9 @@ class DurableRuntime(LocalRuntime):
             self.repository.append_event(run_id, kind, event)
 
     def _checkpointer(self) -> Any:
-        return checkpointer_from_database_url(self.database_url)
+        if self._durable_checkpointer is None:
+            self._durable_checkpointer = checkpointer_from_database_url(self.database_url)
+        return self._durable_checkpointer
 
 
 def create_runtime() -> LocalRuntime:
