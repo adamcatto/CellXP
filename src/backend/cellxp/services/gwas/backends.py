@@ -50,6 +50,17 @@ class HttpGwasBackend:
     def coloc(self, request: ColocRequest) -> ColocBatchResult:
         return self._post("/v1/coloc", request, ColocBatchResult)
 
+    def attest(self) -> dict[str, str]:
+        """Verify that the worker reports the deployment-pinned toolchain revision."""
+        response = _request_with_retries(self._client, "GET", "/health", self.retries)
+        payload = response.json()
+        observed = str(payload.get("revision", ""))
+        if self.version != "remote" and observed != self.version:
+            raise RuntimeError(
+                f"GWAS worker revision mismatch: expected {self.version}, got {observed or 'missing'}"
+            )
+        return {"status": str(payload.get("status", "unknown")), "revision": observed}
+
     def _post(self, path: str, request: BaseModel, result: type[T]) -> T:
         response = _request_with_retries(self._client, "POST", path, self.retries,
                                          json=request.model_dump(mode="json"))
@@ -109,6 +120,86 @@ class EbiGwasQtlBackend:
         raise NotImplementedError("EBI evidence adapter does not run coloc; use gwas_http")
 
 
+class OpenTargetsGwasBackend:
+    """Read variant-to-disease evidence from the versioned Open Targets GraphQL API.
+
+    Open Targets does not provide the regional summary statistics needed for LD, SuSiE, or coloc;
+    those operations deliberately remain worker-only instead of fabricating statistical results.
+    """
+
+    name = "open_targets"
+
+    def __init__(
+        self,
+        *,
+        base_url: str = "https://api.platform.opentargets.org/api/v4/graphql",
+        release: str = "live",
+        timeout: float = 30.0,
+        retries: int = 2,
+        client: httpx.Client | None = None,
+    ) -> None:
+        self.version = release
+        self.retries = retries
+        self._endpoint = base_url
+        self._client = client or httpx.Client(
+            timeout=timeout, headers={"Accept": "application/json"}
+        )
+
+    def lookup_associations(self, request: GwasRequest) -> GwasResult:
+        if not isinstance(request.subject, Variant) or not request.subject.rsid:
+            raise ValueError("Open Targets lookup requires a normalized Variant with rsid")
+        rsid = request.subject.rsid
+        mapping_response = _request_with_retries(
+            self._client,
+            "POST",
+            self._endpoint,
+            self.retries,
+            json={"query": _OPEN_TARGETS_MAP_QUERY, "variables": {"terms": [rsid]}},
+        )
+        mapping_payload = mapping_response.json()
+        _raise_graphql_error(mapping_payload)
+        mappings = mapping_payload.get("data", {}).get("mapIds", {}).get("mappings", [])
+        hits = mappings[0].get("hits", []) if mappings else []
+        variant_ids = [str(hit["id"]) for hit in hits if hit.get("entity") == "variant"]
+        records: list[Association] = []
+        for variant_id in variant_ids[:4]:
+            response = _request_with_retries(
+                self._client, "POST", self._endpoint, self.retries,
+                json={"query": _OPEN_TARGETS_QUERY, "variables": {"variantId": variant_id}},
+            )
+            payload = response.json()
+            _raise_graphql_error(payload)
+            records.extend(_parse_open_targets(payload, rsid, self.version))
+        if request.traits:
+            wanted = {term.casefold() for term in request.traits}
+            records = [record for record in records if any(term in record.trait.casefold()
+                                                              for term in wanted)]
+        return GwasResult(
+            associations=records,
+            confidence=Confidence(
+                band=ConfidenceBand.MEDIUM if records else ConfidenceBand.UNKNOWN,
+                basis="Open Targets curated variant-to-disease evidence",
+            ),
+            provenance=Provenance(
+                tool=self.name,
+                tool_version=self.version,
+                inputs={"rsid": rsid},
+                citations=["https://platform.opentargets.org/"],
+                nondeterministic=self.version == "live",
+            ),
+            coverage_note=None if records else f"no Open Targets records found for {rsid}",
+        )
+
+    def compute_ld(self, request: LdRequest) -> LdResult:
+        raise NotImplementedError("Open Targets does not compute LD; use gwas_http")
+
+    def fine_map(self, request: FineMapRequest) -> FineMapResult:
+        raise NotImplementedError("Open Targets does not expose runnable summary statistics")
+
+    def coloc(self, request: ColocRequest) -> ColocBatchResult:
+        raise NotImplementedError("Open Targets does not run coloc; use gwas_http")
+
+
 class DeterministicGwasBackend:
     """Offline empty-evidence fallback; deterministic and explicit, never fabricated."""
 
@@ -146,6 +237,16 @@ def gwas_backend_from_environment():  # noqa: ANN201
                                  eqtl_url=os.getenv("EQTL_CATALOG_URL",
                                                    "https://www.ebi.ac.uk/eqtl/api/v3"),
                                  timeout=timeout, retries=retries)
+    if mode == "open_targets":
+        return OpenTargetsGwasBackend(
+            base_url=os.getenv(
+                "OPEN_TARGETS_GRAPHQL_URL",
+                "https://api.platform.opentargets.org/api/v4/graphql",
+            ),
+            release=os.getenv("OPEN_TARGETS_RELEASE", "live"),
+            timeout=timeout,
+            retries=retries,
+        )
     if mode == "http":
         url = os.getenv("GWAS_SERVICE_URL", "").strip()
         if not url:
@@ -240,3 +341,59 @@ def _float(value: Any) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+_OPEN_TARGETS_MAP_QUERY = """
+query CellXPMapVariant($terms: [String!]!) {
+  mapIds(queryTerms: $terms) { mappings { term hits { id entity name } } }
+}
+"""
+
+_OPEN_TARGETS_QUERY = """
+query CellXPVariantEvidence($variantId: String!) {
+  variant(variantId: $variantId) {
+    id
+    credibleSets(page: {index: 0, size: 500}) {
+      rows {
+        studyId pValueMantissa pValueExponent beta sampleSize
+        study { traitFromSource diseases { id name } }
+      }
+    }
+  }
+}
+"""
+
+
+def _parse_open_targets(payload: Any, rsid: str, release: str) -> list[Association]:
+    variant = payload.get("data", {}).get("variant") if isinstance(payload, dict) else None
+    rows = ((variant or {}).get("credibleSets") or {}).get("rows", [])
+    records: list[Association] = []
+    for row in rows:
+        study = row.get("study") or {}
+        diseases = study.get("diseases") or []
+        disease = diseases[0] if diseases else {}
+        trait = study.get("traitFromSource") or disease.get("name")
+        study_id = row.get("studyId")
+        mantissa = _float(row.get("pValueMantissa"))
+        exponent = row.get("pValueExponent")
+        if not trait or not study_id or mantissa is None or exponent is None:
+            continue
+        records.append(
+            Association(
+                trait=str(trait).strip(),
+                variant_id=rsid,
+                beta=_float(row.get("beta")),
+                p_value=mantissa * (10 ** int(exponent)),
+                study_accession=str(study_id),
+                citations=[str(study_id)],
+                source="Open Targets Platform",
+                source_release=release,
+                sample_size=row.get("sampleSize"),
+            )
+        )
+    return records
+
+
+def _raise_graphql_error(payload: dict[str, Any]) -> None:
+    if payload.get("errors"):
+        raise RuntimeError(f"Open Targets GraphQL error: {payload['errors'][0].get('message')}")

@@ -20,7 +20,8 @@ class Association(BaseModel):
     trait: str
     variant_id: str | None = None
     beta: float | None = None
-    p_value: float
+    p_value: float | None = Field(default=None, ge=0.0, le=1.0)
+    association_score: float | None = Field(default=None, ge=0.0, le=1.0)
     effect_allele: str | None = None
     study_accession: str
     citations: list[str] = Field(min_length=1)
@@ -93,6 +94,7 @@ class LdResult(BaseModel):
     population: str
     panel: str
     assumptions: list[str] = Field(default_factory=list)
+    provenance: Provenance = Field(default_factory=Provenance)
     storage_ref: str | None = None
     locus_plot_ref: str | None = None
 
@@ -104,6 +106,7 @@ class FineMapRequest(BaseModel):
     trait: str
     population: str | None = None
     summary_stats_ref: str
+    ld_matrix_ref: str | None = None
     source_release: str = "default"
     method: Literal["susie"] = "susie"
 
@@ -112,6 +115,7 @@ class FineMapResult(BaseModel):
     credible_sets: list[CredibleSet] = Field(default_factory=list)
     assumptions: list[str] = Field(default_factory=list)
     input_datasets: list[str] = Field(default_factory=list)
+    provenance: Provenance = Field(default_factory=Provenance)
     storage_ref: str | None = None
     locus_plot_ref: str | None = None
 
@@ -132,6 +136,7 @@ class ColocBatchResult(BaseModel):
     results: list[ColocResult] = Field(default_factory=list)
     assumptions: list[str] = Field(default_factory=list)
     input_datasets: list[str] = Field(default_factory=list)
+    provenance: Provenance = Field(default_factory=Provenance)
     storage_ref: str | None = None
     locus_plot_ref: str | None = None
 

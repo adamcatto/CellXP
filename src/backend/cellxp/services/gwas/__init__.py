@@ -21,7 +21,8 @@ from .schemas import (
 )
 from .service import GwasService
 from .backends import (
-    DeterministicGwasBackend, EbiGwasQtlBackend, HttpGwasBackend, gwas_backend_from_environment,
+    DeterministicGwasBackend, EbiGwasQtlBackend, HttpGwasBackend, OpenTargetsGwasBackend,
+    gwas_backend_from_environment,
 )
 
 __all__ = [
@@ -44,5 +45,6 @@ __all__ = [
     "DeterministicGwasBackend",
     "EbiGwasQtlBackend",
     "HttpGwasBackend",
+    "OpenTargetsGwasBackend",
     "gwas_backend_from_environment",
 ]

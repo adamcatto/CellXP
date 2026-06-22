@@ -5,7 +5,9 @@ from __future__ import annotations
 import httpx
 
 from cellxp.domain.models import Variant
-from cellxp.services.gwas import EbiGwasQtlBackend, GwasRequest, HttpGwasBackend
+from cellxp.services.gwas import (
+    EbiGwasQtlBackend, GwasRequest, HttpGwasBackend, OpenTargetsGwasBackend,
+)
 
 
 def _request() -> GwasRequest:
@@ -70,3 +72,43 @@ def test_environment_selection_is_opt_in(monkeypatch) -> None:  # noqa: ANN001
     assert gwas_backend_from_environment() is None
     monkeypatch.setenv("GWAS_BACKEND", "deterministic")
     assert gwas_backend_from_environment().name == "deterministic_empty"
+
+
+def test_open_targets_adapter_maps_rsid_and_normalizes_credible_set_evidence() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        payload = __import__("json").loads(request.content)
+        if "mapIds" in payload["query"]:
+            return httpx.Response(200, json={"data": {"mapIds": {"mappings": [{
+                "term": "rs123", "hits": [{"id": "1_100_A_G", "entity": "variant",
+                                             "name": "1_100_A_G"}],
+            }]}}})
+        return httpx.Response(200, json={"data": {"variant": {"credibleSets": {"rows": [{
+            "studyId": "GCST1", "pValueMantissa": 2.0, "pValueExponent": -9,
+            "beta": 0.2, "sampleSize": 100000,
+            "study": {"traitFromSource": "type 2 diabetes", "diseases": []},
+        }]}}}})
+
+    backend = OpenTargetsGwasBackend(
+        release="24.06",
+        client=httpx.Client(base_url="https://ot.test", transport=httpx.MockTransport(handler)),
+    )
+    result = backend.lookup_associations(_request())
+    assert result.associations[0].p_value == 2e-9
+    assert result.associations[0].study_accession == "GCST1"
+    assert result.associations[0].source_release == "24.06"
+
+
+def test_http_worker_attestation_rejects_revision_drift() -> None:
+    backend = HttpGwasBackend(
+        "https://worker.test", version="expected", retries=0,
+        client=httpx.Client(
+            base_url="https://worker.test",
+            transport=httpx.MockTransport(lambda request: httpx.Response(
+                200, json={"status": "ok", "revision": "other"}
+            )),
+        ),
+    )
+    import pytest
+    with pytest.raises(RuntimeError, match="revision mismatch"):
+        backend.attest()
