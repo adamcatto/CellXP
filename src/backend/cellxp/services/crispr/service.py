@@ -28,7 +28,10 @@ T = TypeVar("T", bound=BaseModel)
 class CrisprService(Service):
     name = "crispr"
 
-    def __init__(self, *, backend: CrisprBackend | None = None) -> None:
+    def __init__(self, *, backend: CrisprBackend | None = None, configure: bool = True) -> None:
+        if backend is None and configure:
+            from .backends import crispr_backend_from_environment
+            backend = crispr_backend_from_environment()
         self._backend = backend
 
     def design_guides(self, request: CrisprRequest) -> ServiceResult[CrisprResult]:
