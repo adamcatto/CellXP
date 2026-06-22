@@ -2,7 +2,7 @@ PYTHONPATH := src/backend
 PYTHON ?= python
 PNPM ?= pnpm
 
-.PHONY: setup download-models dev-api dev-frontend worker test lint typecheck frontend-build eval-smoke render-graph
+.PHONY: setup download-models dev-api dev-frontend worker test test-browser lint typecheck frontend-build eval-smoke release-gates render-graph
 
 setup:
 	./scripts/setup.sh
@@ -22,6 +22,9 @@ worker:
 test:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m pytest -m "not slow and not live and not gpu and not eval"
 
+test-browser:
+	corepack $(PNPM) --dir src/frontend test:browser
+
 lint:
 	$(PYTHON) -m ruff check src/backend tests evals
 
@@ -33,6 +36,9 @@ frontend-build:
 
 eval-smoke:
 	$(PYTHON) evals/run_evals.py validate
+
+release-gates:
+	$(PYTHON) -m evals.release_gates $(EVIDENCE) $(if $(OUTPUT),--output $(OUTPUT),)
 
 render-graph:
 	PYTHONPATH=$(PYTHONPATH) python -m cellxp.cli.render_graph

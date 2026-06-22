@@ -1,0 +1,19 @@
+{
+  "acceptance": {
+    "review_approve_audit": null,
+    "run_inspector_deep_link": null
+  },
+  "biology": {},
+  "notes": [
+    "The public biology catalogs contain one seed query per shipping capability, below the v1 coverage floor.",
+    "No domain-expert or rubric-evaluator scores were supplied for this deployment wave.",
+    "The private hazard set and its authorized safety scores are not available in this workspace.",
+    "Browser contract journeys pass, but live API/object-store audit verification still requires the deployment stack."
+  ],
+  "regressions": {
+    "open_p0": 0
+  },
+  "reliability": {},
+  "safety": {},
+  "trust": {}
+}

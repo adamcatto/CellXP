@@ -139,15 +139,15 @@ export function ChatPanel({
   };
 
   // Patch the active assistant turn's run state
-  const patchActiveRun = useCallback((updater: (prev: StreamingRunState) => StreamingRunState) => {
+  const patchRun = useCallback((runId: RunId, updater: (prev: StreamingRunState) => StreamingRunState) => {
     setTurns(prev =>
       prev.map(t =>
-        t.role === 'assistant' && t.runState?.runId === activeRunId
+        t.role === 'assistant' && t.runState?.runId === runId
           ? { ...t, runState: updater(t.runState!) }
           : t,
       ),
     );
-  }, [activeRunId]);
+  }, []);
 
   // Open SSE stream for a run
   const openStream = useCallback((runId: RunId) => {
@@ -157,7 +157,7 @@ export function ChatPanel({
 
     const dispose = connectToRunStream(runId, {
       onEvent: (type, event) => {
-        patchActiveRun(prev => applyRunEvent(prev, type, event));
+        patchRun(runId, prev => applyRunEvent(prev, type, event));
         if (type === 'run.completed') {
           setIsRunning(false);
           setActiveRunId(null);
@@ -171,7 +171,7 @@ export function ChatPanel({
       },
     });
     disposeStreamRef.current = dispose;
-  }, [patchActiveRun]);
+  }, [patchRun]);
 
   const handleSend = useCallback(async (message: string) => {
     if (isRunning) return;
@@ -258,11 +258,11 @@ export function ChatPanel({
     if (!clarId) return;
     try {
       await api.runs.answerClarification(runId, clarId, answer);
-      patchActiveRun(prev => ({ ...prev, pendingClarification: null, status: 'running' }));
+      patchRun(runId, prev => ({ ...prev, pendingClarification: null, status: 'running' }));
     } catch {
       // Leave the card visible so the user can retry
     }
-  }, [activeRunId, turns, patchActiveRun]);
+  }, [activeRunId, turns, patchRun]);
 
   const handleReviewDecision = useCallback(async (
     decision: 'approve' | 'reject' | 'request_changes',
@@ -282,11 +282,11 @@ export function ChatPanel({
     };
     try {
       await api.runs.reviewDecision(runId, reviewId, body);
-      patchActiveRun(prev => ({ ...prev, pendingReview: null, status: 'running' }));
+      patchRun(runId, prev => ({ ...prev, pendingReview: null, status: 'running' }));
     } catch {
       // Leave card visible
     }
-  }, [activeRunId, turns, patchActiveRun]);
+  }, [activeRunId, turns, patchRun]);
 
   // Cleanup on unmount
   useEffect(() => () => disposeStreamRef.current?.(), []);
