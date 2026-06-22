@@ -17,6 +17,7 @@ from .schemas import (
     TrackPredictionResult,
     VariantEffectRequest,
     VariantEffectResult,
+    select_oracle,
 )
 
 T = TypeVar("T", bound=BaseModel)
@@ -85,3 +86,60 @@ class HttpModelBackend:
         response = self._client.post(path, json=request.model_dump(mode="json"))
         response.raise_for_status()
         return result_type.model_validate(response.json())
+
+
+class RoutedHttpModelBackend:
+    """Route the stable model contract to separately deployed AlphaGenome and Evo workers."""
+
+    name = "sequence_model_http_router"
+
+    def __init__(self, alphagenome: HttpModelBackend, evo2: HttpModelBackend) -> None:
+        self.alphagenome = alphagenome
+        self.evo2 = evo2
+        self.version = f"alphagenome={alphagenome.version};evo2={evo2.version}"
+
+    @classmethod
+    def from_environment(cls) -> RoutedHttpModelBackend | None:
+        alpha_url = os.getenv("ALPHAGENOME_SERVICE_URL", "").strip()
+        evo_url = os.getenv("EVO2_SERVICE_URL", "").strip()
+        if not alpha_url or not evo_url:
+            return None
+        timeout = float(os.getenv("SEQUENCE_MODEL_SERVICE_TIMEOUT_SECONDS", "120"))
+        return cls(
+            HttpModelBackend(
+                alpha_url,
+                token=os.getenv("ALPHAGENOME_SERVICE_TOKEN") or None,
+                timeout=timeout,
+                version=os.getenv("ALPHAGENOME_MODEL_REVISION", "remote"),
+            ),
+            HttpModelBackend(
+                evo_url,
+                token=os.getenv("EVO2_SERVICE_TOKEN") or None,
+                timeout=timeout,
+                version=os.getenv("EVO2_MODEL_REVISION", "remote"),
+            ),
+        )
+
+    def close(self) -> None:
+        self.alphagenome.close()
+        self.evo2.close()
+
+    def score_variants(self, request: VariantEffectRequest) -> VariantEffectResult:
+        return self._for_organism(request.organism).score_variants(request)
+
+    def score_sequences(self, request: SequenceScoringRequest) -> SequenceScoringResult:
+        return self.evo2.score_sequences(request)
+
+    def predict_tracks(self, request: TrackPredictionRequest) -> TrackPredictionResult:
+        return self._for_organism(request.organism).predict_tracks(request)
+
+    def score_splicing(self, request: SpliceEffectRequest) -> SpliceEffectResult:
+        return self.alphagenome.score_splicing(request)
+
+    def _for_organism(self, organism: str) -> HttpModelBackend:
+        oracle = select_oracle(organism)
+        if oracle == "alphagenome":
+            return self.alphagenome
+        if oracle == "evo2":
+            return self.evo2
+        raise ValueError(f"no sequence-model worker supports organism {organism!r}")

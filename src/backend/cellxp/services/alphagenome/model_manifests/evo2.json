@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "model": "evo2",
+  "model_revision": "arcinstitute/evo2_7b@bda0089f92582d5baabf0f22d9fc85f3588f6b58",
+  "runtime_revision": "evo2==0.6.0",
+  "dependencies": {"evo2": "0.6.0", "fastapi": "0.115.14", "uvicorn": "0.34.3"},
+  "weights": [
+    {
+      "filename": "evo2_7b.pt",
+      "url": "https://huggingface.co/arcinstitute/evo2_7b/resolve/bda0089f92582d5baabf0f22d9fc85f3588f6b58/evo2_7b.pt",
+      "sha256": "c66645929dc1b9c631f5be656da8726f38946315dc9167000a615dd626fcecf4",
+      "size_bytes": 13766621200
+    }
+  ],
+  "distribution": "Apache-2.0 upstream checkpoint; acquisition remains an explicit operator action."
+}

@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "model": "alphagenome",
+  "model_revision": "google-deepmind-alphagenome-api-2025-06",
+  "runtime_revision": "alphagenome==0.6.1",
+  "dependencies": {"alphagenome": "0.6.1", "fastapi": "0.115.14", "uvicorn": "0.34.3"},
+  "weights": [],
+  "distribution": "Provider-hosted weights are not redistributed; production requires an authorized AlphaGenome API/runtime binding."
+}

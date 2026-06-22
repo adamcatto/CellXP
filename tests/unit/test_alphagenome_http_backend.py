@@ -11,6 +11,7 @@ from cellxp.domain.models import GenomicInterval, Variant
 from cellxp.services.alphagenome import (
     AlphaGenomeService,
     HttpModelBackend,
+    RoutedHttpModelBackend,
     SequenceScoringRequest,
     SpliceEffectRequest,
     TrackPredictionRequest,
@@ -139,3 +140,29 @@ def test_from_environment_records_revision(monkeypatch) -> None:
     assert backend is not None
     assert backend.version == "evo2-rev-42"
     backend.close()
+
+
+def test_routed_backend_dispatches_by_organism() -> None:
+    observed: list[str] = []
+
+    def alpha_handler(request: httpx.Request) -> httpx.Response:
+        observed.append("alpha")
+        return httpx.Response(200, json={"per_variant": []})
+
+    def evo_handler(request: httpx.Request) -> httpx.Response:
+        observed.append("evo")
+        return httpx.Response(200, json={"per_variant": []})
+
+    backend = RoutedHttpModelBackend(
+        HttpModelBackend("https://alpha.test", client=_client(alpha_handler)),
+        HttpModelBackend("https://evo.test", client=_client(evo_handler)),
+    )
+    backend.score_variants(VariantEffectRequest(
+        variants=[_variant()], organism="Homo sapiens", assembly="GRCh38"
+    ))
+    backend.score_variants(VariantEffectRequest(
+        variants=[Variant(chrom="NC_000913.3", pos=10, ref="A", alt="G",
+                          assembly="GCF_000005845.2")],
+        organism="Escherichia coli", assembly="GCF_000005845.2",
+    ))
+    assert observed == ["alpha", "evo"]

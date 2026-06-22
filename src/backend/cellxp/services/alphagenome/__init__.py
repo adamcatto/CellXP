@@ -4,7 +4,7 @@ Importing this package registers `AlphaGenomeService` in the global service regi
 """
 
 from .client import AlphaGenomeService
-from .http_backend import HttpModelBackend
+from .http_backend import HttpModelBackend, RoutedHttpModelBackend
 from .schemas import (
     ALPHAGENOME_SUPPORTED_CLASSES,
     EVO2_SUPPORTED_CLASSES,
@@ -36,6 +36,7 @@ __all__ = [
     "AlphaGenomeService",
     "ModelBackend",
     "HttpModelBackend",
+    "RoutedHttpModelBackend",
     "AssayDelta",
     "VariantEffect",
     "VariantEffectRequest",
