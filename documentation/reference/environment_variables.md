@@ -27,15 +27,22 @@ Service URLs (`ALPHAGENOME_SERVICE_URL`, `STRUCTURE_SERVICE_URL`, `GWAS_SERVICE_
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `GWAS_BACKEND` | `none` | `none`, offline `deterministic`, direct `ebi`, or `http` worker |
+| `GWAS_BACKEND` | `none` | `none`, offline `deterministic`, direct `ebi`/`open_targets`, or `http` worker |
 | `GWAS_CATALOG_URL` | EBI production URL | GWAS Catalog REST base for `ebi` |
 | `EQTL_CATALOG_URL` | eQTL Catalogue v3 | QTL association REST base for `ebi` |
+| `OPEN_TARGETS_GRAPHQL_URL` / `OPEN_TARGETS_RELEASE` | public API / `live` | Open Targets endpoint and provenance release |
 | `GWAS_SERVICE_URL` / `GWAS_SERVICE_TOKEN` | unset | Typed statistical-worker endpoint/auth |
+| `GWAS_SERVICE_VERSION` | `remote` | Expected worker toolchain revision for attestation |
 | `GWAS_SERVICE_TIMEOUT_SECONDS` / `GWAS_SERVICE_RETRIES` | `30` / `2` | Bounded HTTP policy |
 | `CRISPR_BACKEND` | `none` | `none`, offline `deterministic`, or production `http` worker |
 | `CRISPR_SERVICE_URL` / `CRISPR_SERVICE_TOKEN` | unset | Typed scoring/off-target worker/auth |
 | `CRISPR_SERVICE_TIMEOUT_SECONDS` / `CRISPR_SERVICE_RETRIES` | `120` / `2` | Bounded HTTP policy |
 | `CRISPR_TOOL_REVISION` | `remote` | Worker toolchain revision recorded at the boundary |
+
+The GWAS worker additionally uses `GWAS_WORKER_REVISION`, `GWAS_LD_PANEL_MANIFEST`,
+`GWAS_WORKER_TIMEOUT_SECONDS`, `PLINK_EXECUTABLE`, and `RSCRIPT_EXECUTABLE`. See
+`infra/gwas/README.md`; production readiness fails if the pinned executables or panel manifest are
+missing or drifted.
 
 Remote data/model access is opt-in. `none` preserves honest unsupported outcomes;
 `deterministic` is network-free and does not fabricate catalog evidence, genome-wide off-target

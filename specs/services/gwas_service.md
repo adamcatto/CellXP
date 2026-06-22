@@ -1,6 +1,7 @@
 # GWAS / QTL Service
 
-> Status: Draft v0.1; typed boundary plus production EBI/worker adapters implemented for X1
+> Status: Draft v0.1; typed boundary, EBI/Open Targets adapters, and pinned statistical worker
+> implemented for X1
 > (2026-06-22). Logical service contract for
 > statistical-genetics lookup and analysis. Impl:
 > `src/backend/cellxp/services/gwas/`. Methodology:
@@ -45,10 +46,17 @@ The registry provides adapters for GWAS Catalog, Open Targets Genetics, eQTL Cat
 dbSNP, ClinVar, LD panels, SuSiE, coloc, PLINK/LDSC-class tools. Each adapter declares release,
 license/access mode, organism coverage, and citation metadata.
 
-The implemented `ebi` adapter queries GWAS Catalog and eQTL Catalogue v3 for normalized rsIDs. The
-`http` adapter delegates all four operations to a separately deployed, versioned worker so LD
-panels and statistical toolchains can be pinned independently. `deterministic` is an explicit
-offline empty-evidence fallback and never invents associations. Live access is opt-in.
+The implemented `ebi` adapter queries GWAS Catalog and eQTL Catalogue v3 for normalized rsIDs;
+`open_targets` resolves rsIDs to Open Targets variant IDs and queries versioned credible-set study
+evidence. The `http` adapter delegates statistical operations to a separately
+deployed worker pinned to PLINK 2 `2.00a6.9`, `susieR` `0.12.35`, and `coloc` `5.2.3`. The worker
+requires an assembly/population-specific LD panel with a release checksum, persists results in the
+configured object store, attests its versions, and fails closed on missing tools/data or version
+drift. `deterministic` is an explicit offline empty-evidence fallback and never invents
+associations. Live access is opt-in.
+
+SuSiE requires allele-harmonized summary statistics plus a supplied LD matrix; identity LD is never
+substituted. Coloc requires harmonized GWAS/QTL beta, standard error, MAF, and sample size inputs.
 
 ## 5. Outputs & Artifacts
 
@@ -100,6 +108,9 @@ PYTHONPATH=src/backend python -m pytest \
   tests/unit/test_gwas_service.py tests/unit/test_gwas_subgraph.py -q
 ```
 
-The T2 live smoke is disabled by default. Run it with
+The catalog T2 live smoke is disabled by default. Run it with
 `CELLXP_RUN_LIVE_GWAS=1 GWAS_BACKEND=ebi python -m pytest -m live
 tests/integration/test_live_production_adapters.py -q`.
+
+Pinned worker deployment, input requirements, and its opt-in LD/SuSiE/coloc acceptance command are
+documented in `infra/gwas/README.md`.
