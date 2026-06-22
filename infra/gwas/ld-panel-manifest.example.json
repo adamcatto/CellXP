@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "panels": {
+    "GRCh38:EUR": {
+      "id": "1000G-phase3-GRCh38-EUR",
+      "pfile_prefix": "/data/ld-panels/1000g-grch38-eur",
+      "sha256": "REPLACE_WITH_RELEASE_PANEL_SHA256",
+      "source": "1000 Genomes Project phase 3, lifted and normalized to GRCh38",
+      "license": "International Genome Sample Resource terms"
+    }
+  }
+}

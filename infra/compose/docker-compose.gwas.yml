@@ -1,0 +1,27 @@
+services:
+  gwas-worker:
+    build:
+      context: ../..
+      dockerfile: infra/docker/gwas-worker.Dockerfile
+      args:
+        PLINK_ARCHIVE_URL: ${PLINK_ARCHIVE_URL:?set the release-pinned PLINK archive URL}
+        PLINK_ARCHIVE_SHA256: ${PLINK_ARCHIVE_SHA256:?set the PLINK archive SHA-256}
+    image: cellxp/gwas-worker:plink-2.00a6.9-susier-0.12.35-coloc-5.2.3
+    restart: unless-stopped
+    ports:
+      - "8103:8103"
+    environment:
+      OBJECT_STORE_URL: file:///artifacts
+      GWAS_LD_PANEL_MANIFEST: /data/ld-panels/manifest.json
+      GWAS_WORKER_REVISION: plink@2.00a6.9+susieR@0.12.35+coloc@5.2.3
+    volumes:
+      - cellxp-artifacts:/artifacts
+      - ${GWAS_LD_PANEL_DIR:?set the immutable LD panel directory}:/data/ld-panels:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8103/ready', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  cellxp-artifacts:

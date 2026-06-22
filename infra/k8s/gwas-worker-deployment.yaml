@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cellxp-gwas-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cellxp-gwas-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cellxp-gwas-worker
+    spec:
+      containers:
+        - name: gwas-worker
+          image: cellxp/gwas-worker:plink-2.00a6.9-susier-0.12.35-coloc-5.2.3
+          ports:
+            - name: http
+              containerPort: 8103
+          env:
+            - name: GWAS_WORKER_REVISION
+              value: plink@2.00a6.9+susieR@0.12.35+coloc@5.2.3
+            - name: GWAS_LD_PANEL_MANIFEST
+              value: /data/ld-panels/manifest.json
+            - name: OBJECT_STORE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cellxp-runtime
+                  key: object-store-url
+          volumeMounts:
+            - name: ld-panels
+              mountPath: /data/ld-panels
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          resources:
+            requests:
+              cpu: "2"
+              memory: 4Gi
+            limits:
+              cpu: "8"
+              memory: 16Gi
+      volumes:
+        - name: ld-panels
+          persistentVolumeClaim:
+            claimName: cellxp-gwas-ld-panels
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cellxp-gwas-worker
+spec:
+  selector:
+    app.kubernetes.io/name: cellxp-gwas-worker
+  ports:
+    - name: http
+      port: 8103
+      targetPort: http
