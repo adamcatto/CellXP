@@ -232,6 +232,23 @@ class ArtifactEvidence(Base):
     )
 
 
+class GuidePool(Base):
+    """A versioned, ordered selection of actionable CRISPR guide candidates."""
+
+    __tablename__ = "guide_pools"
+
+    id: Mapped[str] = _id_col()
+    session_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("sessions.id"), index=True
+    )
+    source_artifact_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
+    name: Mapped[str] = mapped_column(String)
+    guide_ids: Mapped[list[str]] = mapped_column(JSONType, default=list)
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(TimestampTZ, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(TimestampTZ, default=utc_now)
+
+
 class Clarification(Base):
     __tablename__ = "clarifications"
 
@@ -330,7 +347,7 @@ APPEND_ONLY_TABLES: frozenset[str] = frozenset(
 
 __all__ = [
     "Base", "User", "WorkspaceSession", "Run", "Message", "Subtask", "Step", "EvidenceItem",
-    "Artifact", "ArtifactEvidence", "Clarification", "ReviewItem", "RunError", "Macro",
+    "Artifact", "ArtifactEvidence", "GuidePool", "Clarification", "ReviewItem", "RunError", "Macro",
     "ApiRunState", "ApiRunEvent",
     "AuditLog", "APPEND_ONLY_TABLES",
 ]

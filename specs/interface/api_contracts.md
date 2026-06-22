@@ -158,6 +158,9 @@ the audit log before resuming the graph. Approval is per item, not blanket appro
 | `GET` | `/artifacts/{artifact_id}` | fetch `ArtifactManifest` |
 | `GET` | `/artifacts/{artifact_id}/content` | stream inline/object payload with authorization |
 | `GET` | `/artifacts/{artifact_id}/tiles` | bounded range/tile request for supported types |
+| `GET` | `/artifacts/{artifact_id}/guide-pools` | list persisted ordered CRISPR candidate pools |
+| `POST` | `/artifacts/{artifact_id}/guide-pools` | persist a new ordered CRISPR candidate pool |
+| `PUT` | `/artifacts/{artifact_id}/guide-pools/{pool_id}` | replace pool membership using `expected_revision` |
 | `POST` | `/artifacts/{artifact_id}/exports` | create or resolve requested export |
 | `GET` | `/artifacts/{artifact_id}/exports/{export_id}` | status/download descriptor |
 
@@ -168,6 +171,10 @@ returned, but raw object-store keys and permanent public URLs MUST NOT be expose
 Export creation accepts `format`, optional renderer-independent view state (viewport, visible tracks,
 selection), dimensions, and coordinate convention. It records the source artifact revision and
 transform parameters. Actionable export restrictions follow `artifact_model.md` §8.
+
+Guide pools contain ordered candidate IDs and retain the source guide-table artifact ID. Updates
+use optimistic concurrency; a stale `expected_revision` returns `409`. Persisting a candidate pool
+does not approve it or bypass the source artifact's review state.
 
 ## 8. SSE Wire Contract
 

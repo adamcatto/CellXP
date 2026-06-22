@@ -88,3 +88,27 @@ class RunEvent(BaseModel):
     seq: int
     at: str
     data: dict[str, Any] = Field(default_factory=dict)
+
+
+class SaveGuidePoolRequest(BaseModel):
+    session_id: str
+    name: str = Field(default="Guide pool", min_length=1, max_length=200)
+    guide_ids: list[str] = Field(min_length=1, max_length=100)
+    expected_revision: int | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def _unique_guides(self) -> "SaveGuidePoolRequest":
+        if len(set(self.guide_ids)) != len(self.guide_ids):
+            raise ValueError("guide_ids must be unique")
+        return self
+
+
+class GuidePoolResponse(BaseModel):
+    id: str
+    session_id: str
+    source_artifact_id: str
+    name: str
+    guide_ids: list[str]
+    revision: int
+    created_at: str
+    updated_at: str

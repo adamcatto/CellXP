@@ -18,6 +18,7 @@ def test_metadata_creates_all_history_tables():
     tables = set(inspect(engine).get_table_names())
     expected = {
         "users", "sessions", "runs", "messages", "subtasks", "steps", "evidence_items",
+        "guide_pools",
         "artifacts", "artifact_evidence", "clarifications", "review_items", "run_errors",
         "macros",
     }
