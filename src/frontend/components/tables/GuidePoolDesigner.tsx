@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import type { ArtifactManifest, ReviewStatus } from '../../lib/types';
+import React, { useEffect, useMemo, useState } from 'react';
+import type { ArtifactManifest, GuidePool, ReviewStatus } from '../../lib/types';
+import { api } from '../../lib/api';
 import { useWorkspaceSelection } from '../../lib/selection';
 
 interface GuideRow {
@@ -59,10 +60,23 @@ function statusLabel(status: ReviewStatus): string {
 export function GuidePoolDesigner({ manifest }: { manifest: ArtifactManifest }) {
   const guides = useMemo(() => parseGuides(manifest), [manifest]);
   const [pool, setPool] = useState<string[]>([]);
+  const [savedPool, setSavedPool] = useState<GuidePool>();
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [sort, setSort] = useState<'onTarget' | 'offTarget'>('onTarget');
   const { selection, publish } = useWorkspaceSelection();
   const ordered = [...guides].sort((a, b) => (b[sort] ?? -Infinity) - (a[sort] ?? -Infinity));
   const activeRow = selection?.kind === 'row' ? String(selection.payload.row_id ?? '') : '';
+
+  useEffect(() => {
+    let current = true;
+    api.artifacts.guidePools(manifest.id).then(result => {
+      if (!current || !result.items.length) return;
+      const latest = result.items[result.items.length - 1];
+      setSavedPool(latest);
+      setPool(latest.guide_ids);
+    }).catch(() => undefined);
+    return () => { current = false; };
+  }, [manifest.id]);
 
   const toggle = (id: string) => setPool(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
   const move = (id: string, delta: number) => setPool(current => {
@@ -77,6 +91,22 @@ export function GuidePoolDesigner({ manifest }: { manifest: ArtifactManifest }) 
     publish({ kind: 'row', artifact_id: manifest.id, coordinate_frame: manifest.coordinate_frame ?? { kind: 'none' }, payload: { table_id: manifest.id, row_id: guide.id } });
     if (guide.contig && guide.start !== undefined && guide.end !== undefined) {
       publish({ kind: 'interval', artifact_id: manifest.id, coordinate_frame: manifest.coordinate_frame ?? { kind: 'genomic', contig: guide.contig }, payload: { contig: guide.contig, start: guide.start, end: guide.end, strand: guide.strand } });
+    }
+  };
+  const save = async () => {
+    if (!pool.length) return;
+    setSaveState('saving');
+    try {
+      const saved = await api.artifacts.saveGuidePool(manifest.id, {
+        session_id: manifest.session_id,
+        name: savedPool?.name ?? 'Guide pool',
+        guide_ids: pool,
+        ...(savedPool ? { expected_revision: savedPool.revision } : {}),
+      }, savedPool?.id);
+      setSavedPool(saved);
+      setSaveState('saved');
+    } catch {
+      setSaveState('error');
     }
   };
 
@@ -97,7 +127,7 @@ export function GuidePoolDesigner({ manifest }: { manifest: ArtifactManifest }) 
           })}</tbody>
         </table>
       </div>
-      <div style={poolStyle}><strong>Draft pool · {pool.length} guide{pool.length === 1 ? '' : 's'}</strong><span style={{ color: 'var(--text-muted)' }}>{pool.length ? pool.join(' → ') : 'Select candidates to compose a pool.'}</span><span title="The backend candidate endpoint is not part of the current wire contract" style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>Commit requires candidate API</span></div>
+      <div style={poolStyle}><strong>{savedPool ? 'Saved' : 'Draft'} pool · {pool.length} guide{pool.length === 1 ? '' : 's'}</strong><span style={{ color: 'var(--text-muted)' }}>{pool.length ? pool.join(' → ') : 'Select candidates to compose a pool.'}</span><button type="button" disabled={!pool.length || saveState === 'saving'} onClick={save} style={{ ...miniButton, marginLeft: 'auto' }}>{saveState === 'saving' ? 'Saving…' : savedPool ? 'Update pool' : 'Save pool'}</button>{saveState === 'error' && <span role="alert">Save failed; reload and retry.</span>}{saveState === 'saved' && <span role="status">Saved.</span>}</div>
     </div>
   );
 }

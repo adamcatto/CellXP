@@ -14,6 +14,7 @@ export type SubtaskId = string;
 export type UploadId = string;
 export type ClarificationId = string;
 export type ReviewItemId = string;
+export type GuidePoolId = string;
 
 // ---------------------------------------------------------------------------
 // Enums / union literals
@@ -186,6 +187,17 @@ export interface ArtifactManifest extends ArtifactRef {
   interactions?: Interaction[];
   exports?: ExportDescriptor[];
   accessibility?: AccessibilityMetadata;
+  updated_at: string;
+}
+
+export interface GuidePool {
+  id: GuidePoolId;
+  session_id: SessionId;
+  source_artifact_id: ArtifactId;
+  name: string;
+  guide_ids: string[];
+  revision: number;
+  created_at: string;
   updated_at: string;
 }
 

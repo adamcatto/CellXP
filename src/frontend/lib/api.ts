@@ -6,7 +6,7 @@ import type {
   SessionSummary, SessionType, SessionDefaults,
   CreateRunRequest, CreateRunResponse, RunSnapshot, RunStep, EvidenceItem,
   ClarificationAnswer, ReviewDecisionRequest,
-  ArtifactManifest, ArtifactRef,
+  ArtifactManifest, ArtifactRef, GuidePool,
   UploadRef,
   CollectionResponse,
 } from './types';
@@ -146,6 +146,19 @@ const runs = {
 const artifacts = {
   get: (id: ArtifactId): Promise<ArtifactManifest> =>
     request('GET', `/artifacts/${id}`),
+
+  guidePools: (id: ArtifactId): Promise<CollectionResponse<GuidePool>> =>
+    request('GET', `/artifacts/${id}/guide-pools`),
+
+  saveGuidePool: (
+    id: ArtifactId,
+    body: { session_id: SessionId; name: string; guide_ids: string[]; expected_revision?: number },
+    poolId?: string,
+  ): Promise<GuidePool> => request(
+    poolId ? 'PUT' : 'POST',
+    poolId ? `/artifacts/${id}/guide-pools/${poolId}` : `/artifacts/${id}/guide-pools`,
+    body,
+  ),
 
   /** URL of raw artifact content (use with fetch + Authorization if needed) */
   contentUrl: (id: ArtifactId): string =>
