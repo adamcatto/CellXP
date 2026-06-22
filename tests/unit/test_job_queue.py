@@ -31,6 +31,10 @@ class FakeRedis:
     def xack(self, stream, group, stream_id):
         self.acked.append((stream, group, stream_id))
 
+    def xautoclaim(self, stream, group, consumer, min_idle_ms, start, count):
+        del stream, group, consumer, min_idle_ms, start, count
+        return ("0-0", [])
+
     def xlen(self, stream):
         return len(self.messages)
 
@@ -62,3 +66,8 @@ def test_stable_job_id_deduplicates_and_retry_is_bounded():
     assert queue.retry(first)
     retry = queue.reserve("executor-1", block_ms=1)
     assert retry is not None and retry.attempts == 1
+    assert queue.retry(retry)
+    final = queue.reserve("executor-1", block_ms=1)
+    assert final is not None and final.attempts == 2
+    assert not queue.retry(final)
+    assert redis.messages[0][0] == "jobs:dead"

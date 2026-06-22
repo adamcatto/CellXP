@@ -72,6 +72,21 @@ class RedisJobQueue:
             return None
         _, messages = rows[0]
         stream_id, fields = messages[0]
+        return self._job(stream_id, fields)
+
+    def reclaim(self, consumer: str, *, min_idle_ms: int = 60_000) -> Job | None:
+        """Claim one command abandoned by a crashed consumer."""
+        rows = self.client.xautoclaim(
+            self.stream, self.group, consumer, min_idle_ms, "0-0", count=1
+        )
+        messages = rows[1] if rows else []
+        if not messages:
+            return None
+        stream_id, fields = messages[0]
+        return self._job(stream_id, fields)
+
+    @staticmethod
+    def _job(stream_id: str, fields: dict[str, str]) -> Job:
         return Job(
             id=fields["job_id"], stream_id=stream_id, task=fields["task"],
             payload=json.loads(fields["payload"]), attempts=int(fields.get("attempts", 0)),
@@ -85,6 +100,11 @@ class RedisJobQueue:
         """Acknowledge and redeliver a failed command while its retry budget remains."""
         self.acknowledge(job)
         if job.attempts + 1 >= job.max_attempts:
+            self.client.xadd(f"{self.stream}:dead", {
+                "job_id": job.id, "task": job.task,
+                "payload": json.dumps(job.payload, separators=(",", ":")),
+                "attempts": str(job.attempts + 1),
+            })
             return False
         # A retry is a distinct delivery but preserves the logical job id in its payload.
         retry_id = f"{job.id}:retry:{job.attempts + 1}"

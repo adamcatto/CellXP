@@ -19,14 +19,15 @@ def run_worker(
     while not stop():
         job = queue.reserve(consumer)
         if job is None:
-            continue
+            job = queue.reclaim(consumer)
+            if job is None:
+                continue
         handler = handlers.get(job.task)
         if handler is None:
             raise KeyError(f"no handler registered for job task {job.task!r}")
         try:
             handler(job.payload)
         except Exception:
-            if not queue.retry(job):
-                raise
+            queue.retry(job)
         else:
             queue.acknowledge(job)
