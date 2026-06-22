@@ -49,6 +49,12 @@ uses bounded retries for transient failures. The `deterministic` offline adapter
 sequence-QC scores and empty search/outcome results; it never labels its heuristic as Rule Set 2 or
 claims genome-wide completeness.
 
+The production worker MUST return version-attested health covering its exact Rule Set 2, CFD, and
+Cas-OFFinder revisions plus the digest of its assembly-index manifest. It MUST verify each
+reference/index checksum before accepting work and reject organism/assembly pairs absent from that
+manifest. Circular topology is manifest data passed to the runtime. Contract-fixture heuristics
+MUST identify themselves as fixtures and reject production scorer labels.
+
 ## 5. Outputs & Artifacts
 
 | Output | Artifact type | Actionable | Storage |
@@ -90,6 +96,8 @@ be presented as exploratory.
   specificity/off-target summary, confidence, and provenance.
 - **CRS-4** Large guide/off-target tables MUST use object storage.
 - **CRS-5** The service MUST clearly distinguish "no feasible candidates" from tool failure.
+- **CRS-6** Production results MUST attest exact source and assembly-index revisions; unverified
+  binaries, weights, or indexes fail closed.
 
 ## 10. Related
 

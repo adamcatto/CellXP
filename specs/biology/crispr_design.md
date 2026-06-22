@@ -46,6 +46,8 @@ organism (`supported_species.md`).
    outcome/efficiency window (BE-Hive/PRIDICT).
 4. **(heavy) Off-target analysis** — enumerate genome-wide near-matches (Cas-OFFinder) within a
    mismatch budget; score specificity (CFD); aggregate an off-target profile per guide.
+   Production execution binds results to an attested tool revision and organism/assembly index;
+   sequence-QC fixtures are not biological scores and cannot satisfy this step.
 5. **(light) Rank + assemble** — multi-objective rank (on-target↑, off-target↓, position fit);
    build a sortable guide table with PAM/strand/score context.
 6. **gate:** mark output `is_actionable` → human-review gate.

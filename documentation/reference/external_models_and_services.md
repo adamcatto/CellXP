@@ -180,6 +180,10 @@ Service: `services/crispr/` · Subgraph: `crispr`. **Actionable → review-gated
 | **BE-Hive** | — | weights/oss | Base-editing outcome prediction | P1 |
 | **PRIDICT** | — | weights/oss | Prime-editing efficiency/outcome | P1 |
 
+The packaged X5 worker pins Cas-OFFinder 2.4.1, Azimuth v2.0, and a CRISPOR CFD source snapshot in
+`services/crispr/worker_manifest.json`. These identities describe packaged sources, not live
+acceptance; deployments additionally attest their reference/index manifest.
+
 *Excluded (superseded):* DeepHF/DeepSpCas9 (on-target — Rule Set 2 kept as standard; revisit for
 best-in-class accuracy); CHOPCHOP (CRISPOR kept as primary suite); DeepPrime (PRIDICT kept for prime
 editing). Cas-variant/PAM trade-offs live in `specs/biology/crispr_design.md`.
