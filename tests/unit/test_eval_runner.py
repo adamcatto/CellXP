@@ -1,6 +1,10 @@
 import json
 
-from evals.run_evals import evaluate_results, main, score_expected_shape, validate_catalog
+import httpx
+
+from evals.run_evals import (
+    dispatch_api_runs, evaluate_results, main, score_expected_shape, validate_catalog,
+)
 
 
 def test_validate_catalog_accepts_required_shape(tmp_path):
@@ -79,3 +83,68 @@ def test_evaluate_results_fails_missing_queries(tmp_path) -> None:
 
     assert report["failed"] == 1
     assert report["pass_rate"] == 0.0
+
+
+def test_dispatch_archives_real_api_snapshots_and_refuses_overwrite(tmp_path) -> None:
+    catalog_dir = tmp_path / "catalog"
+    catalog_dir.mkdir()
+    query = {
+        "id": "variant-001", "capability": "variant_effect",
+        "organism": "Homo sapiens", "assembly": "GRCh38", "message": "Score rs699",
+        "expected": {}, "added_at": "2026-06-19T00:00:00Z",
+        "last_reviewed_at": "2026-06-19T00:00:00Z",
+    }
+    (catalog_dir / "queries.jsonl").write_text(json.dumps(query) + "\n")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/v1/sessions":
+            return httpx.Response(201, json={"id": "session-1"})
+        if request.url.path == "/api/v1/sessions/session-1/runs":
+            return httpx.Response(202, json={"run_id": "run-1"})
+        return httpx.Response(
+            200, json={"id": "run-1", "status": "completed", "steps": [], "evidence": []},
+        )
+
+    client = httpx.Client(
+        base_url="https://cellxp.test/api/v1", transport=httpx.MockTransport(handler)
+    )
+    archive = tmp_path / "archive-001"
+    manifest = dispatch_api_runs(
+        "https://cellxp.test/api/v1", archive, catalog_dir=catalog_dir,
+        poll_seconds=0, client=client,
+    )
+
+    assert manifest["dispatch_errors"] == 0
+    assert manifest["results"]["sha256"]  # type: ignore[index]
+    record = json.loads((archive / "results.jsonl").read_text().strip())
+    assert record["run_id"] == "run-1"
+    assert record["snapshot"]["status"] == "completed"
+    try:
+        dispatch_api_runs(
+            "https://cellxp.test/api/v1", archive, catalog_dir=catalog_dir, client=client
+        )
+    except FileExistsError:
+        pass
+    else:
+        raise AssertionError("dispatch archive must not be overwritten")
+
+
+def test_dispatch_archives_errors_fail_closed(tmp_path) -> None:
+    catalog_dir = tmp_path / "catalog"
+    catalog_dir.mkdir()
+    (catalog_dir / "queries.jsonl").write_text(json.dumps({
+        "id": "q1", "capability": "variant_effect", "message": "query", "expected": {},
+        "added_at": "2026-06-19T00:00:00Z", "last_reviewed_at": "2026-06-19T00:00:00Z",
+    }) + "\n")
+    client = httpx.Client(
+        base_url="https://cellxp.test/api/v1",
+        transport=httpx.MockTransport(lambda request: httpx.Response(503)),
+    )
+    archive = tmp_path / "failed-archive"
+    manifest = dispatch_api_runs(
+        "https://cellxp.test/api/v1", archive, catalog_dir=catalog_dir, client=client
+    )
+    assert manifest["dispatch_errors"] == 1
+    result = json.loads((archive / "results.jsonl").read_text().strip())
+    assert "snapshot" not in result
+    assert result["dispatch_error"]["type"] == "HTTPStatusError"
