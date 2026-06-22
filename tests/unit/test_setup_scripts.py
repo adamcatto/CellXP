@@ -91,3 +91,32 @@ def test_model_name_rejects_shell_metacharacters() -> None:
 
     assert result.returncode != 0
     assert "invalid Ollama model name" in result.stderr
+
+
+def test_structure_model_dry_run_uses_immutable_revisions(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text("LLM_PROVIDER=openai\n")
+    result = run_script(
+        "scripts/download_models.sh",
+        "--dry-run",
+        "--env-file",
+        str(env_file),
+        "--cache-dir",
+        str(tmp_path / "models"),
+        "--structure",
+        "all",
+        env={"LLM_PROVIDER": ""},
+    )
+
+    assert result.returncode == 0
+    assert "75a3841ee059df2bf4d56688166c8fb459ddd97a" in result.stdout
+    assert "boltz==2.2.1" in result.stdout
+    assert "ollama pull" not in result.stdout
+
+
+def test_structure_model_rejects_unknown_name() -> None:
+    result = run_script(
+        "scripts/download_models.sh", "--dry-run", "--structure", "bad;model"
+    )
+    assert result.returncode != 0
+    assert "structure model must be" in result.stderr

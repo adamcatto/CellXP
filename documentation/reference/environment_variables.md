@@ -50,6 +50,19 @@ provider is Ollama. Remote-provider models are not downloaded. `CELLXP_ENV_FILE`
 download script at a non-default env file; `--env-file` takes precedence when selecting that file,
 and exported process variables override values read from it.
 
-Domain foundation models are not configured here yet. Their service implementations must define a
-pinned source/revision, cache location, hardware requirements, and provenance behavior before a
-download key is added; see `.agents/guidelines/setup-scripts.md`.
+Domain foundation-model downloads remain opt-in; see `.agents/guidelines/setup-scripts.md`.
+
+## Structure worker
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `STRUCTURE_BACKEND` | `none` | `none` for honest unsupported results or `http` for worker dispatch |
+| `STRUCTURE_DEVICE` | `cuda` | ESMFold device and Boltz accelerator (`cuda` or `cpu`) |
+| `STRUCTURE_JOB_TIMEOUT_SECONDS` | `1800` | Hard limit for a Boltz prediction subprocess |
+| `MODEL_CACHE_DIR` | `/models` in worker image | Parent of pinned Hugging Face and Boltz caches |
+| `ESMFOLD_REVISION` | `75a3841…97a` | Release-pinned ESMFold weights commit; worker rejects drift |
+| `BOLTZ_EXECUTABLE` | `boltz` | Executable path/name; invoked as an argv vector without a shell |
+| `CELLXP_LIVE_STRUCTURE` | unset | Set to `1` only to enable opt-in T7 GPU smoke tests |
+
+`scripts/download_models.sh --structure {esmfold,boltz2,all}` acquires these domain weights. Boltz is
+pinned to package version 2.2.1 in the worker image and runtime provenance.
