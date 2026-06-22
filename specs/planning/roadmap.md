@@ -7,12 +7,14 @@
 > For the planning model and where things go, see "How planning is organized" below. For *how this
 > work parallelizes across simultaneous agent sessions*, see "Execution waves" at the end.
 >
-> **Implementation checkpoint (2026-06-21):** Wave 0 and contract implementations through X7 have
-> landed. The closure wave adds an executable local session/run API with ordered SSE, Ensembl
-> resolution/liftover, remote AlphaGenome/Evo 2 worker transport, concrete PubMed/PMC + SQLite-vector
-> RAG, M2/M3 scientific panes, and deterministic golden-result shape gates. Remaining work is
-> deployment integration: pinned model workers/weights, production GWAS/CRISPR/structure adapters,
-> durable API persistence/queue dispatch, browser/live-model tests, and biological/safety gate runs.
+> **Implementation checkpoint (2026-06-22):** The deployment-completion wave landed Postgres-backed
+> API/run persistence and LangGraph checkpoints, Redis Streams job primitives, S3-compatible object
+> storage, pinned ESMFold/Boltz-2 GPU workers, production GWAS/QTL and CRISPR worker transports,
+> opt-in live tests, and Playwright chat/clarification/review journeys. The fail-closed M1–M3 gate
+> report remains **blocked**: the public biology catalogs are seed-sized and unscored, authorized
+> private hazard-set scores are unavailable, and live GPU/CRISPR deployment evidence has not been
+> produced. Do not start L1 or promote L3 until those gates pass. See
+> `evals/reports/m1-m3-gate-report-2026-06-22.json`.
 
 ## How planning is organized
 
@@ -47,9 +49,10 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   downstream slice imports; structurally mitigates R2 (coordinates) and R3 (provenance) ·
   *shipped* · depends-on: N1 · M1.
 - **N3 — Core orchestration pipeline.** normalizer → intent → risk → entity → planner → clarify
-  (FR-1..FR-7) · the agent loop all subgraphs hang off · *in-progress* (implementation, real graph
-  integration coverage, and a process-local v1 API with SSE/replay/pause-resume complete; durable
-  repository/queue wiring and browser coverage remain) · depends-on: N2 · M1.
+  (FR-1..FR-7) · the agent loop all subgraphs hang off · *in-progress* (implementation, graph
+  integration coverage, ordered SSE/replay/pause-resume, durable Postgres repository/checkpoint
+  wiring, and browser coverage complete; moving graph execution off the API process through the
+  Redis queue remains) · depends-on: N2 · M1.
 - **N4 — Reference genome service.** GRCh38 + ≥1 prokaryote with circular handling (RGS-1..RGS-5) ·
   coordinate source of truth; R2/R4 mitigation · *shipped* (catalog + 6 operations, Ensembl
   gene/dbSNP resolution and cross-assembly mapping, circular handling, and deterministic tests;
@@ -65,8 +68,9 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
 - **N6 — Frontend M1.** chat + progressive streaming UI, genome-browser pane v1, run inspector
   (FR-21, FR-27, FR-30) · the user-visible surface · *in-progress* (wire types, REST+SSE client,
   streaming accumulator, chat thread, genome browser, run inspector, workspace layout, locus and
-  linked structure panes, guide/off-target panes, and app pages implemented; browser journeys,
-  candidate persistence, and full Mol* mmCIF dependency remain) ·
+  linked structure panes, guide/off-target panes, app pages, and Playwright streaming,
+  clarification, review/approve, and accessibility journeys implemented; candidate persistence and
+  the full Mol* mmCIF dependency remain) ·
   depends-on: N2 (contracts only) · M1.
 - **N7 — Safety M1.** `risk_classifier` on every run + audit log of refusals/consequential events
   (FR-33, FR-34) · R1 structural defense · *shipped* (AuditEntry domain model + SHA-256 hash

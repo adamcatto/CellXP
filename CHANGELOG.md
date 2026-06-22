@@ -23,6 +23,9 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-22** — Add durable Postgres API/run persistence and LangGraph checkpoints, Redis Streams
+  job transport, S3-compatible object storage, Playwright chat/clarification/review journeys, and a
+  fail-closed M1–M3 release-gate report that distinguishes missing evidence from a passing gate.
 - **2026-06-22** — Add the production structure worker with pinned ESMFold/Boltz-2 acquisition,
   bounded GPU inference, content-addressed PDB/mmCIF outputs, deployable manifests, complete model
   provenance, and opt-in live smoke tests.

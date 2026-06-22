@@ -69,5 +69,6 @@ single-sequence mode to prevent unannounced sequence egress.
 `infra/k8s/worker-deployment.yaml` requests one `nvidia.com/gpu`, mounts the
 `cellxp-structure-models` PVC, and reads `OBJECT_STORE_URL` from the `cellxp-runtime` Secret. Replace
 the example image tag with an immutable registry digest before production deployment. Object storage
-must be shared with the API; the current in-repo factory supports `file://` only, so S3/MinIO support
-must be present before using separate Kubernetes nodes.
+must be shared with the API; use the in-repo `s3://bucket/prefix` backend with AWS credentials or an
+S3-compatible endpoint for separate Kubernetes nodes. A `file://` store is node-local and therefore
+only suitable when the API and worker share the same persistent volume.
