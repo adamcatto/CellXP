@@ -11,6 +11,10 @@ FR-18a) is review-gated and intentionally not implemented here — it lands with
 
 from __future__ import annotations
 
+import hashlib
+import json
+import os
+
 from cellxp.agent.state import RunError, Step
 from cellxp.domain.artifacts import ArtifactRef
 from cellxp.domain.clock import utc_now_iso
@@ -59,6 +63,14 @@ class StructureService(Service):
     name = "structure"
 
     def __init__(self, *, structure_backend: StructureBackend | None = None) -> None:
+        if structure_backend is None and os.getenv("STRUCTURE_BACKEND", "none") == "http":
+            from .backends import RemoteStructureBackend
+
+            service_url = os.getenv("STRUCTURE_SERVICE_URL")
+            if not service_url:
+                raise ValueError("STRUCTURE_SERVICE_URL is required for STRUCTURE_BACKEND=http")
+            timeout = float(os.getenv("STRUCTURE_JOB_TIMEOUT_SECONDS", "1800"))
+            structure_backend = RemoteStructureBackend(service_url, timeout_seconds=timeout)
         self._backend = structure_backend
 
     # ------------------------------------------------------------------
@@ -123,6 +135,19 @@ class StructureService(Service):
             )
 
         finished = utc_now_iso()
+        normalized_inputs = {
+            "kind": request.kind,
+            "sequences": [sequence.model_dump(mode="json") for sequence in request.sequences],
+            "ligand": request.ligand.model_dump(mode="json") if request.ligand else None,
+            "organism": request.organism,
+            "assembly": request.assembly,
+        }
+        input_hash = hashlib.sha256(
+            json.dumps(normalized_inputs, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        output_hash = None
+        if raw.structure_ref and raw.structure_ref.startswith("cas/"):
+            output_hash = raw.structure_ref.removeprefix("cas/")
 
         # Service derives confidence band + low-confidence spans from per-residue scores (STS-3).
         per_residue = raw.per_residue_confidence or []
@@ -141,12 +166,10 @@ class StructureService(Service):
                 "provenance": Provenance(
                     tool=model,
                     tool_version=raw.provenance.tool_version,
-                    inputs={
-                        "kind": request.kind,
-                        "n_chains": len(request.sequences),
-                        "has_ligand": request.ligand is not None,
-                        "organism": request.organism,
-                    },
+                    params=raw.provenance.params,
+                    inputs=normalized_inputs,
+                    input_hash=input_hash,
+                    output_hash=output_hash,
                     output_ref=raw.structure_ref,
                     timestamp=finished,
                 ),
@@ -182,8 +205,18 @@ class StructureService(Service):
         ]
         return ServiceResult.succeeded(
             result,
-            steps=[_done_step("predict_structure", started, tool=model, finished=finished,
-                              weight="heavy")],
+            steps=[
+                _done_step(
+                    "predict_structure",
+                    started,
+                    tool=model,
+                    tool_version=result.provenance.tool_version,
+                    input_ref={"input_hash": input_hash},
+                    output_ref=result.structure_ref,
+                    finished=finished,
+                    weight="heavy",
+                )
+            ],
             evidence=evidence,
             artifacts=artifacts,
         )
@@ -310,12 +343,18 @@ def _done_step(
     started: str,
     *,
     tool: str = "structure",
+    tool_version: str | None = None,
+    input_ref: dict[str, object] | None = None,
+    output_ref: str | None = None,
     finished: str | None = None,
     weight: str = "light",
 ) -> Step:
     return Step(
         name=name,
         tool=tool,
+        tool_version=tool_version,
+        input_ref=input_ref or {},
+        output_ref=output_ref,
         weight=weight,  # type: ignore[arg-type]
         status=TaskStatus.DONE,
         started_at=started,

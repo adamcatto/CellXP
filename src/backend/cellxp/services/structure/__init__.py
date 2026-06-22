@@ -18,6 +18,14 @@ from .schemas import (
     StructureResult,
 )
 from .service import StructureService
+from .backends import (
+    BOLTZ_MODEL_VERSION,
+    ESMFOLD_REPOSITORY,
+    ESMFOLD_REVISION,
+    ProductionStructureBackend,
+    RemoteStructureBackend,
+    StructureRuntimeConfig,
+)
 from .transforms import (
     classify_structure_task,
     low_confidence_spans,
@@ -40,9 +48,15 @@ __all__ = [
     "Span",
     "StructureKind",
     "StructureBackend",
+    "ProductionStructureBackend",
+    "RemoteStructureBackend",
+    "StructureRuntimeConfig",
     # constants
     "ESMFOLD_MAX_RESIDUES",
     "LOW_CONFIDENCE_THRESHOLD",
+    "ESMFOLD_REPOSITORY",
+    "ESMFOLD_REVISION",
+    "BOLTZ_MODEL_VERSION",
     # transforms
     "classify_structure_task",
     "validate_kind_alphabet",

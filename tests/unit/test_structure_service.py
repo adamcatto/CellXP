@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from cellxp.domain.enums import ArtifactType, ConfidenceBand, SequenceAlphabet
+from cellxp.domain.evidence import Provenance
 from cellxp.domain.models import GenomicInterval
 from cellxp.domain.sequences import BiologicalSequence
 from cellxp.services.base import ServiceOutcome
@@ -222,6 +223,20 @@ class TestPredictStructureNoBackend:
         assert result.outcome is ServiceOutcome.FAILURE
         assert "ESMFold limit" in result.error.message
 
+    def test_http_backend_requires_service_url(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("STRUCTURE_BACKEND", "http")
+        monkeypatch.delenv("STRUCTURE_SERVICE_URL", raising=False)
+        with pytest.raises(ValueError, match="STRUCTURE_SERVICE_URL"):
+            StructureService()
+
+    def test_http_backend_is_selected_from_environment(self, monkeypatch: pytest.MonkeyPatch):
+        from cellxp.services.structure.backends import RemoteStructureBackend
+
+        monkeypatch.setenv("STRUCTURE_BACKEND", "http")
+        monkeypatch.setenv("STRUCTURE_SERVICE_URL", "http://structure-worker:8102")
+        service = StructureService()
+        assert isinstance(service._backend, RemoteStructureBackend)
+
 
 class TestPredictStructureWithBackend:
     def _svc(self) -> StructureService:
@@ -282,6 +297,28 @@ class TestPredictStructureWithBackend:
             StructureRequest(kind="protein", sequences=[_protein()])
         )
         assert result.value.provenance.tool == "esmfold"
+
+    def test_provenance_records_input_and_output_hashes(self):
+        backend = _MockStructureBackend()
+        raw_predict = backend.predict_structure
+
+        def predict(request: StructureRequest) -> StructureResult:
+            raw = raw_predict(request)
+            return raw.model_copy(
+                update={
+                    "structure_ref": "cas/" + "a" * 64,
+                    "provenance": Provenance(tool_version="pinned-revision"),
+                }
+            )
+
+        backend.predict_structure = predict  # type: ignore[method-assign]
+        result = StructureService(structure_backend=backend).predict_structure(
+            StructureRequest(kind="protein", sequences=[_protein()])
+        )
+        assert result.value.provenance.input_hash is not None
+        assert result.value.provenance.output_hash == "a" * 64
+        assert result.steps[0].tool_version == "pinned-revision"
+        assert result.steps[0].output_ref == result.value.structure_ref
 
 
 # ---------------------------------------------------------------------------
