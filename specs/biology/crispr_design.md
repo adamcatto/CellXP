@@ -42,6 +42,8 @@ organism (`supported_species.md`).
    locate the exact edit position.
 2. **(light) PAM site enumeration** — scan both strands for the Cas's PAM within the target window;
    extract candidate protospacers (organism/Cas-aware; respect circular coordinates).
+   For packaged SpCas9, candidates require a complete NGG site inside the resolved interval and a
+   complete real 30-bp context; the 0-based cut boundary is 3 bp 5' of the PAM on either strand.
 3. **(heavy) On-target scoring** — score each candidate (Rule Set 2); for base/prime, predict edit
    outcome/efficiency window (BE-Hive/PRIDICT).
    Rule Set 2 consumes the real 30-bp genomic context (4 upstream + spacer + PAM + 3 downstream),

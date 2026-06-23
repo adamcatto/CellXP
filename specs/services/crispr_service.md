@@ -54,6 +54,13 @@ uses bounded retries for transient failures. The `deterministic` offline adapter
 sequence-QC scores and empty search/outcome results; it never labels its heuristic as Rule Set 2 or
 claims genome-wide completeness.
 
+The packaged SpCas9 path accepts resolved `GenomicInterval` targets, enumerates NGG sites on both
+strands from the attested FASTA, constructs real 30-bp Rule Set 2 contexts, and composes on-target
+scores with Cas-OFFinder/CFD results into ranked `Guide` rows. Cut sites are canonical 0-based
+cleavage boundaries three bases 5' of the PAM. Circular origin-crossing intervals and contexts are
+normalized against the attested contig length. Unresolved gene strings and unconfigured base/prime
+outcome models fail closed.
+
 The production worker MUST return version-attested health covering its exact Rule Set 2, CFD, and
 Cas-OFFinder revisions plus the digest of its assembly-index manifest. It MUST verify each
 reference/index checksum before accepting work and reject organism/assembly pairs absent from that

@@ -69,7 +69,11 @@ pytest -m live tests/live/test_live_crispr_worker.py
 
 A skipped test or contract-fixture result is not acceptance evidence.
 
-The packaged worker currently implements on-target scoring and off-target enumeration/scoring.
-Target-sequence/PAM enumeration and base/prime edit-outcome models still return explicit partial
-results; therefore this package alone does not complete the full X5 design/outcome definition of
-done.
+The packaged worker resolves `GenomicInterval` targets against the attested FASTA, enumerates SpCas9
+NGG sites on both strands, extracts real strand-oriented 30-mers, and composes Rule Set 2 with
+Cas-OFFinder/CFD into ranked guides. Coordinates remain canonical 0-based: the reported cut site is
+the cleavage boundary three bases 5' of the PAM. Circular references support origin-crossing target,
+site, and context windows with cut coordinates normalized onto the contig.
+
+Gene-string targets fail until the API/reference layer resolves them to a `GenomicInterval`.
+Base/prime edit-outcome models are not packaged and fail explicitly; no efficiency is fabricated.
