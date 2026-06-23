@@ -55,3 +55,7 @@ The new directory contains read-only `observations.json`, gate-compatible `evide
 hash manifest. Its telemetry section records only the acceptance sample and is explicitly not a
 substitute for release-scale run-success or latency telemetry. Merge reviewed measurements into the
 release evidence manifest through the controlled release process; do not hand-edit a passing value.
+
+Hardware/model smoke records such as `live-evo2-sdk-2026-06-23.json` are deliberately scoped. They
+record real checkpoint/runtime execution, but do not satisfy a deployed-worker or release gate when
+their `not_release_gate_complete` field is true.

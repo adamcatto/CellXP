@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "scope": "direct_sdk_acceptance",
+  "not_release_gate_complete": true,
+  "observed_at": "2026-06-23T03:01:18Z",
+  "source_revision": "b820d2f3a07d15d55fb4ec931da2fb7bed6cefb5",
+  "model": "evo2==0.6.0:evo2_7b",
+  "checkpoint": {
+    "revision": "arcinstitute/evo2_7b@bda0089f92582d5baabf0f22d9fc85f3588f6b58",
+    "sha256": "c66645929dc1b9c631f5be656da8726f38946315dc9167000a615dd626fcecf4",
+    "size_bytes": 13766621200,
+    "checksum_verified_by": "scripts/acquire_sequence_model.py"
+  },
+  "runtime": {
+    "python": "3.11.11",
+    "torch": "2.7.1+cu128",
+    "cuda_runtime": "12.8",
+    "cuda_extensions": ["flash_attn_2_cuda", "local_causal_conv1d_cuda"],
+    "gpu": "NVIDIA A100 80GB PCIe",
+    "driver": "565.57.01"
+  },
+  "request": {
+    "organism": "Escherichia coli",
+    "assembly": "GCF_000005845.2",
+    "sequence_sha256": "cf573e65038d08ff910a3345642ffd1e8329844633c2dcb15964b324ebdba4d0",
+    "sequence_length": 16,
+    "scoring_type": "likelihood"
+  },
+  "result": {
+    "score": -1.1983072757720947,
+    "model_load_seconds": 7.69,
+    "total_seconds": 14.164
+  },
+  "limitations": [
+    "This exercised the packaged SDK backend directly, not the Docker image or HTTP worker.",
+    "Docker-daemon access was denied in the execution environment.",
+    "This single smoke is not release-scale reliability, biology scoring, or worker-pool evidence."
+  ]
+}

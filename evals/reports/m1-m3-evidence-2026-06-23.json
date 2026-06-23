@@ -8,7 +8,7 @@
     "The public M1-M3 biology catalog now contains 200 sourced queries and meets capability, composition, organism-class, and edge-case size floors; no domain-review scores were supplied.",
     "Public non-sensitive safety catalogs meet adjacent-legitimate, actionable-gate, gate-evasion, leakage, and honesty size floors; they remain unscored.",
     "The private hazard set and its authorized aggregate safety results are not available in this workspace.",
-    "A live EBI GWAS Catalog adapter lookup passed on 2026-06-23, but production LD/SuSiE/coloc, AlphaGenome/Evo, structure GPU, and CRISPR worker acceptance evidence is unavailable.",
+    "A live EBI GWAS Catalog lookup and direct checksum-verified Evo 2 SDK inference passed on 2026-06-23; production LD/SuSiE/coloc, AlphaGenome, structure GPU, CRISPR, and deployed Evo HTTP-worker acceptance evidence is unavailable.",
     "Reviewed artifact export and audit-chain APIs plus deployed acceptance collectors are implemented and deterministic tests pass; no deployed API/object-store acceptance archive was produced."
   ],
   "regressions": {
