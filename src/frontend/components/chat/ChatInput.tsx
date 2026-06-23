@@ -22,7 +22,14 @@ function detectFormat(text: string): InputFormat {
   if (/^>/.test(t)) return 'fasta';
   if (/^##fileformat=VCF/.test(t)) return 'vcf';
   if (/^ATOM\s+\d/.test(t) || /^HEADER\s/.test(t)) return 'pdb';
-  if (/^[A-Z][a-z]?\d*(\(|\)|=|#|%|@|\/|\\|\.|\[|\]|\+|-)*[A-Z]/.test(t)) return 'smiles';
+  // Require SMILES-specific syntax so gene symbols (e.g. BRCA1) are not misclassified.
+  if (
+    /^[A-Za-z0-9@+\-[\]()=#%/\\.:]+$/i.test(t) &&
+    (/[=[\]()@#/\\]/.test(t) || /\d[a-z]/i.test(t)) &&
+    t.length >= 3
+  ) {
+    return 'smiles';
+  }
   return null;
 }
 
@@ -83,17 +90,6 @@ export function ChatInput({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-      e.preventDefault();
-      doSend();
-    }
-    if ((e.metaKey || e.ctrlKey) && e.key === '.') {
-      e.preventDefault();
-      onStop?.();
-    }
-  };
-
   const doSend = useCallback(() => {
     const msg = text.trim();
     if (!msg || disabled || running) return;
@@ -106,6 +102,17 @@ export function ChatInput({
     setShowSlash(false);
     setShowMention(false);
   }, [text, disabled, running, detectedFormat, formatConfirmed, onSend]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      doSend();
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === '.') {
+      e.preventDefault();
+      onStop?.();
+    }
+  };
 
   // Filtered mention suggestions
   const mentionSuggestions = [
@@ -127,6 +134,7 @@ export function ChatInput({
   };
 
   const isDisabled = disabled || running;
+  const pendingFormatConfirmation = Boolean(detectedFormat && !formatConfirmed);
 
   return (
     <div
@@ -158,7 +166,14 @@ export function ChatInput({
           <Button size="sm" variant="primary" onClick={() => setFormatConfirmed(true)}>
             Yes, attach
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setDetectedFormat(null)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setDetectedFormat(null);
+              setFormatConfirmed(false);
+            }}
+          >
             No, send as text
           </Button>
         </div>
@@ -297,8 +312,8 @@ export function ChatInput({
           <Button
             variant="primary"
             onClick={doSend}
-            disabled={!text.trim() || isDisabled}
-            title="Send (⌘↵)"
+            disabled={!text.trim() || isDisabled || pendingFormatConfirmation}
+            title={pendingFormatConfirmation ? 'Confirm detected input format first' : 'Send (↵)'}
             aria-label="Send message"
           >
             Send
@@ -308,7 +323,7 @@ export function ChatInput({
 
       {/* Keyboard hint */}
       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textAlign: 'right' }}>
-        ⌘↵ send · / macros · @ mention
+        ↵ send · ⇧↵ new line · / macros · @ mention
       </div>
     </div>
   );
