@@ -13,6 +13,13 @@ category).
 ## [Unreleased]
 
 ### Changed
+- **2026-06-23** — Make M1–M4 release evaluation fail closed on the overall biology floor, archive
+  real deployed-API runs and review/audit acceptance with hashes, and expand public biology and
+  non-sensitive safety catalogs to their documented size and coverage floors without adding private
+  hazard content or fabricated scores.
+- **2026-06-23** — Require real strand-oriented 30-bp genomic context for Rule Set 2 scoring and
+  compose checksum-attested SpCas9 PAM enumeration, Cas-OFFinder/CFD specificity, circular-genome
+  handling, and durable guide-pool selection while rejecting unsupported editor outcomes.
 - **2026-06-21** — Make terminal reports explicitly disclose when an evidence-producing plan returns
   no evidence, and replace placeholder GWAS/variant integration tests with real supervisor flows.
 - **2026-06-19** — Require per-entry land dates on `[Unreleased]` changelog bullets (`**YYYY-MM-DD** —`); update
@@ -23,6 +30,13 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-06-23** — Package concrete pinned AlphaGenome 0.6.1 and Evo 2 0.6.0 SDK workers, an
+  Open Targets/PLINK/SuSiE/coloc GWAS worker, and an Azimuth/CFD/Cas-OFFinder CRISPR worker with
+  version/index attestations, fail-closed production readiness, deployment manifests, and opt-in
+  live inference tests.
+- **2026-06-23** — Add persisted artifact manifests/content, review-enforced immutable exports,
+  audit-chain query/verification, and durable ordered CRISPR guide pools with optimistic revisions
+  and frontend save/restore behavior.
 - **2026-06-22** — Move production LangGraph start/resume/cancel execution out of FastAPI into
   dedicated Redis Streams graph executors with idempotent commands, retry/reclaim/dead-letter
   handling, durable snapshots/events, production capability composition, and compose/Kubernetes

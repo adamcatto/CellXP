@@ -7,13 +7,15 @@
 > For the planning model and where things go, see "How planning is organized" below. For *how this
 > work parallelizes across simultaneous agent sessions*, see "Execution waves" at the end.
 >
-> **Implementation checkpoint (2026-06-22):** The deployment-completion wave landed Postgres-backed
-> API/run persistence and LangGraph checkpoints, Redis Streams job primitives, S3-compatible object
-> storage, pinned ESMFold/Boltz-2 GPU workers, production GWAS/QTL and CRISPR worker transports,
-> opt-in live tests, and Playwright chat/clarification/review journeys. The fail-closed M1–M3 gate
-> report remains **blocked**: the public biology catalogs are seed-sized and unscored, authorized
-> private hazard-set scores are unavailable, and live GPU/CRISPR deployment evidence has not been
-> produced. Do not start L1 or promote L3 until those gates pass. See
+> **Implementation checkpoint (2026-06-23):** N3 graph execution is detached from FastAPI through
+> durable Redis workers. Pinned AlphaGenome/Evo 2, GWAS statistics, structure, and CRISPR worker
+> images now include concrete SDK/tool runtimes, fail-closed attestations, deployment manifests, and
+> opt-in live inference tests. CRISPR guide pools persist through the API/UI, and reviewed artifact
+> exports are audit-chained. Public biology and non-sensitive safety catalogs meet their documented
+> size floors, but remain unscored. The fail-closed M1–M3 gate report is therefore still **blocked**:
+> authorized private hazard-set results, domain-review scores, production LD/reference indexes, and
+> deployed AlphaGenome/Evo/GPU/CRISPR acceptance evidence are unavailable. Do not start L1 or
+> promote L3 until those gates pass. See
 > `evals/reports/m1-m3-gate-report-2026-06-22.json`.
 
 ## How planning is organized
@@ -62,15 +64,17 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   evidence + evidence integration + report/run-trace (FR-12, FR-13, FR-14 binding subset, FR-22..24) ·
   proves the architecture end-to-end; first proven contract before fan-out · *in-progress*
   (AlphaGenomeService + BindingService + variant_effect subgraph + evidence integration, Ensembl
-  resolution, strict remote AlphaGenome/Evo 2 worker transport, and model-call provenance complete;
-  pinned worker images/weights and live-model acceptance remain) ·
+  resolution, strict worker transport, pinned images/manifests, concrete official AlphaGenome 0.6.1
+  and Evo 2 0.6.0 SDK adapters, and model-call provenance complete; deployed live-model acceptance,
+  authorized AlphaGenome access, the Evo checkpoint, and sequence-context support for coordinate-
+  only microbial variant requests remain) ·
   depends-on: N3, N4 · M1.
 - **N6 — Frontend M1.** chat + progressive streaming UI, genome-browser pane v1, run inspector
   (FR-21, FR-27, FR-30) · the user-visible surface · *in-progress* (wire types, REST+SSE client,
   streaming accumulator, chat thread, genome browser, run inspector, workspace layout, locus and
   linked structure panes, guide/off-target panes, app pages, and Playwright streaming,
-  clarification, review/approve, and accessibility journeys implemented; candidate persistence and
-  the full Mol* mmCIF dependency remain) ·
+  clarification, review/approve, accessibility journeys, and durable CRISPR guide-pool composition
+  implemented; the full Mol* mmCIF dependency remains) ·
   depends-on: N2 (contracts only) · M1.
 - **N7 — Safety M1.** `risk_classifier` on every run + audit log of refusals/consequential events
   (FR-33, FR-34) · R1 structural defense · *shipped* (AuditEntry domain model + SHA-256 hash
@@ -83,10 +87,10 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
 <!-- Committed and sequenced, not started. Theme/epic granularity. -->
 
 - **X1 — GWAS/QTL.** service + subgraph + locus-inspector pane (FR-14) · associations, LD, fine-map,
-  coloc · *in-progress* (typed `GwasService` with injectable backend, four operations, human-data
-  coverage guards, provenance/artifacts, GWAS subgraph, tests, locus-inspector pane, direct EBI
-  GWAS/eQTL adapter, and versioned statistical-worker transport complete; additional Open Targets,
-  LD-panel, and pinned SuSiE/coloc worker deployment remains) · depends-on: N5 · M2.
+  coloc · *in-progress* (typed `GwasService`, four-operation orchestration, human-data guards,
+  provenance/artifacts, GWAS subgraph, locus pane, EBI and Open Targets adapters, and a pinned
+  PLINK/SuSiE/coloc worker with fail-closed panel/summary-stat validation complete; production LD
+  panel acquisition and deployed statistical acceptance remain) · depends-on: N5 · M2.
 - **X2 — RAG.** service + vector index + report-resolvable citations (FR-20) · literature grounding;
   R3 citation validity · *in-progress* (five-operation `RagService`, injectable retrieval/vector
   backend contract, RAG subgraph, citation maps, PubMed/PMC adapter, persistent SQLite vector index,
@@ -102,10 +106,11 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   user-visible payoff · *shipped* (ordered dependency plan, cross-subtask evidence accounting,
   planner tests, golden query, and worked calibration example) · depends-on: X1, X2, X3 · M2.
 - **X5 — CRISPR design.** service + subgraph + guide-pool & off-target panes (FR-15) · first actionable
-  capability · *shipped* (typed four-operation service, injectable backend, organism/assembly and
-  edit-spec guards, actionable artifacts, subgraph, deterministic coverage, and guide/off-target
-  panes plus a versioned scoring/off-target worker transport; pinned worker deployment and persisted
-  pool composition remain deployment work) ·
+  capability · *in-progress* (typed service/subgraph, actionable artifacts, durable versioned guide
+  pools, reviewed exports, and a pinned Azimuth Rule Set 2/CFD/Cas-OFFinder worker with real 30-bp
+  contexts, checksum-attested human/microbial index contracts, both-strand and circular SpCas9
+  enumeration, and fail-closed unsupported editors complete; production index acquisition, deployed
+  live acceptance, and base/prime outcome models remain) ·
   depends-on: N5 · M3.
 - **X6 — Human-review gate.** `human_review_gate` node + genome-editing session type (strict posture)
   (FR-25, FR-26, FR-39) · R1; enforced before any build-ready export · *shipped* (supervisor
