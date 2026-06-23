@@ -99,6 +99,7 @@ VCF, PDB/mmCIF, molecule, or origami content.
 | `POST` | `/runs/{run_id}/reproduce` | create a run from recorded inputs/versions |
 | `GET` | `/runs/{run_id}/steps` | paginated execution trace |
 | `GET` | `/runs/{run_id}/evidence` | paginated evidence records |
+| `GET` | `/runs/{run_id}/audit` | hash-chain-verified consequential audit records |
 
 Run creation:
 
@@ -171,6 +172,9 @@ returned, but raw object-store keys and permanent public URLs MUST NOT be expose
 Export creation accepts `format`, optional renderer-independent view state (viewport, visible tracks,
 selection), dimensions, and coordinate convention. It records the source artifact revision and
 transform parameters. Actionable export restrictions follow `artifact_model.md` §8.
+An actionable export returns `409` until approval. A successful export persists its descriptor,
+stores immutable content through the configured object store, and appends a linked
+`side_effect.performed` audit record. Manifest responses never expose object-store keys.
 
 Guide pools contain ordered candidate IDs and retain the source guide-table artifact ID. Updates
 use optimistic concurrency; a stale `expected_revision` returns `409`. Persisting a candidate pool
@@ -246,6 +250,8 @@ platform UI client.
 - **API-10** Errors MUST be actionable and safe, with stable codes and no secrets/raw stack traces.
 - **API-11** Run start/resume/cancel endpoints MUST return without executing graph or heavy domain
   work inline; production execution is performed by Redis-backed workers.
+- **API-12** Actionable exports MUST fail closed until approval and MUST link the export to the
+  persisted review and hash-chain-verified audit trail.
 
 ## 12. Related
 

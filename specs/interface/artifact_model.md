@@ -183,6 +183,9 @@ API identity remains `/artifacts/{artifact_id}`. Links remain stable if titles o
   scripts or active document content.
 - Actionable artifacts can be previewed as candidates while pending review, but download/export MAY
   be restricted by review policy and is always audit logged.
+- The v1 API restricts actionable export until `review_status=approved`; successful exports persist
+  a descriptor, immutable content hash, and `side_effect.performed` audit link. Manifest responses
+  do not reveal server-side object keys.
 
 ## 9. Performance
 

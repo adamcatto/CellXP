@@ -11,7 +11,9 @@ The current single-user development adapter provides executable session and run 
 - create/list/get/update/delete sessions, with optimistic revision checks;
 - create/list/get/reproduce/cancel runs, with session-scoped `client_request_id` deduplication;
 - list run steps and evidence;
+- list hash-chain-verified run audit records;
 - answer blocking clarification and review interactions;
+- fetch artifact manifests/content and create review-enforced exports;
 - consume ordered SSE events and replay after `Last-Event-ID` or `last_event_id`.
 
 Start it with `make dev-api`. A minimal request flow is:
@@ -27,10 +29,11 @@ Use the returned session ID with `POST /api/v1/sessions/{session_id}/runs`, incl
 
 ## Deployment boundary
 
-`cellxp.api.runtime.LocalRuntime` is intentionally process-local. It is suitable for deterministic
-contract tests and regime-1 single-process development, but it is not durable across restarts and
-must not be used for multi-replica deployment. Regime 2 replaces this adapter with the existing
-repository/checkpoint infrastructure without changing the HTTP schemas.
+`cellxp.api.runtime.LocalRuntime` is process-local and suitable only for deterministic contract
+tests. Production uses the queued runtime with Postgres/Redis graph executors. Artifact export
+descriptors and audit records are durable; payload bytes use the configured file or S3-compatible
+object store. Actionable export returns `409` until approval. `GET /runs/{run_id}/audit` returns
+entries plus `chain_valid`; `false` is an integrity failure.
 
 ## Verification
 
@@ -38,6 +41,7 @@ The T4 network-free lifecycle tests use FastAPI's in-process client and the real
 
 ```bash
 python -m pytest tests/e2e/test_chat_variant_query.py tests/e2e/test_artifact_generation.py
+python -m pytest tests/e2e/test_artifact_review_api.py
 ```
 
 They require no Ollama, database, Redis, or external biological services.
