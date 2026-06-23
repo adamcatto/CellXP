@@ -33,7 +33,11 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const res = await fetch(`${getApiBase()}${path}`, init);
   if (!res.ok) {
     const problem = await res.json().catch(() => ({ title: res.statusText }));
-    const err = new Error(problem.title ?? res.statusText) as ApiError;
+    const message =
+      (typeof problem.title === 'string' && problem.title) ||
+      (typeof problem.detail === 'string' && problem.detail) ||
+      res.statusText;
+    const err = new Error(message) as ApiError;
     err.status = res.status;
     err.code = problem.code;
     err.body = problem;
@@ -90,7 +94,11 @@ const sessions = {
     });
     if (!res.ok) {
       const problem = await res.json().catch(() => ({ title: res.statusText }));
-      const err = new Error(problem.title ?? res.statusText) as ApiError;
+      const message =
+        (typeof problem.title === 'string' && problem.title) ||
+        (typeof problem.detail === 'string' && problem.detail) ||
+        res.statusText;
+      const err = new Error(message) as ApiError;
       err.status = res.status;
       throw err;
     }

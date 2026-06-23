@@ -13,6 +13,8 @@ category).
 ## [Unreleased]
 
 ### Fixed
+- **2026-06-23** — Auto-create a backend session when opening `/chat` without `?session=`
+  (fixes "session not found" on first submit from remote dev clients).
 - **2026-06-23** — Fix remote dev chat submit: auto-allow `127.0.0.1` and LAN IPs in Next.js
   `allowedDevOrigins` so HMR hydrates when the UI is opened via IP (not only `localhost`).
 - **2026-06-23** — Fix LAN remote chat access: proxy `/api/v1` through the Next.js dev server,
