@@ -13,6 +13,8 @@ category).
 ## [Unreleased]
 
 ### Fixed
+- **2026-06-23** — Resolve gene symbols to genomic intervals before annotation when a query names a
+  gene (e.g. "is SNAP25 expressed in cerebellum?") but provides no explicit interval or FASTA.
 - **2026-06-23** — Wire the annotation capability subgraph into the supervisor so `/annotate`
   and sequence-annotation chat runs complete honestly (roadmap L1 deferred backends) instead of
   failing with the generic N3 scaffold sentinel.

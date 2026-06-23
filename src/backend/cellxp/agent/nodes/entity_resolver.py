@@ -39,6 +39,56 @@ _COORDINATE_INTENTS = {
     IntentType.INVERSE_EDIT_DESIGN,
     IntentType.VISUALIZATION,
 }
+_GENE_QUERY_PATTERNS = (
+    re.compile(r"\b(?:is|does)\s+([A-Za-z][A-Za-z0-9-]{1,14})\s+expressed\b", re.IGNORECASE),
+    re.compile(r"\bexpression\s+of\s+([A-Za-z][A-Za-z0-9-]{1,14})\b", re.IGNORECASE),
+    re.compile(r"\bgene\s+([A-Za-z][A-Za-z0-9-]{1,14})\b", re.IGNORECASE),
+    re.compile(r"\bannotate\s+([A-Za-z][A-Za-z0-9-]{1,14})\b", re.IGNORECASE),
+)
+_GENE_STOPWORDS = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "brain",
+        "cell",
+        "cerebellum",
+        "cortex",
+        "does",
+        "expressed",
+        "expression",
+        "gene",
+        "heart",
+        "hippocampus",
+        "human",
+        "in",
+        "is",
+        "kidney",
+        "level",
+        "liver",
+        "lung",
+        "mouse",
+        "of",
+        "or",
+        "the",
+        "tissue",
+        "type",
+    }
+)
+
+
+def _gene_symbols_from_query(query: str) -> list[str]:
+    """Extract likely gene symbols from prose (entity_resolver owns symbol inference)."""
+    found: list[str] = []
+    for pattern in _GENE_QUERY_PATTERNS:
+        for match in pattern.finditer(query):
+            symbol = match.group(1)
+            if symbol.lower() in _GENE_STOPWORDS:
+                continue
+            canonical = symbol.upper()
+            if canonical not in found:
+                found.append(canonical)
+    return found
 
 
 def _context_from_query(query: str) -> tuple[str | None, str | None]:
@@ -96,6 +146,11 @@ def run(state: AgentState) -> dict[str, object]:
         }
         if len(variant_assemblies) == 1:
             normalized.assembly = next(iter(variant_assemblies))
+
+    if not normalized.intervals and not normalized.variants:
+        for symbol in _gene_symbols_from_query(state.get("user_query", "")):
+            if symbol not in normalized.identifiers:
+                normalized.identifiers.append(symbol)
 
     entities: list[Entity] = []
     if normalized.organism:

@@ -12,10 +12,11 @@ from cellxp.agent.state import (
     Subtask,
 )
 from cellxp.agent.subgraphs.annotation import build_subgraph
-from cellxp.domain.enums import SequenceAlphabet, SubtaskType, TaskStatus
+from cellxp.domain.enums import SequenceAlphabet, Strand, SubtaskType, TaskStatus
 from cellxp.domain.models import GenomicInterval
 from cellxp.domain.sequences import BiologicalSequence
 from cellxp.services.base import ServiceOutcome, ServiceResult
+from cellxp.services.reference import EntityResolveRequest, EntityResolveResult, ResolvedEntity
 from cellxp.services.reference.annotations import (
     AnnotationFeature,
     AnnotationRequest,
@@ -39,6 +40,48 @@ class _AnnotatingReferenceService(ReferenceGenomeService):
                         start=0,
                         end=1200,
                         name="dnaA",
+                        source="test_catalog",
+                    )
+                ],
+            )
+        )
+
+
+class _Snap25ResolvingReferenceService(ReferenceGenomeService):
+    def resolve_entity(self, request: EntityResolveRequest) -> ServiceResult[EntityResolveResult]:
+        if request.identifier.upper() != "SNAP25":
+            return ServiceResult.empty(f"identifier {request.identifier!r} was not found")
+        return ServiceResult.succeeded(
+            EntityResolveResult(
+                entity=ResolvedEntity(
+                    identifier="SNAP25",
+                    type="gene",
+                    label="SNAP25",
+                    organism=request.organism,
+                    assembly=request.assembly or "GRCh38",
+                    chrom="chr20",
+                    start=30_000_000,
+                    end=30_050_000,
+                    strand=Strand.MINUS,
+                    refs={"Ensembl": "ENSG00000139318"},
+                )
+            )
+        )
+
+    def annotate(self, request: AnnotationRequest) -> ServiceResult[AnnotationResult]:
+        return ServiceResult.succeeded(
+            AnnotationResult(
+                organism=request.organism,
+                assembly=request.assembly,
+                source_databases=["test_catalog"],
+                features=[
+                    AnnotationFeature(
+                        feature_id="ENSG00000139318",
+                        feature_type="gene",
+                        chrom=request.chrom or "chr20",
+                        start=request.start or 0,
+                        end=request.end or 50_000,
+                        name="SNAP25",
                         source="test_catalog",
                     )
                 ],
@@ -80,6 +123,24 @@ def test_missing_scope_fails_with_step_and_error() -> None:
     assert _status(result) is TaskStatus.FAILED
     assert result["errors"]
     assert "classify_scope" in _step_names(result)
+
+
+def test_gene_symbol_resolves_to_interval_before_annotation() -> None:
+    node = build_subgraph(reference_service=_Snap25ResolvingReferenceService())
+    result = node(
+        _state(
+            NormalizedInputs(
+                organism="Homo sapiens",
+                assembly="GRCh38",
+                identifiers=["SNAP25"],
+            )
+        )
+    )
+    assert _status(result) is TaskStatus.DONE
+    assert "resolve_gene_locus" in _step_names(result)
+    assert {"classify_scope", "validate_reference", "call_annotation"} <= _step_names(result)
+    assert result["evidence"]
+    assert any("SNAP25" in item.claim for item in result["evidence"])
 
 
 def test_invalid_assembly_fails_before_annotation_call() -> None:

@@ -30,16 +30,18 @@ from cellxp.domain.enums import (
     ConfidenceBand,
     CoordinateSystem,
     SourceKind,
+    Strand,
     TaskStatus,
 )
 from cellxp.domain.evidence import Confidence, EvidenceItem, Provenance
+from cellxp.domain.models import GenomicInterval
 from cellxp.services.base import ServiceOutcome, ServiceResult
+from cellxp.services.reference import EntityResolveRequest, ReferenceGenomeService
 from cellxp.services.reference.annotations import (
     AnnotationFeature,
     AnnotationRequest,
     AnnotationResult,
 )
-from cellxp.services.reference.genome import ReferenceGenomeService
 
 _Node = Callable[[AgentState], dict[str, object]]
 
@@ -70,6 +72,20 @@ def build_subgraph(
         evidence: list[EvidenceItem] = []
         artifacts: list[ArtifactRef] = []
         errors: list[RunError] = []
+
+        # --- Step 0: resolve gene symbol → interval when needed (FR-16 / entity_resolver) ---
+        resolve_started = utc_now_iso()
+        inputs, resolve_steps, resolve_error = _resolve_gene_interval(
+            inputs, state, ref_svc, active.id, resolve_started
+        )
+        steps.extend(resolve_steps)
+        if resolve_error is not None:
+            active.status = TaskStatus.FAILED
+            return {
+                "subtasks": subtasks,
+                "steps": steps,
+                "errors": [resolve_error],
+            }
 
         # --- Step 1: classify scope (light) ---
         classify_started = utc_now_iso()
@@ -229,6 +245,105 @@ def build_subgraph(
         return output
 
     return _run
+
+
+def _gene_identifiers(inputs: NormalizedInputs) -> list[str]:
+    return [item for item in inputs.identifiers if not item.lower().startswith("rs")]
+
+
+def _resolve_gene_interval(
+    inputs: NormalizedInputs,
+    state: AgentState,
+    ref_svc: ReferenceGenomeService,
+    subtask_id: str,
+    started: str,
+) -> tuple[NormalizedInputs, list[Step], RunError | None]:
+    """Resolve a gene symbol to a genomic interval when annotation lacks explicit scope."""
+    if inputs.intervals or inputs.sequences or _fasta_ref(state):
+        return inputs, [], None
+
+    gene_ids = _gene_identifiers(inputs)
+    if not gene_ids:
+        return inputs, [], None
+    if inputs.organism is None or inputs.assembly is None:
+        return inputs, [], None
+
+    result = ref_svc.resolve_entity(
+        EntityResolveRequest(
+            identifier=gene_ids[0],
+            organism=inputs.organism,
+            assembly=inputs.assembly,
+            type_hint="gene",
+        )
+    )
+    steps = [
+        step.model_copy(update={"subtask_id": subtask_id}) for step in result.steps
+    ]
+    if result.outcome is ServiceOutcome.FAILURE:
+        message = result.error.message if result.error else "gene resolution failed"
+        steps.append(
+            Step(
+                subtask_id=subtask_id,
+                name="resolve_gene_locus",
+                status=TaskStatus.FAILED,
+                error=message,
+                started_at=started,
+                finished_at=utc_now_iso(),
+            )
+        )
+        return inputs, steps, RunError(subtask_id=subtask_id, kind="ValidationError", message=message)
+    if result.outcome is ServiceOutcome.UNSUPPORTED:
+        message = result.detail or "gene resolution unavailable"
+        steps.append(
+            Step(
+                subtask_id=subtask_id,
+                name="resolve_gene_locus",
+                status=TaskStatus.FAILED,
+                error=message,
+                started_at=started,
+                finished_at=utc_now_iso(),
+            )
+        )
+        return inputs, steps, RunError(
+            subtask_id=subtask_id, kind="UnsupportedReference", message=message
+        )
+    entity = result.value.entity if result.value is not None else None
+    if entity is None or entity.chrom is None or entity.start is None or entity.end is None:
+        message = f"gene {gene_ids[0]!r} could not be resolved to genomic coordinates"
+        steps.append(
+            Step(
+                subtask_id=subtask_id,
+                name="resolve_gene_locus",
+                status=TaskStatus.FAILED,
+                error=message,
+                started_at=started,
+                finished_at=utc_now_iso(),
+            )
+        )
+        return inputs, steps, RunError(subtask_id=subtask_id, kind="MissingInput", message=message)
+
+    updated = inputs.model_copy(deep=True)
+    updated.intervals.append(
+        GenomicInterval(
+            species=entity.organism,
+            assembly=entity.assembly,
+            chrom=entity.chrom,
+            start=entity.start,
+            end=entity.end,
+            strand=entity.strand or Strand.UNSTRANDED,
+        )
+    )
+    steps.append(
+        Step(
+            subtask_id=subtask_id,
+            name="resolve_gene_locus",
+            params={"gene": gene_ids[0], "interval": updated.intervals[-1].model_dump(mode="json")},
+            status=TaskStatus.DONE,
+            started_at=started,
+            finished_at=utc_now_iso(),
+        )
+    )
+    return updated, steps, None
 
 
 def _classify_scope(inputs: NormalizedInputs, state: AgentState) -> str | None:
