@@ -73,7 +73,10 @@ def design_guides(request: CrisprRequest) -> CrisprResult:
                 f"assembly topology={index.topology}"
             )
         })
-    return production_backend().design_guides(request, assembly_index=index)
+    try:
+        return production_backend().design_guides(request, assembly_index=index)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post("/v1/off-targets", response_model=OffTargetResult)
@@ -106,4 +109,7 @@ def predict_edit_outcomes(request: EditOutcomeRequest) -> EditOutcomeResult:
     index = assembly_index(request.organism, request.assembly)
     if fixture_mode():
         return _fixture.predict_edit_outcomes(request)
-    return production_backend().predict_edit_outcomes(request, assembly_index=index)
+    try:
+        return production_backend().predict_edit_outcomes(request, assembly_index=index)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
