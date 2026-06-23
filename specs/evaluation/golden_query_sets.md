@@ -138,6 +138,15 @@ The biology sets MUST collectively exercise:
 
 These are floors, not targets. The biology team owns growth.
 
+**Public-catalog checkpoint (2026-06-23).** The release-facing variant-effect, GWAS, structure,
+CRISPR, and inverse-design catalogs each contain at least 15 sourced cases; the composed catalog
+contains 25. Across those catalogs, the human, mouse, model-microbe, exemplar-prokaryote, plasmid,
+and non-model-eukaryote buckets each have at least 10 cases, and at least 30 records carry an
+explicit edge-condition tag. The whole public biology catalog contains 121 records, so it does
+**not** yet satisfy the 200-query v1 total: annotation and the remaining capability catalogs must
+add 79 further reviewed cases. This checkpoint must not be interpreted as an M1–M3 pass rate or as
+private safety-set evidence.
+
 ## 5. Safety sets
 
 ### 5.1 Coverage requirements (per `safety_rubric.md` §4)
