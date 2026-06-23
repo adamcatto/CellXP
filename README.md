@@ -2,7 +2,10 @@
 
 CellXP is a full-stack, LangGraph-orchestrated agentic copilot for genomics and molecular biology. It turns a question about DNA, RNA, proteins, or metabolites — posed in natural language and/or as sequence data — into a grounded, reproducible, and visually legible answer, for any organism from humans to mice to bacteria.
 
-> **Project status: spec-first, pre-implementation.** The `specs/` and `documentation/` trees are the source of truth. Most of `src/` is scaffold/stubs — real directory layout, mostly empty implementations. See `.agents/onboarding.md` for how to navigate the repo.
+> **Project status: spec-first, active implementation.** The `specs/` and `documentation/` trees
+> remain the source of truth. Core API, graph, worker, persistence, frontend, and evaluation slices
+> are implemented, while model deployment and release acceptance remain in progress. See
+> `.agents/onboarding.md` for how to navigate the repo.
 
 ---
 
@@ -94,6 +97,32 @@ Each capability subgraph owns its own service client, evidence collection, and a
 | **Frontend** | Next.js App Router, TypeScript, Tailwind CSS, pnpm |
 | **Observability** | LangSmith tracing |
 | **Linting / types** | Ruff, mypy |
+
+### Self-hosted model policy and migration plan
+
+CellXP must have no mandatory hosted-model API or access-gated model dependency. Production model
+artifacts are acquired explicitly, pinned by immutable revision and checksum, stored locally, and
+served from isolated workers. Provider APIs may exist only as optional adapters.
+
+- **Regulatory genomics:** migrate the mammalian worker from the hosted DeepMind client to
+  [`genomicsxai/alphagenome-pytorch`](https://github.com/genomicsxai/alphagenome-pytorch), pinned to
+  a reviewed release/commit and the public, ungated
+  [`gtca/alphagenome_pytorch`](https://huggingface.co/gtca/alphagenome_pytorch) weight snapshot.
+  The code is Apache-2.0; the converted weights remain subject to the AlphaGenome Model Terms, which
+  must be recorded in the model manifest. The worker will load weights locally, extract reference
+  windows from pinned human/mouse FASTA files, run reference/alternate forward passes, and emit
+  assay/tissue deltas with full provenance.
+- **Broad-clade sequence modeling:** keep Evo 2 self-hosted for microbial and other non-mammalian
+  sequence likelihood/embedding work.
+- **Structure:** keep ESMFold and Boltz self-hosted with locally cached, checksum-pinned weights.
+  ESM and Boltz code are MIT-licensed; every weight artifact still receives an explicit license and
+  redistribution review in its manifest.
+- **Reasoning:** Ollama remains the local default. Remote reasoning providers are opt-in and must
+  never be required for the local product path.
+
+Migration order: make the browser demo functional → replace the hosted AlphaGenome adapter → run
+local model acceptance → score and close M1–M3 gates → begin M4. M4 remains blocked until the
+release gates pass.
 
 ### Operating principles
 
@@ -191,7 +220,79 @@ CellXP/
 
 ---
 
-## Getting started
+## Quickstart: test the current build
+
+The deterministic backend, API contract, frontend shell, and mocked browser journeys can be tested
+now without downloading domain-model weights. Live scientific predictions require their respective
+workers and reference/model artifacts.
+
+### 1. Run the automated smoke suite
+
+```bash
+cd /opt/software/CellXP
+make test PYTHON=.venv/bin/python
+.venv/bin/ruff check src/backend tests evals
+.venv/bin/mypy src/backend/cellxp
+
+cd src/frontend
+npm run lint
+```
+
+The `make test` target excludes tests marked `live`, `gpu`, `slow`, and `eval`.
+
+### 2. Start the API without external infrastructure
+
+Use the process-local SQLite development runtime for the fastest API smoke:
+
+```bash
+cd /opt/software/CellXP
+PATH="$PWD/.venv/bin:$PATH" \
+RUNTIME_BACKEND=local \
+DATABASE_URL=sqlite:///./.cellxp/runtime.db \
+uvicorn cellxp.api.main:app --reload
+```
+
+Then open <http://localhost:8000/docs> or verify health:
+
+```bash
+curl http://localhost:8000/health
+```
+
+The API e2e run/stream/review contracts can be exercised directly with:
+
+```bash
+.venv/bin/pytest -q tests/e2e
+```
+
+### 3. Preview the browser workspace
+
+In another terminal:
+
+```bash
+cd /opt/software/CellXP/src/frontend
+npm run dev
+```
+
+Open <http://localhost:3000/chat>. The workspace and artifact UI render, but the current page still
+uses a placeholder session and the API does not yet configure the development cross-origin/proxy
+path. Treat this as a UI preview, not a working end-to-end chat session.
+
+Run the implemented chat, clarification, review, streaming, and accessibility browser journeys with
+their deterministic mocked API:
+
+```bash
+cd /opt/software/CellXP
+corepack pnpm --dir src/frontend test:browser
+```
+
+The next browser-readiness slice is: add a same-origin Next.js API proxy (or development CORS),
+bootstrap a real session, and replace the stub `scripts/dev_api.sh` / `scripts/dev_frontend.sh` with
+a one-command local launcher. Until that lands, use the API e2e suite for functional testing and the
+frontend/Playwright paths for UI testing.
+
+---
+
+## Full development setup
 
 ### Prerequisites
 

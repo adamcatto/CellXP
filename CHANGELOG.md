@@ -13,6 +13,9 @@ category).
 ## [Unreleased]
 
 ### Changed
+- **2026-06-23** — Document the no-mandatory-hosted-model policy, the local
+  `alphagenome-pytorch` migration, and an honest quickstart covering API smoke, frontend preview,
+  automated browser journeys, and current end-to-end browser limitations.
 - **2026-06-23** — Build and import-check Evo 2's required pinned `vtx` CUDA extensions in the
   worker image after direct A100 acceptance exposed that the upstream wheel omits compiled kernels.
 - **2026-06-23** — Make M1–M4 release evaluation fail closed on the overall biology floor, archive
