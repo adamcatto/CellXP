@@ -12,6 +12,8 @@ CATALOG_DIR = Path("evals/golden_queries")
 RELEASE_CATALOGS = {
     "variant_effect.jsonl", "gwas_lookup.jsonl", "structure_prediction.jsonl",
     "crispr_design.jsonl", "inverse_design.jsonl", "composed_evidence.jsonl",
+    "binding_prediction.jsonl", "rag_literature.jsonl", "visualization.jsonl",
+    "reference_genome.jsonl",
 }
 EDGE_TAGS = {
     "edge_case", "circular", "circular_bacterial", "missing_assembly", "missing_inputs",
@@ -62,10 +64,19 @@ def test_release_biology_catalogs_are_sourced_and_explicit() -> None:
 
 
 def test_release_capability_and_composition_floors() -> None:
-    counts = Counter(str(record["capability"]) for record in _records())
-    for capability in ("variant_effect", "gwas", "structure", "crispr", "inverse_design"):
+    records = _records()
+    counts = Counter(str(record["capability"]) for record in records)
+    for capability in (
+        "variant_effect", "gwas", "structure", "crispr", "inverse_design", "binding",
+        "rag", "visualization", "reference",
+    ):
         assert counts[capability] >= 15, (capability, counts[capability])
     assert counts["composed_evidence"] >= 25
+    public_total = sum(
+        1 for path in CATALOG_DIR.glob("*.jsonl")
+        for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    )
+    assert public_total >= 200
 
 
 def test_release_organism_and_edge_case_floors() -> None:
