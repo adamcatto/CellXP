@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from cellxp.api.cors import configure_cors
 from cellxp.api.routers import (
     annotations,
     artifacts,
@@ -16,6 +17,7 @@ from cellxp.api.routers import (
 )
 
 app = FastAPI(title="CellXP API", version="0.1.0")
+configure_cors(app)
 app.include_router(health.router)
 
 for router in [

@@ -22,7 +22,9 @@ function detectFormat(text: string): InputFormat {
   if (/^>/.test(t)) return 'fasta';
   if (/^##fileformat=VCF/.test(t)) return 'vcf';
   if (/^ATOM\s+\d/.test(t) || /^HEADER\s/.test(t)) return 'pdb';
-  // Require SMILES-specific syntax so gene symbols (e.g. BRCA1) are not misclassified.
+  // Gene / entity tokens (BRCA1, CYP2D6, HLA-A) are not SMILES.
+  if (/^[A-Z][A-Za-z0-9-]{1,31}$/.test(t) && !/[=#@%/\\]/.test(t)) return null;
+  // Require SMILES-specific syntax so pasted prose is not misclassified.
   if (
     /^[A-Za-z0-9@+\-[\]()=#%/\\.:]+$/i.test(t) &&
     (/[=[\]()@#/\\]/.test(t) || /\d[a-z]/i.test(t)) &&
@@ -310,6 +312,7 @@ export function ChatInput({
           </Button>
         ) : (
           <Button
+            type="button"
             variant="primary"
             onClick={doSend}
             disabled={!text.trim() || isDisabled || pendingFormatConfirmation}

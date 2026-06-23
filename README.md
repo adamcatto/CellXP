@@ -246,16 +246,23 @@ Use the process-local SQLite development runtime for the fastest API smoke:
 
 ```bash
 cd /opt/software/CellXP
-PATH="$PWD/.venv/bin:$PATH" \
-RUNTIME_BACKEND=local \
-DATABASE_URL=sqlite:///./.cellxp/runtime.db \
-uvicorn cellxp.api.main:app --reload
+./scripts/dev_api.sh
 ```
 
-Then open <http://localhost:8000/docs> or verify health:
+Or equivalently (uses the repo `.venv` and `src/backend` on `PYTHONPATH`):
 
 ```bash
-curl http://localhost:8000/health
+cd /opt/software/CellXP
+PYTHONPATH="$PWD/src/backend" \
+RUNTIME_BACKEND=local \
+DATABASE_URL=sqlite:///./.cellxp/runtime.db \
+.venv/bin/python -m uvicorn cellxp.api.main:app --reload --host 0.0.0.0 --port 8001
+```
+
+Then open <http://localhost:8001/docs> or verify health:
+
+```bash
+curl http://localhost:8001/health
 ```
 
 The API e2e run/stream/review contracts can be exercised directly with:
@@ -352,7 +359,7 @@ cp .env.example .env
 
 ```bash
 make dev-api
-# → http://localhost:8000
+# → http://localhost:8001 (scripts/dev_api.sh)
 ```
 
 ### 5. Run the frontend

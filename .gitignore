@@ -2,7 +2,11 @@
 __pycache__/
 *.pyc
 .env
+.env.local
+src/frontend/.env.local
 node_modules/
+test-results/
+src/frontend/test-results/
 .next/
 dist/
 build/

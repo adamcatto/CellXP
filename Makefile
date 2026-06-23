@@ -11,10 +11,10 @@ download-models:
 	./scripts/download_models.sh
 
 dev-api:
-	PYTHONPATH=$(PYTHONPATH) uvicorn cellxp.api.main:app --reload
+	./scripts/dev_api.sh
 
 dev-frontend:
-	cd src/frontend && pnpm dev
+	./scripts/dev_frontend.sh
 
 worker:
 	PYTHONPATH=$(PYTHONPATH) python -m cellxp.jobs.graph_worker

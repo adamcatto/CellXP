@@ -1,6 +1,18 @@
 import type { Page, Route } from '@playwright/test';
 
-const API = 'http://localhost:8000/api/v1';
+function resolveApiBase(): string {
+  const configured =
+    process.env.CELLXP_API_BASE ??
+    process.env.NEXT_PUBLIC_API_BASE ??
+    '/api/v1';
+  if (configured.startsWith('/')) {
+    const web = process.env.CELLXP_WEB_URL ?? 'http://localhost:3000';
+    return `${web.replace(/\/$/, '')}${configured}`;
+  }
+  return configured;
+}
+
+const API = resolveApiBase();
 
 export interface MockEvent {
   type: string;

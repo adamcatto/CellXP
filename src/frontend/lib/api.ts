@@ -1,6 +1,7 @@
 // REST client for CellXP — api_contracts.md §3–§7.
-// Base URL defaults to http://localhost:8000/api/v1; override via NEXT_PUBLIC_API_BASE.
+// Base URL from `getApiBase()` (same-origin `/api/v1` by default in dev).
 
+import { getApiBase } from './apiBase';
 import type {
   SessionId, RunId, ArtifactId, ClarificationId, ReviewItemId, UploadId,
   SessionSummary, SessionType, SessionDefaults,
@@ -10,10 +11,6 @@ import type {
   UploadRef,
   CollectionResponse,
 } from './types';
-
-const BASE =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE) ||
-  'http://localhost:8000/api/v1';
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -33,7 +30,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   if (body !== undefined) {
     init.body = JSON.stringify(body);
   }
-  const res = await fetch(`${BASE}${path}`, init);
+  const res = await fetch(`${getApiBase()}${path}`, init);
   if (!res.ok) {
     const problem = await res.json().catch(() => ({ title: res.statusText }));
     const err = new Error(problem.title ?? res.statusText) as ApiError;
@@ -87,7 +84,7 @@ const sessions = {
     const form = new FormData();
     form.append('file', file);
     if (input_kind) form.append('input_kind', input_kind);
-    const res = await fetch(`${BASE}/sessions/${id}/uploads`, {
+    const res = await fetch(`${getApiBase()}/sessions/${id}/uploads`, {
       method: 'POST',
       body: form,
     });
@@ -162,7 +159,7 @@ const artifacts = {
 
   /** URL of raw artifact content (use with fetch + Authorization if needed) */
   contentUrl: (id: ArtifactId): string =>
-    `${BASE}/artifacts/${id}/content`,
+    `${getApiBase()}/artifacts/${id}/content`,
 
   /** URL template for tile requests */
   tileUrl: (
@@ -172,7 +169,7 @@ const artifacts = {
     end: number,
     resolution: number,
   ): string =>
-    `${BASE}/artifacts/${id}/tiles?contig=${encodeURIComponent(contig)}&start=${start}&end=${end}&res=${resolution}`,
+    `${getApiBase()}/artifacts/${id}/tiles?contig=${encodeURIComponent(contig)}&start=${start}&end=${end}&res=${resolution}`,
 
   requestExport: (
     id: ArtifactId,

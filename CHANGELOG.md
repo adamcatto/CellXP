@@ -12,6 +12,12 @@ category).
 
 ## [Unreleased]
 
+### Fixed
+- **2026-06-23** — Fix remote dev chat submit: auto-allow `127.0.0.1` and LAN IPs in Next.js
+  `allowedDevOrigins` so HMR hydrates when the UI is opened via IP (not only `localhost`).
+- **2026-06-23** — Fix LAN remote chat access: proxy `/api/v1` through the Next.js dev server,
+  bind the frontend to `0.0.0.0`, and stop baking loopback `NEXT_PUBLIC_API_BASE` into remote browsers.
+
 ### Changed
 - **2026-06-23** — Document the no-mandatory-hosted-model policy, the local
   `alphagenome-pytorch` migration, and an honest quickstart covering API smoke, frontend preview,

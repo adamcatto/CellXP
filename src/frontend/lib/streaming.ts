@@ -4,6 +4,7 @@
 // automatically when the server closes the stream).
 
 import type { RunEvent, StreamEventType } from './types';
+import { getApiBase } from './apiBase';
 
 export type EventHandler = (type: StreamEventType, event: RunEvent) => void;
 
@@ -45,9 +46,7 @@ const TERMINAL_EVENTS: StreamEventType[] = ['run.completed', 'run.status'];
  * Returns a dispose function that closes the connection.
  */
 export function connectToRunStream(runId: string, opts: StreamOptions): () => void {
-  const base =
-    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE) ||
-    'http://localhost:8000/api/v1';
+  const base = getApiBase();
 
   const params = opts.lastEventId !== undefined
     ? `?last_event_id=${opts.lastEventId}`

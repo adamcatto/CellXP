@@ -5,7 +5,7 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "lint": "tsc --noEmit",
     "test:browser": "NODE_PATH=./node_modules playwright test"

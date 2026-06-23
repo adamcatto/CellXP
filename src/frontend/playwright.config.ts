@@ -14,9 +14,16 @@ export default defineConfig({
   webServer: process.env.CELLXP_WEB_URL
     ? undefined
     : {
-        command: 'corepack pnpm dev',
+        command: 'npm run dev',
         url: 'http://localhost:3000/chat',
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
+        env: {
+          ...process.env,
+          NEXT_PUBLIC_API_BASE:
+            process.env.CELLXP_API_BASE ?? '/api/v1',
+          CELLXP_API_PROXY_TARGET:
+            process.env.CELLXP_API_PROXY_TARGET ?? 'http://127.0.0.1:8001',
+        },
       },
 });
