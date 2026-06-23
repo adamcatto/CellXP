@@ -57,6 +57,14 @@ versioned `/v1/score-variants`, `/v1/score-sequences`, `/v1/predict-tracks`, and
 Pydantic validation of every response. An absent endpoint leaves the service explicitly unsupported;
 HTTP and response-contract errors become recoverable backend failures.
 
+The packaged AlphaGenome worker binds the official 0.6.1 client (`dna_client.create`,
+`score_variant`, `predict_interval`) and converts CellXP's canonical 0-based variant position to the
+SDK's documented 1-based `genome.Variant.position`. The packaged Evo worker binds the official 0.6.0
+`Evo2` SDK and uses `score_sequences` for mean forward/reverse-complement likelihood; embeddings use
+the SDK's documented forward-hook interface. SDK operations whose required input is absent from the
+CellXP request (notably Evo coordinate-only variant/track requests) MUST return an explicit
+unsupported/validation error rather than infer sequence context or fabricate an output.
+
 AlphaGenome and Evo 2 are separate worker classes. A routed transport sends mammalian
 variant/track and splice requests to AlphaGenome, sequence scoring to Evo 2, and non-mammalian
 variant/track requests to Evo 2. Each worker exposes readiness and an immutable version manifest.

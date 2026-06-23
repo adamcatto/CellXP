@@ -23,6 +23,22 @@ stack. The API commits run identity before queue dispatch and does not execute L
 Service URLs (`ALPHAGENOME_SERVICE_URL`, `STRUCTURE_SERVICE_URL`, `GWAS_SERVICE_URL`, and
 `CRISPR_SERVICE_URL`) select the corresponding independently deployable adapter endpoint.
 
+## Sequence-model workers
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `ALPHAGENOME_SERVICE_URL` | unset | CellXP-facing AlphaGenome worker URL (image port 8106) |
+| `EVO2_SERVICE_URL` | unset | CellXP-facing Evo 2 worker URL (image port 8107) |
+| `ALPHAGENOME_API_KEY` | unset | Credential for official AlphaGenome 0.6.1 hosted inference; worker is not ready without it |
+| `EVO2_WEIGHT_PATH` | `/models/evo2_7b.pt` | Checksum-verified official Evo 2 7B checkpoint |
+| `EVO2_BATCH_SIZE` | `1` | Official SDK sequence-scoring batch size |
+| `EVO2_USE_KERNELS` | `0` | Opt in to official Evo 2/Vortex inference kernels |
+| `EVO2_EMBEDDING_LAYER` | `blocks.28.mlp.l3` | Pinned SDK layer used for mean-pooled embeddings |
+| `CELLXP_*_RUNTIME_FACTORY` | packaged adapter | Optional `module:function` operator override |
+
+The worker images set their packaged factory defaults. Readiness still fails closed when credentials
+or checksum-verified weights are absent.
+
 ## GWAS/QTL and CRISPR adapters
 
 | Variable | Default | Purpose |
