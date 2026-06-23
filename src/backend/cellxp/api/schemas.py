@@ -112,3 +112,53 @@ class GuidePoolResponse(BaseModel):
     revision: int
     created_at: str
     updated_at: str
+
+
+class ArtifactExportRequest(BaseModel):
+    format: str = Field(min_length=1, max_length=32)
+
+
+class ArtifactExportResponse(BaseModel):
+    id: str
+    artifact_id: str
+    format: str
+    media_type: str
+    content_hash: str
+    status: Literal["ready"] = "ready"
+
+
+class ArtifactManifestResponse(BaseModel):
+    id: str
+    schema_version: str = "1.0"
+    type: str
+    payload_schema: str
+    title: str
+    status: str
+    session_id: str
+    run_id: str
+    summary: dict[str, Any] = Field(default_factory=dict)
+    evidence_ids: list[str] = Field(default_factory=list)
+    actionable: bool = False
+    review_status: str = "not_required"
+    exports: list[dict[str, Any]] = Field(default_factory=list)
+    content_available: bool
+    storage_ref: None = None
+
+
+class AuditEntryResponse(BaseModel):
+    id: str
+    event_type: str
+    actor: dict[str, Any]
+    run_id: str | None = None
+    session_id: str | None = None
+    subject_ref: str | None = None
+    payload: dict[str, Any] = Field(default_factory=dict)
+    at: str
+    prev_hash: str | None = None
+    hash: str
+
+
+class AuditCollectionResponse(BaseModel):
+    items: list[AuditEntryResponse] = Field(default_factory=list)
+    chain_valid: bool
+    next_cursor: str | None = None

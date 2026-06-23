@@ -1,18 +1,103 @@
 from threading import RLock
 
-from fastapi import APIRouter, HTTPException, status
+import json
+
+from fastapi import APIRouter, HTTPException, Response, status
 
 from cellxp.api.runtime import runtime
-from cellxp.api.schemas import GuidePoolResponse, SaveGuidePoolRequest
+from cellxp.api.schemas import (
+    ArtifactExportRequest,
+    ArtifactExportResponse,
+    ArtifactManifestResponse,
+    GuidePoolResponse,
+    SaveGuidePoolRequest,
+)
+from cellxp.config.settings import Settings
 from cellxp.domain.clock import utc_now_iso
 from cellxp.domain.ids import new_id
 from cellxp.storage.guide_pool_repository import GuidePoolConflictError, GuidePoolRepository
+from cellxp.storage.object_store import content_hash, object_store_from_url
 
 router = APIRouter(prefix="/artifacts", tags=["artifacts"])
 
 @router.get("")
 def index():
     return {"status": "ok", "router": "artifacts"}
+
+
+def _artifact(artifact_id: str) -> tuple[dict[str, object], dict[str, object]]:
+    return runtime.find_artifact(artifact_id)
+
+
+@router.get("/{artifact_id}", response_model=ArtifactManifestResponse)
+def get_artifact(artifact_id: str) -> ArtifactManifestResponse:
+    snapshot, artifact = _artifact(artifact_id)
+    return ArtifactManifestResponse.model_validate({
+        **artifact,
+        "session_id": snapshot["session_id"],
+        "run_id": snapshot["id"],
+        "schema_version": "1.0",
+        "payload_schema": f"cellxp.{artifact['type']}/1.0",
+        "content_available": bool(artifact.get("storage_ref") or artifact.get("summary")),
+        # Object-store keys are deliberately excluded from the HTTP representation (API-3).
+        "storage_ref": None,
+    })
+
+
+@router.get("/{artifact_id}/content")
+def get_artifact_content(artifact_id: str) -> Response:
+    _, artifact = _artifact(artifact_id)
+    media_type = str(artifact.get("content_type") or "application/json")
+    if storage_ref := artifact.get("storage_ref"):
+        try:
+            data = object_store_from_url(Settings().object_store_url).get(str(storage_ref))
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="artifact content not found") from exc
+    else:
+        data = json.dumps(artifact.get("summary", {}), sort_keys=True).encode()
+    return Response(
+        content=data, media_type=media_type,
+        headers={"ETag": content_hash(data), "Content-Disposition": "inline"},
+    )
+
+
+@router.post(
+    "/{artifact_id}/exports", response_model=ArtifactExportResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_artifact_export(
+    artifact_id: str, request: ArtifactExportRequest
+) -> ArtifactExportResponse:
+    snapshot, artifact = _artifact(artifact_id)
+    if artifact.get("actionable") and artifact.get("review_status") != "approved":
+        raise HTTPException(
+            status_code=409, detail="actionable artifact requires approval before export"
+        )
+    if request.format not in {"json", "raw"}:
+        raise HTTPException(status_code=422, detail="unsupported export format")
+    media_type = str(artifact.get("content_type") or "application/json")
+    if storage_ref := artifact.get("storage_ref"):
+        try:
+            data = object_store_from_url(Settings().object_store_url).get(str(storage_ref))
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="artifact content not found") from exc
+    else:
+        data = json.dumps(artifact.get("summary", {}), sort_keys=True).encode()
+    stored = object_store_from_url(Settings().object_store_url).put(data, content_type=media_type)
+    descriptor = ArtifactExportResponse(
+        id=new_id(), artifact_id=artifact_id, format=request.format,
+        media_type=media_type, content_hash=stored.hash,
+    )
+    runtime.record_export(artifact_id, descriptor.model_dump(mode="json"))
+    runtime.audit_export(
+        str(snapshot["id"]), artifact_id,
+        {
+            "export_id": descriptor.id, "format": request.format,
+            "content_hash": descriptor.content_hash,
+            "review_status": artifact.get("review_status"),
+        },
+    )
+    return descriptor
 
 
 _lock = RLock()

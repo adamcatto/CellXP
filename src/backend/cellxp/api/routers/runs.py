@@ -9,6 +9,7 @@ from fastapi.responses import StreamingResponse
 
 from cellxp.api.runtime import runtime
 from cellxp.api.schemas import (
+    AuditCollectionResponse,
     ClarificationAnswerRequest,
     CreateRunRequest,
     CreateRunResponse,
@@ -55,6 +56,14 @@ def list_steps(run_id: str) -> dict[str, object]:
 @router.get("/runs/{run_id}/evidence")
 def list_evidence(run_id: str) -> dict[str, object]:
     return {"items": runtime.get_run(run_id)["evidence"], "next_cursor": None}
+
+
+@router.get("/runs/{run_id}/audit", response_model=AuditCollectionResponse)
+def list_audit(run_id: str) -> AuditCollectionResponse:
+    items, chain_valid = runtime.audit_entries(run_id)
+    return AuditCollectionResponse.model_validate(
+        {"items": items, "chain_valid": chain_valid, "next_cursor": None}
+    )
 
 
 @router.post(

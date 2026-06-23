@@ -224,6 +224,7 @@ class LocalRuntime:
                     "artifact_ref": artifact, "rationale": raw_pending["reason"],
                     "risks": raw_pending["risks"],
                 }
+                self._on_review_requested(record, snapshot["pending_review"])
                 self._emit(record, "review.requested", snapshot["pending_review"])
             else:
                 clarification = next(
@@ -239,6 +240,13 @@ class LocalRuntime:
             parsed = Report.model_validate(report)
             snapshot["report"] = parsed.markdown
             self._emit(record, "report.delta", {"token": parsed.markdown})
+        if raw_review := output.get("review"):
+            review = ReviewState.model_validate(raw_review)
+            snapshot["review"] = self._json(review)
+            decisions = {item.subject_ref: item.decision.value for item in review.items}
+            for artifact in snapshot["artifacts"]:
+                if artifact.get("actionable") and artifact["id"] in decisions:
+                    artifact["review_status"] = decisions[artifact["id"]]
         snapshot["status"] = status
         snapshot["updated_at"] = utc_now_iso()
         self._emit(record, "run.status", {"status": status})
@@ -316,6 +324,32 @@ class LocalRuntime:
 
     def _on_run_created(self, record: RunRecord) -> None:
         """Persistence hook invoked before graph execution starts."""
+
+    def _on_review_requested(self, record: RunRecord, pending: dict[str, Any]) -> None:
+        """Durable runtimes persist review audit linkage; local tests keep no audit store."""
+
+    def find_artifact(self, artifact_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
+        with self._lock:
+            run_ids = list(self.runs)
+        for run_id in run_ids:
+            snapshot = self.get_run(run_id)
+            for artifact in snapshot.get("artifacts", []):
+                if artifact.get("id") == artifact_id:
+                    return snapshot, artifact
+        raise HTTPException(status_code=404, detail="artifact not found")
+
+    def audit_entries(self, run_id: str) -> tuple[list[dict[str, Any]], bool]:
+        self.get_run(run_id)
+        return [], False
+
+    def audit_export(self, run_id: str, artifact_id: str, payload: dict[str, Any]) -> None:
+        del run_id, artifact_id, payload
+
+    def record_export(self, artifact_id: str, descriptor: dict[str, Any]) -> None:
+        snapshot, artifact = self.find_artifact(artifact_id)
+        artifact.setdefault("exports", []).append(deepcopy(descriptor))
+        record = self._record(snapshot["id"])
+        record.snapshot = snapshot
 
     @staticmethod
     def _response(snapshot: dict[str, Any]) -> CreateRunResponse:
@@ -465,10 +499,53 @@ class DurableRuntime(LocalRuntime):
         kind, event = record.events[-1]
         self.repository.append_event(record.snapshot["id"], kind, event)
 
+    def _on_review_requested(self, record: RunRecord, pending: dict[str, Any]) -> None:
+        from cellxp.domain.audit import AGENT_ACTOR, AuditEventType
+        from cellxp.storage.audit_repository import AuditRepository
+
+        with self._factory.begin() as db:
+            repo = AuditRepository(db)
+            existing = repo.query(run_id=record.snapshot["id"], event_type=AuditEventType.REVIEW_REQUESTED)
+            if not any(item.subject_ref == pending["artifact_ref"]["id"] for item in existing):
+                repo.append(
+                    event_type=AuditEventType.REVIEW_REQUESTED, actor=AGENT_ACTOR,
+                    run_id=record.snapshot["id"], session_id=record.snapshot["session_id"],
+                    subject_ref=pending["artifact_ref"]["id"],
+                    payload={"review_item_id": pending["id"]},
+                )
+
+    def _audit_review_decision(
+        self, record: RunRecord, subject_ref: str, review_id: str, approved: bool
+    ) -> None:
+        from cellxp.domain.audit import AGENT_ACTOR, AuditEventType
+        from cellxp.storage.audit_repository import AuditRepository
+
+        with self._factory.begin() as db:
+            repo = AuditRepository(db)
+            repo.append(
+                event_type=AuditEventType.REVIEW_DECIDED, actor=AGENT_ACTOR,
+                run_id=record.snapshot["id"], session_id=record.snapshot["session_id"],
+                subject_ref=subject_ref,
+                payload={"review_item_id": review_id, "decision": "approved" if approved else "rejected"},
+            )
+            if approved:
+                repo.append(
+                    event_type=AuditEventType.ACTIONABLE_EMITTED, actor=AGENT_ACTOR,
+                    run_id=record.snapshot["id"], session_id=record.snapshot["session_id"],
+                    subject_ref=subject_ref,
+                    payload={"artifact_id": subject_ref, "approving_review_item_id": review_id},
+                )
+
     def resume(self, run_id: str, item_id: str, value: Any, expected_status: str) -> None:
+        pending = deepcopy(self._record(run_id).snapshot.get("pending_review"))
         before = len(self._record(run_id).events)
         super().resume(run_id, item_id, value, expected_status)
         record = self._record(run_id)
+        if pending:
+            approved = value.get(item_id) == "approved" if isinstance(value, dict) else False
+            self._audit_review_decision(
+                record, pending["artifact_ref"]["id"], item_id, approved
+            )
         self.repository.save_run(record.snapshot, record.request)
         for kind, event in record.events[before:]:
             self.repository.append_event(run_id, kind, event)
@@ -499,6 +576,7 @@ class DurableRuntime(LocalRuntime):
 
     def resume_queued(self, run_id: str, item_id: str, value: Any, expected_status: str) -> None:
         record = self.refresh_run(run_id)
+        pending_review = deepcopy(record.snapshot.get("pending_review"))
         if record.snapshot["status"] != expected_status:
             raise HTTPException(status_code=409, detail="run is not awaiting this interaction")
         pending_key = (
@@ -509,10 +587,52 @@ class DurableRuntime(LocalRuntime):
             raise HTTPException(status_code=409, detail="interaction is no longer pending")
         before = len(record.events)
         self._dispatch_resume(record, item_id, value)
+        if pending_review:
+            approved = value.get(item_id) == "approved" if isinstance(value, dict) else False
+            self._audit_review_decision(
+                record, pending_review["artifact_ref"]["id"], item_id, approved
+            )
         record.snapshot.pop("_queued_resume", None)
         self.repository.save_run(record.snapshot, record.request)
         for kind, event in record.events[before:]:
             self.repository.append_event(run_id, kind, event)
+
+    def audit_entries(self, run_id: str) -> tuple[list[dict[str, Any]], bool]:
+        from cellxp.storage.audit_repository import AuditRepository
+
+        self.get_run(run_id)
+        with self._factory() as db:
+            repo = AuditRepository(db)
+            return (
+                [entry.model_dump(mode="json") for entry in repo.query(run_id=run_id)],
+                repo.verify_chain(run_id=run_id),
+            )
+
+    def audit_export(self, run_id: str, artifact_id: str, payload: dict[str, Any]) -> None:
+        from cellxp.domain.audit import AuditEventType, SYSTEM_ACTOR
+        from cellxp.storage.audit_repository import AuditRepository
+
+        snapshot = self.get_run(run_id)
+        with self._factory.begin() as db:
+            AuditRepository(db).append(
+                event_type=AuditEventType.SIDE_EFFECT_PERFORMED, actor=SYSTEM_ACTOR,
+                run_id=run_id, session_id=snapshot["session_id"], subject_ref=artifact_id,
+                payload=payload,
+            )
+
+    def record_export(self, artifact_id: str, descriptor: dict[str, Any]) -> None:
+        for snapshot, request in self.repository.runs():
+            for artifact in snapshot.get("artifacts", []):
+                if artifact.get("id") == artifact_id:
+                    artifact.setdefault("exports", []).append(deepcopy(descriptor))
+                    self.repository.save_run(snapshot, request)
+                    with self._lock:
+                        self.runs[snapshot["id"]] = RunRecord(
+                            snapshot=snapshot, request=request,
+                            events=self.repository.events_after(snapshot["id"], 0),
+                        )
+                    return
+        raise HTTPException(status_code=404, detail="artifact not found")
 
 
 class QueuedRuntime(DurableRuntime):
