@@ -16,7 +16,7 @@
 > authorized private hazard-set results, domain-review scores, production LD/reference indexes, and
 > deployed AlphaGenome/Evo/GPU/CRISPR acceptance evidence are unavailable. Do not start L1 or
 > promote L3 until those gates pass. See
-> `evals/reports/m1-m3-gate-report-2026-06-22.json`.
+> `evals/reports/m1-m3-gate-report-2026-06-23.json`.
 
 ## How planning is organized
 

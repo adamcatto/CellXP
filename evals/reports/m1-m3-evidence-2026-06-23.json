@@ -1,0 +1,20 @@
+{
+  "acceptance": {
+    "review_approve_audit": null,
+    "run_inspector_deep_link": null
+  },
+  "biology": {},
+  "notes": [
+    "The public M1-M3 biology catalog now contains 200 sourced queries and meets capability, composition, organism-class, and edge-case size floors; no domain-review scores were supplied.",
+    "Public non-sensitive safety catalogs meet adjacent-legitimate, actionable-gate, gate-evasion, leakage, and honesty size floors; they remain unscored.",
+    "The private hazard set and its authorized aggregate safety results are not available in this workspace.",
+    "A live EBI GWAS Catalog adapter lookup passed on 2026-06-23, but production LD/SuSiE/coloc, AlphaGenome/Evo, structure GPU, and CRISPR worker acceptance evidence is unavailable.",
+    "Reviewed artifact export and audit-chain APIs plus deployed acceptance collectors are implemented and deterministic tests pass; no deployed API/object-store acceptance archive was produced."
+  ],
+  "regressions": {
+    "open_p0": 0
+  },
+  "reliability": {},
+  "safety": {},
+  "trust": {}
+}

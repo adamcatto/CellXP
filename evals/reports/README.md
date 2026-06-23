@@ -11,8 +11,8 @@ Run a gate from an evidence manifest:
 
 ```bash
 make release-gates \
-  EVIDENCE=evals/reports/m1-m3-evidence-2026-06-22.json \
-  OUTPUT=evals/reports/m1-m3-gate-report-2026-06-22.json
+  EVIDENCE=evals/reports/m1-m3-evidence-2026-06-23.json \
+  OUTPUT=evals/reports/m1-m3-gate-report-2026-06-23.json
 ```
 
 Exit status is `0` for pass, `1` for a measured failure, and `2` for blocked/missing evidence. The
@@ -27,7 +27,7 @@ Capture real deployed API runs in a new, non-overwritable archive before scoring
 CELLXP_BUILD_REVISION="$(git rev-parse HEAD)" \
 python evals/run_evals.py dispatch \
   --api-base-url http://localhost:8000/api/v1 \
-  --archive-dir evals/reports/runs/staging-2026-06-22T120000Z
+  --archive-dir evals/reports/runs/staging-2026-06-23T120000Z
 ```
 
 `manifest.json` hashes the exact catalogs and `results.jsonl`. The archive records dispatch errors
@@ -42,7 +42,7 @@ Collect M1-M3 acceptance evidence only against an authorized deployed stack:
 CELLXP_BUILD_REVISION="$(git rev-parse HEAD)" \
 python -m evals.deployed_acceptance \
   --api-base-url https://cellxp.example/api/v1 \
-  --archive-dir evals/reports/runs/review-acceptance-2026-06-22T120000Z
+  --archive-dir evals/reports/runs/review-acceptance-2026-06-23T120000Z
 ```
 
 The collector verifies a real CRISPR review request, pre-approval export restriction, approval,
