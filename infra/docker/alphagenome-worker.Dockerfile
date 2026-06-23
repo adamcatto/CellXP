@@ -1,7 +1,8 @@
 FROM python:3.12.11-slim-bookworm
 
 ARG ALPHAGENOME_VERSION=0.6.1
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 CELLXP_SEQUENCE_WORKER_MODE=production
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 CELLXP_SEQUENCE_WORKER_MODE=production \
+    CELLXP_ALPHAGENOME_RUNTIME_FACTORY=cellxp.services.alphagenome.sdk_backends:create_alphagenome_backend
 WORKDIR /app
 COPY pyproject.toml ./
 COPY src/backend ./src/backend

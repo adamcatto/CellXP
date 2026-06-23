@@ -56,8 +56,12 @@ def enforce_model_organism(model: str, organism: str) -> None:
 
 @lru_cache(maxsize=2)
 def production_backend(model: str) -> Any:
-    """Load an operator-supplied runtime factory without coupling the worker contract to a SDK."""
-    setting = os.getenv(f"CELLXP_{model.upper()}_RUNTIME_FACTORY", "").strip()
+    """Load the packaged pinned SDK adapter, with an explicit operator override seam."""
+    defaults = {
+        "alphagenome": "cellxp.services.alphagenome.sdk_backends:create_alphagenome_backend",
+        "evo2": "cellxp.services.alphagenome.sdk_backends:create_evo2_backend",
+    }
+    setting = os.getenv(f"CELLXP_{model.upper()}_RUNTIME_FACTORY", defaults[model]).strip()
     if not setting or ":" not in setting:
         raise HTTPException(
             status_code=503,
@@ -76,6 +80,18 @@ def fixture_mode() -> bool:
     return os.getenv("CELLXP_SEQUENCE_WORKER_MODE", "production") == "fixture"
 
 
+def call_production(model: str, operation: str, request: Any) -> Any:
+    """Invoke one packaged operation with stable fail-closed HTTP errors."""
+    try:
+        return getattr(production_backend(model), operation)(request)
+    except HTTPException:
+        raise
+    except (ValueError, NotImplementedError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=f"{model} inference failed: {exc}") from exc
+
+
 def verify_local_artifacts(manifest: WorkerManifest) -> None:
     root = Path(os.getenv("MODEL_CACHE_DIR", "/models"))
     for artifact in manifest.weights:
@@ -92,12 +108,29 @@ def verify_local_artifacts(manifest: WorkerManifest) -> None:
 
 def health_payload(manifest: WorkerManifest) -> dict[str, Any]:
     mode = os.getenv("CELLXP_SEQUENCE_WORKER_MODE", "production")
-    factory = os.getenv(f"CELLXP_{manifest.model.upper()}_RUNTIME_FACTORY", "").strip()
+    defaults = {
+        "alphagenome": "cellxp.services.alphagenome.sdk_backends:create_alphagenome_backend",
+        "evo2": "cellxp.services.alphagenome.sdk_backends:create_evo2_backend",
+    }
+    factory = os.getenv(
+        f"CELLXP_{manifest.model.upper()}_RUNTIME_FACTORY", defaults[manifest.model]
+    ).strip()
+    ready = bool(factory)
+    reason = None
+    if mode != "fixture":
+        try:
+            if manifest.model == "alphagenome" and not os.getenv("ALPHAGENOME_API_KEY", "").strip():
+                raise ValueError("ALPHAGENOME_API_KEY is required")
+            verify_local_artifacts(manifest)
+        except ValueError as exc:
+            ready = False
+            reason = str(exc)
     return {
-        "status": "ok" if mode == "fixture" or bool(factory) else "not_ready",
+        "status": "ok" if mode == "fixture" or ready else "not_ready",
         "mode": mode,
         "model": manifest.model,
         "model_revision": manifest.model_revision,
         "runtime_revision": manifest.runtime_revision,
         "manifest_sha256": manifest_digest(manifest),
+        "reason": reason,
     }

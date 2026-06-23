@@ -20,11 +20,11 @@ from .schemas import (
     VariantEffectResult,
 )
 from .worker_common import (
+    call_production,
     enforce_model_organism,
     fixture_mode,
     health_payload,
     load_manifest,
-    production_backend,
 )
 
 MANIFEST = load_manifest("alphagenome")
@@ -45,7 +45,7 @@ def version() -> dict[str, object]:
 def score_variants(request: VariantEffectRequest) -> VariantEffectResult:
     enforce_model_organism("alphagenome", request.organism)
     if not fixture_mode():
-        return production_backend("alphagenome").score_variants(request)
+        return call_production("alphagenome", "score_variants", request)
     effects = []
     for variant in request.variants:
         variant_id = f"{variant.chrom}:{variant.pos + 1}:{variant.ref}>{variant.alt}"
@@ -69,7 +69,7 @@ def score_variants(request: VariantEffectRequest) -> VariantEffectResult:
 def predict_tracks(request: TrackPredictionRequest) -> TrackPredictionResult:
     enforce_model_organism("alphagenome", request.organism)
     if not fixture_mode():
-        return production_backend("alphagenome").predict_tracks(request)
+        return call_production("alphagenome", "predict_tracks", request)
     assays = request.assays or ["RNA_SEQ"]
     return TrackPredictionResult(
         tracks={assay: [_unit_score(f"{assay}:{i}") for i in range(8)] for assay in assays},
@@ -82,7 +82,7 @@ def predict_tracks(request: TrackPredictionRequest) -> TrackPredictionResult:
 def score_splicing(request: SpliceEffectRequest) -> SpliceEffectResult:
     enforce_model_organism("alphagenome", request.organism)
     if not fixture_mode():
-        return production_backend("alphagenome").score_splicing(request)
+        return call_production("alphagenome", "score_splicing", request)
     return SpliceEffectResult(
         donor_gain=_unit_score(f"{request.variant.chrom}:{request.variant.pos}"),
         confidence=Confidence(band=ConfidenceBand.MEDIUM, score=0.5),

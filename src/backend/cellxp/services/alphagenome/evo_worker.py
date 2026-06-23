@@ -20,11 +20,11 @@ from .schemas import (
     VariantEffectResult,
 )
 from .worker_common import (
+    call_production,
     enforce_model_organism,
     fixture_mode,
     health_payload,
     load_manifest,
-    production_backend,
 )
 
 MANIFEST = load_manifest("evo2")
@@ -45,7 +45,7 @@ def version() -> dict[str, object]:
 def score_sequences(request: SequenceScoringRequest) -> SequenceScoringResult:
     enforce_model_organism("evo2", request.organism)
     if not fixture_mode():
-        return production_backend("evo2").score_sequences(request)
+        return call_production("evo2", "score_sequences", request)
     normalized = [sequence.upper() for sequence in request.sequences]
     if any(not sequence or set(sequence) - set("ACGTN") for sequence in normalized):
         raise HTTPException(status_code=422, detail="sequences must use the DNA alphabet A/C/G/T/N")
@@ -66,7 +66,7 @@ def score_sequences(request: SequenceScoringRequest) -> SequenceScoringResult:
 def score_variants(request: VariantEffectRequest) -> VariantEffectResult:
     enforce_model_organism("evo2", request.organism)
     if not fixture_mode():
-        return production_backend("evo2").score_variants(request)
+        return call_production("evo2", "score_variants", request)
     effects = []
     for variant in request.variants:
         variant_id = f"{variant.chrom}:{variant.pos + 1}:{variant.ref}>{variant.alt}"
@@ -89,7 +89,7 @@ def score_variants(request: VariantEffectRequest) -> VariantEffectResult:
 def predict_tracks(request: TrackPredictionRequest) -> TrackPredictionResult:
     enforce_model_organism("evo2", request.organism)
     if not fixture_mode():
-        return production_backend("evo2").predict_tracks(request)
+        return call_production("evo2", "predict_tracks", request)
     assays = request.assays or ["sequence_likelihood"]
     return TrackPredictionResult(
         tracks={assay: [_unit_score(f"{assay}:{i}") for i in range(8)] for assay in assays},
