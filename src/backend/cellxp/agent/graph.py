@@ -52,6 +52,7 @@ CAPABILITY_NODES = (
 
 def production_capability_nodes() -> dict[str, Node]:
     """Compose implemented capability nodes without making graph construction read environment."""
+    from cellxp.agent.subgraphs.annotation import run as annotation_run
     from cellxp.agent.subgraphs.crispr import run as crispr_run
     from cellxp.agent.subgraphs.gwas import run as gwas_run
     from cellxp.agent.subgraphs.inverse_design import run as inverse_design_run
@@ -63,6 +64,7 @@ def production_capability_nodes() -> dict[str, Node]:
         "variant_effect_subgraph": variant_effect_run,
         "gwas_subgraph": gwas_run,
         "crispr_subgraph": crispr_run,
+        "annotation_subgraph": annotation_run,
         "structure_subgraph": structure_run,
         "rag_subgraph": rag_run,
         "inverse_design_subgraph": inverse_design_run,
@@ -135,7 +137,10 @@ def _unimplemented_capability(state: AgentState) -> dict[str, object]:
     ]
     active = next(item for item in subtasks if item.id == cursor.active_subtask_id)
     active.status = TaskStatus.FAILED
-    message = f"Capability '{active.capability}' is not implemented in roadmap phase N3."
+    message = (
+        f"Capability '{active.capability}' is not yet implemented; "
+        "see specs/planning/roadmap.md for the committed slice."
+    )
     return {
         "subtasks": subtasks,
         "steps": [

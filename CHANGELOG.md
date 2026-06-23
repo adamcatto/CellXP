@@ -13,6 +13,9 @@ category).
 ## [Unreleased]
 
 ### Fixed
+- **2026-06-23** — Wire the annotation capability subgraph into the supervisor so `/annotate`
+  and sequence-annotation chat runs complete honestly (roadmap L1 deferred backends) instead of
+  failing with the generic N3 scaffold sentinel.
 - **2026-06-23** — Auto-create a backend session when opening `/chat` without `?session=`
   (fixes "session not found" on first submit from remote dev clients).
 - **2026-06-23** — Fix remote dev chat submit: auto-allow `127.0.0.1` and LAN IPs in Next.js

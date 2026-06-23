@@ -35,6 +35,7 @@ _COORDINATE_INTENTS = {
     IntentType.GWAS_QTL,
     IntentType.CRISPR_DESIGN,
     IntentType.BINDING,
+    IntentType.ANNOTATION,
     IntentType.INVERSE_EDIT_DESIGN,
     IntentType.VISUALIZATION,
 }

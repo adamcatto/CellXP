@@ -60,7 +60,8 @@ def _append_text_signals(text: str, normalized: NormalizedInputs) -> None:
 
 
 def run(state: AgentState) -> dict[str, object]:
-    normalized = NormalizedInputs()
+    existing = NormalizedInputs.model_validate(state.get("normalized_inputs", {}))
+    normalized = NormalizedInputs(organism=existing.organism, assembly=existing.assembly)
     errors: list[RunError] = []
     raw_items = [RawInput.model_validate(item) for item in state.get("raw_inputs", [])]
 
