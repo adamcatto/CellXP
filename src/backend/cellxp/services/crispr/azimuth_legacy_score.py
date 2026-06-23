@@ -20,7 +20,9 @@ def main():
 
     payload = json.load(sys.stdin)
     guides = payload["guides"]
-    contexts = numpy.asarray(["AAAA" + guide + "AGGAAA" for guide in guides])
+    contexts = numpy.asarray(payload["contexts"])
+    if len(contexts) != len(guides) or any(len(context) != 30 for context in contexts):
+        raise ValueError("one real 30-bp genomic context is required per guide")
     original_stdout = sys.stdout
     sys.stdout = StringIO()
     try:

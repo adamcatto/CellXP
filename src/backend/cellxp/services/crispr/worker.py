@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException
 
 from .backends import DeterministicCrisprBackend
+from .runtime import rule_set_2_contexts
 from .schemas import (
     CrisprRequest,
     CrisprResult,
@@ -93,6 +94,10 @@ def score_on_target(request: GuideScoringRequest) -> GuideScoringResult:
                 detail="contract fixture cannot claim Rule Set 2 or another production scorer",
             )
         return _fixture.score_on_target(request)
+    try:
+        rule_set_2_contexts(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return production_backend().score_on_target(request, assembly_index=index)
 
 

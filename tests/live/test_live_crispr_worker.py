@@ -27,11 +27,14 @@ def test_live_worker_attestation_and_human_microbe_routing() -> None:
             ("Homo sapiens", os.getenv("CELLXP_CRISPR_HUMAN_ASSEMBLY", "GRCh38")),
             ("Escherichia coli", os.getenv("CELLXP_CRISPR_MICROBIAL_ASSEMBLY", "GCF_000005845.2")),
         ):
+            context = os.environ["CELLXP_CRISPR_TEST_30BP_CONTEXT"]
+            guide = context[4:24]
             response = client.post("/v1/on-target-scores", json={
-                "guides": ["GAGTCCGAGCAGAAGAAGAA"],
+                "guides": [guide],
                 "organism": organism,
                 "assembly": assembly,
                 "model": "auto",
+                "genomic_contexts": {guide: context},
             })
             response.raise_for_status()
             assert 0 <= next(iter(response.json()["scores"].values())) <= 1

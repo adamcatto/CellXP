@@ -31,6 +31,11 @@ Inputs MUST include organism, assembly, target coordinates, edit type, and any e
 editor choice. Base/prime-edit requests require an `edit_spec`; missing or ambiguous edit specs
 trigger a clarification before this service runs.
 
+Rule Set 2 scoring additionally requires the real assembly-derived 30-bp context for every guide:
+4 upstream bases + 20-bp spacer + 3-bp PAM + 3 downstream bases. The worker MUST validate that the
+spacer and NGG PAM occupy those positions and fail closed when context is absent or inconsistent;
+it MUST NOT synthesize flanking sequence or PAM bases.
+
 Coordinate handling MUST support both strands and circular microbial genomes. Off-target analysis
 uses the named organism's reference genome, never a default human genome.
 

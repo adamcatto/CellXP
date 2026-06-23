@@ -44,6 +44,8 @@ organism (`supported_species.md`).
    extract candidate protospacers (organism/Cas-aware; respect circular coordinates).
 3. **(heavy) On-target scoring** — score each candidate (Rule Set 2); for base/prime, predict edit
    outcome/efficiency window (BE-Hive/PRIDICT).
+   Rule Set 2 consumes the real 30-bp genomic context (4 upstream + spacer + PAM + 3 downstream),
+   extracted from the named assembly and strand; fabricated or missing flanks invalidate the score.
 4. **(heavy) Off-target analysis** — enumerate genome-wide near-matches (Cas-OFFinder) within a
    mismatch budget; score specificity (CFD); aggregate an off-target profile per guide.
    Production execution binds results to an attested tool revision and organism/assembly index;

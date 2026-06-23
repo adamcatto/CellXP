@@ -45,6 +45,11 @@ PYTHONPATH=src/backend python scripts/verify_crispr_index_manifest.py /indexes/m
 The worker rejects organism/assembly pairs absent from this manifest and passes topology metadata
 to the runtime, so microbial circular references are not silently treated as human/linear indexes.
 
+Rule Set 2 requests carry `genomic_contexts`, keyed by guide sequence. Each value must be the real
+assembly-derived 30-mer: 4 upstream bases, the 20-bp spacer, the 3-bp PAM, and 3 downstream bases.
+The worker verifies spacer placement and the NGG PAM and returns HTTP 422 when context is missing or
+inconsistent. It never manufactures flanks or a PAM from the guide alone.
+
 ## Deploy and accept
 
 Use `infra/compose/docker-compose.crispr.yml` or `infra/k8s/crispr-worker-deployment.yaml`. Point the
@@ -58,6 +63,7 @@ After deploying real human and microbial indexes:
 
 ```bash
 CELLXP_LIVE_CRISPR_URL=http://localhost:8105 \
+CELLXP_CRISPR_TEST_30BP_CONTEXT=<real-assembly-derived-30mer> \
 pytest -m live tests/live/test_live_crispr_worker.py
 ```
 

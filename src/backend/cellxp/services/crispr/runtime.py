@@ -52,7 +52,8 @@ class ProductionCrisprRuntime:
     def score_on_target(
         self, request: GuideScoringRequest, *, assembly_index: AssemblyIndex
     ) -> GuideScoringResult:
-        payload = json.dumps({"guides": request.guides}).encode()
+        contexts = rule_set_2_contexts(request)
+        payload = json.dumps({"guides": request.guides, "contexts": contexts}).encode()
         completed = subprocess.run(
             self.azimuth_command, input=payload, capture_output=True, check=True, timeout=120
         )
@@ -155,6 +156,26 @@ def parse_cas_offinder_line(raw: str) -> tuple[str, str, str, str, str, str, str
     if len(columns) == 6:
         return "", columns[0], columns[3], columns[1], columns[2], columns[4], columns[5]
     raise ValueError(f"unexpected Cas-OFFinder output with {len(columns)} columns")
+
+
+def rule_set_2_contexts(request: GuideScoringRequest) -> list[str]:
+    """Return validated, assembly-derived 30-mers in guide order or fail closed."""
+    if request.genomic_contexts is None:
+        raise ValueError("Rule Set 2 requires real 30-bp genomic_contexts for every guide")
+    contexts: list[str] = []
+    for raw_guide in request.guides:
+        guide = raw_guide.upper()
+        context = request.genomic_contexts.get(raw_guide, "").upper()
+        if len(guide) != 20 or set(guide) - set("ACGT"):
+            raise ValueError("Rule Set 2 requires 20-bp unambiguous guide spacers")
+        if len(context) != 30 or set(context) - set("ACGT"):
+            raise ValueError("Rule Set 2 genomic context must be 30 unambiguous DNA bases")
+        if context[4:24] != guide:
+            raise ValueError("Rule Set 2 genomic context positions 5-24 must equal the guide")
+        if context[25:27] != "GG":
+            raise ValueError("Rule Set 2 genomic context must contain an NGG PAM at positions 25-27")
+        contexts.append(context)
+    return contexts
 
 
 def create_runtime(

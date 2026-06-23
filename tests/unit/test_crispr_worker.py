@@ -8,11 +8,13 @@ import sys
 import types
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 from cellxp.services.crispr.backends import HttpCrisprBackend
 from cellxp.services.crispr.worker import app
-from cellxp.services.crispr.runtime import parse_cas_offinder_line
+from cellxp.services.crispr.runtime import parse_cas_offinder_line, rule_set_2_contexts
+from cellxp.services.crispr.schemas import GuideScoringRequest
 from cellxp.services.crispr.worker_contract import (
     index_manifest,
     packaged_worker_manifest,
@@ -51,6 +53,48 @@ def test_fixture_never_accepts_rule_set_2_label(monkeypatch) -> None:  # noqa: A
     payload["model"] = "contract_fixture_qc"
     accepted = client.post("/v1/on-target-scores", json=payload)
     assert accepted.status_code == 200
+
+
+def test_rule_set_2_requires_real_context_and_validates_spacer_pam() -> None:
+    guide = "GAGTCCGAGCAGAAGAAGAA"
+    base = GuideScoringRequest(guides=[guide], organism="Homo sapiens", assembly="GRCh38")
+    with pytest.raises(ValueError, match="requires real 30-bp"):
+        rule_set_2_contexts(base)
+    with pytest.raises(ValueError, match="positions 5-24"):
+        rule_set_2_contexts(base.model_copy(update={
+            "genomic_contexts": {guide: "AAAA" + "A" * 20 + "AGGAAA"}
+        }))
+    context = "TTGC" + guide + "AGG" + "TCA"
+    assert rule_set_2_contexts(base.model_copy(update={
+        "genomic_contexts": {guide: context}
+    })) == [context]
+
+
+def test_production_endpoint_rejects_guide_only_before_runtime(monkeypatch, tmp_path) -> None:  # noqa: ANN001
+    index_file = tmp_path / "grch38.fa"
+    index_file.write_bytes(b">chr1\nACGT\n")
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps({
+        "schema_version": "1.0",
+        "indexes": [{
+            "organism": "Homo sapiens", "assembly": "GRCh38", "topology": "linear",
+            "files": [{
+                "path": index_file.name, "role": "reference_fasta",
+                "sha256": hashlib.sha256(index_file.read_bytes()).hexdigest(),
+            }],
+        }],
+    }))
+    monkeypatch.setenv("CELLXP_CRISPR_WORKER_MODE", "production")
+    monkeypatch.setenv("CRISPR_INDEX_MANIFEST", str(manifest_path))
+    monkeypatch.delenv("CELLXP_CRISPR_RUNTIME_FACTORY", raising=False)
+    index_manifest.cache_clear()
+    production_backend.cache_clear()
+    response = TestClient(app).post("/v1/on-target-scores", json={
+        "guides": ["GAGTCCGAGCAGAAGAAGAA"],
+        "organism": "Homo sapiens", "assembly": "GRCh38", "model": "auto",
+    })
+    assert response.status_code == 422
+    assert "real 30-bp genomic_contexts" in response.json()["detail"]
 
 
 def test_fixture_microbe_request_uses_attested_circular_assembly(monkeypatch) -> None:  # noqa: ANN001

@@ -77,6 +77,7 @@ class GuideScoringRequest(BaseModel):
     organism: str
     assembly: str
     model: str = "auto"
+    genomic_contexts: dict[str, str] | None = None
 
 
 class GuideScoringResult(BaseModel):
