@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.7.1-cuda12.8-cudnn9-runtime
+FROM pytorch/pytorch:2.7.1-cuda12.8-cudnn9-devel
 
 ARG EVO2_VERSION=0.6.0
 ENV DEBIAN_FRONTEND=noninteractive PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
@@ -8,7 +8,12 @@ WORKDIR /app
 COPY pyproject.toml ./
 COPY src/backend ./src/backend
 RUN python -m pip install --no-cache-dir . "evo2==${EVO2_VERSION}" \
-    "fastapi==0.115.14" "uvicorn[standard]==0.34.3" \
+    "fastapi==0.115.14" "uvicorn[standard]==0.34.3" ninja psutil wheel \
+    && VORTEX_OPS="$(python -c 'import importlib.util, pathlib; print(pathlib.Path(importlib.util.find_spec("vortex").origin).parent / "ops")')" \
+    && for operation in depr_attn conv; do \
+         (cd "${VORTEX_OPS}/${operation}" && MAX_JOBS=8 python setup.py build_ext --inplace); \
+       done \
+    && python -c 'import flash_attn_2_cuda, local_causal_conv1d_cuda' \
     && useradd --create-home --uid 10001 cellxp && mkdir -p /models && chown cellxp:cellxp /models
 USER cellxp
 EXPOSE 8107

@@ -49,6 +49,11 @@ The images now select packaged runtime factories by default:
 - `create_evo2_backend` uses the official `evo2==0.6.0` `Evo2('evo2_7b', local_path=...)` SDK and
   its `score_sequences` method. `EVO2_WEIGHT_PATH` defaults to the checksum-verified manifest file.
 
+The pinned `vtx` wheel contains CUDA operator sources but omits the compiled extensions required at
+import time. The Evo image therefore uses the matching PyTorch CUDA 12.8 development base, builds
+the flash-attention and causal-convolution extensions, and import-checks both during the image
+build.
+
 These mappings were verified against the pinned upstream sources:
 [AlphaGenome v0.6.1](https://github.com/google-deepmind/alphagenome/tree/v0.6.1), including its
 [`DnaClient` source](https://github.com/google-deepmind/alphagenome/blob/v0.6.1/src/alphagenome/models/dna_client.py),

@@ -13,6 +13,8 @@ category).
 ## [Unreleased]
 
 ### Changed
+- **2026-06-23** — Build and import-check Evo 2's required pinned `vtx` CUDA extensions in the
+  worker image after direct A100 acceptance exposed that the upstream wheel omits compiled kernels.
 - **2026-06-23** — Make M1–M4 release evaluation fail closed on the overall biology floor, archive
   real deployed-API runs and review/audit acceptance with hashes, and expand public biology and
   non-sensitive safety catalogs to their documented size and coverage floors without adding private
