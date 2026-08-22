@@ -23,7 +23,9 @@ test('captures CopilotKit clarification in the biological workspace', async ({ p
     'Ask about a gene, variant, structure, pathway, or analysis…',
   );
   await composer.fill('Help me analyze this biological result');
-  await composer.press('Enter');
+  const send = composer.locator('xpath=following-sibling::button[1]');
+  await expect(send).toBeEnabled({ timeout: 15_000 });
+  await send.click();
 
   await expect(
     page.getByText('What kind of analysis should CellXP perform?'),
