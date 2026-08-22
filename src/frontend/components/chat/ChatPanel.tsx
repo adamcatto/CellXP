@@ -96,6 +96,7 @@ interface ChatPanelProps {
   pinnedEntities?: string[];
   recentArtifacts?: ArtifactRef[];
   onArtifactOpen?: (artifactId: string) => void;
+  onArtifactAdded?: (artifact: ArtifactRef) => void;
   onRunOpen?: (runId: RunId) => void;
 }
 
@@ -107,6 +108,7 @@ export function ChatPanel({
   pinnedEntities = [],
   recentArtifacts = [],
   onArtifactOpen: _onArtifactOpen,
+  onArtifactAdded,
   onRunOpen,
 }: ChatPanelProps) {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
@@ -161,6 +163,11 @@ export function ChatPanel({
         if (type === 'run.completed') {
           setIsRunning(false);
           setActiveRunId(null);
+          if (onArtifactAdded) {
+            void api.runs.get(runId).then(snapshot => {
+              snapshot.artifacts.forEach(onArtifactAdded);
+            });
+          }
         }
       },
       onError: () => {
@@ -171,7 +178,7 @@ export function ChatPanel({
       },
     });
     disposeStreamRef.current = dispose;
-  }, [patchRun]);
+  }, [onArtifactAdded, patchRun]);
 
   const handleSend = useCallback(async (message: string) => {
     if (isRunning) return;

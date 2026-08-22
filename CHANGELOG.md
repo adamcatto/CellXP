@@ -48,6 +48,9 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-08-22** — Add the CopilotKit v2 chat foundation, same-origin runtime broker, custom FastAPI
+  AG-UI adapter, bounded shared workspace context, registered biological artifact rendering, and
+  graph-backed clarification/review interrupts while retaining the native REST/SSE fallback.
 - **2026-08-22** — Accept the CopilotKit-over-AG-UI experience architecture and Qwen3.8 quality-model
   strategy (ADR-0006/0007), with a phased plan that preserves CellXP's LangGraph safety,
   provenance, artifact, and canonical REST/SSE contracts.

@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import type { SessionSummary, RunId, ArtifactRef, GenomeViewport } from '../../lib/types';
 import { ChatPanel } from '../chat/ChatPanel';
+import { CopilotChatPanel } from '../chat/CopilotChatPanel';
 import { ArtifactPanel } from './ArtifactPanel';
 import { RunInspector } from './RunInspector';
 
@@ -19,6 +20,7 @@ interface WorkspaceLayoutProps {
 export function WorkspaceLayout({ session }: WorkspaceLayoutProps) {
   // Collected artifacts for the dock (updated as runs produce them)
   const [dockArtifacts, setDockArtifacts] = useState<ArtifactRef[]>([]);
+  const [selectedArtifactIds, setSelectedArtifactIds] = useState<string[]>([]);
   const [inspectedRunId, setInspectedRunId] = useState<RunId | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dockOpen, setDockOpen] = useState(true);
@@ -89,6 +91,11 @@ export function WorkspaceLayout({ session }: WorkspaceLayoutProps) {
     });
     setDockView('artifacts');
     setDockOpen(true);
+    setSelectedArtifactIds([artifact.id]);
+  }, []);
+
+  const handleActiveArtifactChange = useCallback((artifactId: string) => {
+    setSelectedArtifactIds(artifactId ? [artifactId] : []);
   }, []);
 
   const defaultViewport: GenomeViewport | undefined = session.defaults.assembly
@@ -157,13 +164,25 @@ export function WorkspaceLayout({ session }: WorkspaceLayoutProps) {
           aria-label="Chat thread"
           style={{ flex: 1, minWidth: 300, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
         >
-          <ChatPanel
-            sessionId={session.id}
-            title={session.title}
-            organism={session.defaults.organism}
-            assembly={session.defaults.assembly}
-            onRunOpen={openRunInspector}
-          />
+          {process.env.NEXT_PUBLIC_CELLXP_CHAT_MODE === 'native' ? (
+            <ChatPanel
+              sessionId={session.id}
+              title={session.title}
+              organism={session.defaults.organism}
+              assembly={session.defaults.assembly}
+              onArtifactAdded={handleArtifactAdded}
+              onRunOpen={openRunInspector}
+            />
+          ) : (
+            <CopilotChatPanel
+              sessionId={session.id}
+              title={session.title}
+              organism={session.defaults.organism}
+              assembly={session.defaults.assembly}
+              selectedArtifactIds={selectedArtifactIds}
+              onArtifactAdded={handleArtifactAdded}
+            />
+          )}
         </main>
 
         {/* Dock resize handle + pane dock */}
@@ -242,6 +261,7 @@ export function WorkspaceLayout({ session }: WorkspaceLayoutProps) {
                   <ArtifactPanel
                     artifacts={dockArtifacts}
                     defaultViewport={defaultViewport}
+                    onActiveArtifactChange={handleActiveArtifactChange}
                   />
                 )}
                 {dockView === 'run' && inspectedRunId && (
@@ -258,8 +278,6 @@ export function WorkspaceLayout({ session }: WorkspaceLayoutProps) {
     </div>
   );
 
-  // Suppress unused warning — this callback is wired to ChatPanel events in real impl
-  void handleArtifactAdded;
 }
 
 // ---------------------------------------------------------------------------

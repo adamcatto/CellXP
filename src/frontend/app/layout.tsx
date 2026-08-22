@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import '@copilotkit/react-core/v2/styles.css';
 import '../styles/theme.css';
 
 export const metadata: Metadata = {

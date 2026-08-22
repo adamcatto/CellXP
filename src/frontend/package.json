@@ -11,9 +11,13 @@
     "test:browser": "NODE_PATH=./node_modules playwright test"
   },
   "dependencies": {
+    "@ag-ui/client": "^0.0.58",
+    "@copilotkit/react-core": "^1.69.0",
+    "@copilotkit/runtime": "^1.69.0",
     "next": "16.2.9",
     "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react-dom": "19.2.7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.2",
