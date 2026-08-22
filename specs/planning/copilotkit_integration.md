@@ -1,8 +1,9 @@
 # CopilotKit, AG-UI, and Reasoning-Harness Integration Plan
 
-> Status: **Phase A foundation implemented; Phase B hardening in progress**. Accepted decisions:
-> ADR-0006 and ADR-0007. This plan sequences the integration without replacing CellXP's canonical
-> REST/SSE, artifact, provenance, safety, or LangGraph contracts.
+> Status: **Phase A foundation implemented; harness migration foundation in progress**. Accepted
+> decisions: ADR-0006, ADR-0007 (model), and ADR-0008. This plan preserves CellXP's canonical
+> REST/SSE, artifact, provenance, safety, and review contracts while replacing LangGraph-first
+> orchestration with typed skills behind a mature harness adapter.
 
 ## 1. Outcome
 
@@ -14,7 +15,7 @@ CellXP should feel like a modern coding agent adapted to biology:
   evidence—not JSON dumps;
 - a shared session workspace where selections/artifacts from the UI become bounded context for the
   next turn;
-- graph-enforced clarification and actionable-biology review cards;
+- kernel-enforced clarification and actionable-biology review cards;
 - a capable, private reasoning model for planning, synthesis, and code work;
 - long-running research/code tasks that can use files and sub-agents without contaminating the
   supervisor context or bypassing safety/provenance.
@@ -33,18 +34,19 @@ Next.js CopilotKit runtime (auth/context broker; no biology)
         │
         │ AG-UI
         ▼
-FastAPI AG-UI adapter ───────────────┐
-        │                            │ canonical IDs/state
-        ▼                            ▼
-CellXP run runtime / ordered events / artifact API
+FastAPI AG-UI adapter ───────────────────┐
+        │                                │ canonical IDs/events
+        ▼                                ▼
+CellXP run runtime / policy kernel / artifact API
         │
         ▼
-LangGraph supervisor (safety → plan → capabilities → review → report)
+HarnessAdapter (Qwen Code first; compatibility graph during migration)
         │
-        ├── typed biology services and GPU workers
+        ├── typed SkillPlugins / deterministic workflow plugins
+        │      └── biology services and GPU workers
         ├── provider-agnostic reasoning LLM
-        │     └── Qwen3.8-27B quality profile (vLLM/SGLang)
-        └── bounded L3 research/code agent (deepagents seam, later phase)
+        │      └── Qwen3.8-27B quality profile (vLLM/SGLang)
+        └── sandboxed code/files/sub-agents
 ```
 
 There are two wire contracts by design:
@@ -101,7 +103,7 @@ The AG-UI state projection is deliberately smaller than `AgentState`:
   context; it does not mutate a scientific artifact.
 - Artifact payloads, raw sequences, coordinates arrays, structures, and tool dumps remain behind
   IDs/storage references (`CTX-4`, `ART-2`).
-- Every context reference is authorized against the session before graph execution.
+- Every context reference is authorized against the session before harness/skill execution.
 
 ## 5. Delivery phases
 
@@ -117,7 +119,7 @@ The AG-UI state projection is deliberately smaller than `AgentState`:
 and open every emitted artifact in the typed dock. API and AG-UI contract tests pass without external
 models.
 
-### Phase B — shared state and graph-enforced HITL
+### Phase B — shared state and kernel-enforced HITL
 
 - Emit state snapshots before every pause.
 - Translate clarification/review to AG-UI interrupt outcomes and correlate `resume[]` to the existing
@@ -131,10 +133,11 @@ actionable artifacts cannot become recommendations or exports before audited app
 
 ### Phase C — true progressive execution
 
-- Emit run events while nodes execute instead of reconstructing them from the terminal snapshot.
+- Emit run events while harness steps/skills execute instead of reconstructing them from the
+  terminal snapshot.
 - Stream reasoning summaries and report tokens from provider callbacks.
 - Emit artifact placeholders before jobs and revisions as payloads/exports become ready.
-- Add cancellation propagation through AG-UI → runtime → graph/job workers.
+- Add cancellation propagation through AG-UI → runtime → harness/skill/job workers.
 - Add backpressure, replay, and large-session virtualization.
 
 **Exit:** p95 visible state change remains under 2 s during long jobs; reconnect replays durable
@@ -155,16 +158,19 @@ events in order; no multi-megabyte payload appears in AG-UI or agent state.
 **Exit:** the quality profile clears ADR-0007's evaluation gate. The modest-hardware local profile
 continues to work and remote fallback never occurs silently.
 
-### Phase E — long-horizon research and coding
+### Phase E — harness-neutral skills and Qwen Code adapter
 
-- Add a sandboxed deepagents-based L3 agent with a virtual filesystem, code/shell tools, selective
+- Land `SkillPlugin`, registry, policy-hook, and `HarnessAdapter` contracts; wrap implemented
+  LangGraph capability nodes only through bounded compatibility inputs.
+- Publish analytical capabilities through an authenticated in-process/MCP bridge. The policy
+  kernel—not Qwen hooks—enforces risk, authorization, provenance, coordinates, budgets, and review.
+- Add a pinned Qwen Code SDK/headless `stream-json` adapter with partial event translation, selective
   artifact readers, task budgets, compaction, and isolated sub-agents.
-- Return a typed result containing claims, evidence IDs, produced file/artifact refs, limitations,
-  and next actions; do not return the sub-agent transcript to L1 context.
-- Feed generated analyses back through the normal evidence/artifact pipeline so later turns can
-  reason from durable handles.
-- Version skills and harness notes. Any self-improvement is a reviewable candidate evaluated offline;
-  immutable safety/review/coordinate policies are never writable.
+- Run code/shell/files in per-run sandboxes without unrestricted auto-approval or ambient network.
+- Return typed claims, evidence IDs, produced file/artifact refs, limitations, and next actions; do
+  not inject internal sub-agent transcripts into parent context.
+- Feed generated analyses through the normal evidence/artifact pipeline so later turns reason from
+  durable handles.
 
 **Exit:** long-horizon biology+coding golden tasks improve without regressions in provenance,
 coordinate correctness, resource ceilings, or safety.
@@ -180,16 +186,18 @@ sent to a hosted platform without policy, consent, and audit coverage.
 
 ## 6. Model and harness policy
 
-- **Production authority:** LangGraph L1/L2 plus typed CellXP services.
+- **Production authority:** CellXP's run store and policy kernel around typed skills; no harness is
+  allowed to bypass them.
+- **Mature harness:** Qwen Code is the first adapter target; LangGraph is a temporary compatibility
+  workflow during parity migration.
 - **Quality model:** Qwen3.8-27B on an explicit capable-GPU profile, not an unconditional laptop
   default.
-- **Fast path:** low reasoning effort and compact context for classification/routing; do not invoke a
-  second harness for trivial turns.
-- **Deep path:** higher reasoning budget and isolated L3 research/code agent only when the plan needs
-  it.
-- **Prime/Hermes:** reference designs, not embedded production orchestrators. Borrow persistent
-  scratch space, programmatic sub-agents, skills, and context compaction only behind CellXP's
-  interfaces.
+- **Fast path:** low reasoning effort and compact context for classification/routing; the harness
+  may choose a deterministic workflow skill for trivial turns.
+- **Deep path:** higher reasoning budget and isolated research/code sub-agents only when the plan
+  needs them.
+- **Prime/Hermes:** comparison/reference designs. Their useful patterns remain portable because
+  CellXP capabilities live behind harness-neutral interfaces.
 - **Context loop:** tools write canonical artifacts/evidence; context builders inject bounded
   summaries + handles; the model requests deeper slices through audited tools.
 
@@ -203,8 +211,9 @@ Required deterministic coverage:
 - shared-state size/redaction tests and authorization of referenced artifacts;
 - browser journeys for text streaming, AlphaGenome track, structure pane, clarification, review,
   rejection/request changes, failure, reconnect, and reduced-motion/axe checks;
-- safety tests proving frontend tools, A2UI, L3 agents, and session state cannot bypass the graph
-  gates;
+- safety tests proving frontend tools, A2UI, harness hooks, skills, sub-agents, and session state
+  cannot bypass kernel gates;
+- Qwen Code stream fixture tests for text/tool/progress events, cancellation, failure, and resume;
 - model evals for structured output/tool validity, biology correctness, coding, long-horizon
   completion, latency, and token/cost budgets.
 
@@ -217,11 +226,11 @@ protocol fixtures and fake providers cover the integration.
 |---|---|
 | two event models drift | one typed translator + contract fixtures; CellXP remains canonical |
 | polished UI hides provenance | default concise cards always deep-link to run/evidence/artifact |
-| frontend approval bypasses policy | only graph interrupts can approve actionable biology |
+| frontend or harness approval bypasses policy | only canonical kernel review decisions can release actionable biology |
 | shared state leaks raw sequence/tool output | bounded projection, refs only, authorization/redaction tests |
 | 27B model is slow or unavailable | explicit hardware profiles, reasoning budgets, measured fallback profile |
 | model context becomes a raw artifact dump | selective context builder and audited lazy readers |
-| second harness bypasses budgets/safety | L3 isolation, typed return, sandbox, immutable policies |
+| harness hooks/config bypass budgets/safety | external policy kernel, typed return, sandbox, immutable policies |
 | hosted thread platform duplicates state | OSS first; separate adoption ADR and data-governance review |
 
 ## 9. Source references
@@ -238,5 +247,6 @@ protocol fixtures and fake providers cover the integration.
   `https://docs.ag-ui.com/concepts/interrupts`
 - Qwen3.8 serving guidance: `https://github.com/QwenLM/Qwen3.8`
 - Harness references:
+  `https://github.com/QwenLM/qwen-code`,
   `https://github.com/primeintellect-ai/prime-agent`,
   `https://github.com/NousResearch/hermes-agent`

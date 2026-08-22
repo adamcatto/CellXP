@@ -83,7 +83,7 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   16 unit tests covering AL-1..6; X6 will wire the gate into the graph for actionable outputs)
   · depends-on: N2 · M1.
 - **N8 — CopilotKit + AG-UI experience layer.** CopilotKit v2 chat, typed biology tool/artifact
-  rendering, bounded shared state, and AG-UI translation of CellXP runs and graph-enforced
+  rendering, bounded shared state, and AG-UI translation of CellXP runs and kernel-enforced
   clarification/review interrupts · modern agent UX without replacing canonical scientific,
   provenance, or safety contracts · *in-progress* (ADRs and phased integration plan accepted;
   protocol/chat foundation underway) · depends-on: N3, N6, N7 · M2.
@@ -125,11 +125,12 @@ Each item uses a one-line schema: **what · why · status · depends-on · targe
   feasibility (FR-18c) · first composed actionable loop · *shipped* (typed bounded optimizer,
   injectable joint oracle/feasibility backend, weighted/Pareto ranking, partial-target reporting,
   actionable subgraph and supervisor routing, deterministic tests) · depends-on: X5, X6 · M3.
-- **X8 — Qwen3.8 reasoning + bounded research/code agent.** provider-backed
-  `Qwen/Qwen3.8-27B` quality profile, per-role reasoning budgets, schema-valid LLM nodes, and an
-  isolated deepagents L3 workspace with audited artifact/file tools · improve biological synthesis,
-  planning, coding, and long-horizon work without adding a second production orchestrator ·
-  *committed* (ADR-0007 accepted; implementation/evaluation pending) · depends-on: N8, N5, X2 · M3.
+- **X8 — Qwen3.8 reasoning + mature harness migration.** provider-backed
+  `Qwen/Qwen3.8-27B` quality profile, typed skill/plugin registry, external policy kernel, and a
+  sandboxed Qwen Code adapter with audited artifact/file tools · improve biological synthesis,
+  planning, coding, and long-horizon work while retiring LangGraph-first orchestration through
+  tested compatibility wrappers · *in-progress* (ADR-0008 and kernel foundation landed; Qwen Code
+  adapter/evaluation pending) · depends-on: N8, N5, X2 · M3.
 
 ### Later
 <!-- Directional themes we're confident about; no commitment to the "how" yet. -->

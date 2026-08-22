@@ -28,6 +28,9 @@ category).
   bind the frontend to `0.0.0.0`, and stop baking loopback `NEXT_PUBLIC_API_BASE` into remote browsers.
 
 ### Changed
+- **2026-08-22** — Replace the LangGraph-first target architecture with a harness-neutral typed
+  skill/plugin registry and CellXP-owned policy hooks (ADR-0008); select Qwen Code as the first
+  mature harness adapter while retaining the tested graph as a compatibility workflow.
 - **2026-06-23** — Document the no-mandatory-hosted-model policy, the local
   `alphagenome-pytorch` migration, and an honest quickstart covering API smoke, frontend preview,
   automated browser journeys, and current end-to-end browser limitations.
@@ -54,8 +57,8 @@ category).
   AG-UI adapter, bounded shared workspace context, registered biological artifact rendering, and
   graph-backed clarification/review interrupts while retaining the native REST/SSE fallback.
 - **2026-08-22** — Accept the CopilotKit-over-AG-UI experience architecture and Qwen3.8 quality-model
-  strategy (ADR-0006/0007), with a phased plan that preserves CellXP's LangGraph safety,
-  provenance, artifact, and canonical REST/SSE contracts.
+  strategy (ADR-0006/0007), preserving CellXP's policy, provenance, artifact, and canonical REST/SSE
+  contracts independently of the selected harness.
 - **2026-06-23** — Package concrete pinned AlphaGenome 0.6.1 and Evo 2 0.6.0 SDK workers, an
   Open Targets/PLINK/SuSiE/coloc GWAS worker, and an Azimuth/CFD/Cas-OFFinder CRISPR worker with
   version/index attestations, fail-closed production readiness, deployment manifests, and opt-in

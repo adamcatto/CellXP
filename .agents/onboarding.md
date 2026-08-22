@@ -7,10 +7,11 @@ docs your task needs. Goal: avoid scanning the whole tree at session start.
 ## 1. What this repo is (10-second version)
 
 **CellXP** — an agentic copilot for genomics (any organism: human → mouse → bacteria),
-covering DNA/RNA + proteins + metabolites. A **LangGraph supervisor** orchestrates capability
-subgraphs (variant effect, GWAS, CRISPR, annotation, binding, structure, DNA origami, RAG,
-visualization) over external foundation models (AlphaGenome, Evo 2, ESMFold, Boltz-2, …). Backend =
-FastAPI/Python; frontend = Next.js; reasoning LLM = local-first via Ollama (default `gemma4:4b`).
+covering DNA/RNA + proteins + metabolites. A **harness-neutral skill/policy kernel** exposes
+capabilities (variant effect, GWAS, CRISPR, annotation, binding, structure, DNA origami, RAG,
+visualization) to a mature agent harness; Qwen Code is the first adapter target and LangGraph is the
+compatibility workflow during migration (ADR-0008). Backend = FastAPI/Python; frontend = Next.js +
+CopilotKit; reasoning LLM = local-first, with Qwen3.8-27B as the capable-GPU quality target.
 
 ## 2. Project phase — READ THIS
 
@@ -38,7 +39,7 @@ Every folder below has a `README.md` index where noted — **read the README bef
 | Area | Path | What's there |
 |---|---|---|
 | Product specs | `specs/product/` | `mission`, `product_requirements` (FR-*/NFR-*/CR-*), `personas`, `user_stories`, `success_metrics` |
-| Agent specs | `specs/agent/` | `state_schema`, `graph_spec`, routing/tool-use/evidence/human-review policies, `session_types`, `harness_and_context_engineering` |
+| Agent specs | `specs/agent/` | skill/plugin + harness contracts, state, compatibility graph, routing/tool-use/evidence/human-review policies |
 | ↳ nodes | `specs/agent/nodes/` (README) | per-node specs (input_normalizer, planner, task_selector, …) |
 | ↳ capability subgraphs | `specs/agent/capability-subgraphs/` (README) | per-capability subgraph specs |
 | ↳ control flow | `specs/agent/control-flow/` (README) | run lifecycle, pause/resume, concurrency, replanning/budget |
@@ -49,12 +50,12 @@ Every folder below has a `README.md` index where noted — **read the README bef
 | Evaluation | `specs/evaluation/` | testing strategy, eval plan, golden sets, rubrics, regression tests |
 | Training | `specs/training/` | `post_training` (SFT/DPO/RLVR) — offline only |
 | Planning | `specs/planning/` | `roadmap` (near-term, committed), `future-additions` (backlog), `milestones`, `open_questions`, `risks` |
-| Explanations (why) | `documentation/explanation/` | architecture, multi-agent, harness/context eng., safety, evidence/confidence, coordinate systems, task patterns, why_langgraph |
+| Explanations (why) | `documentation/explanation/` | architecture, multi-agent, harness/context eng., safety, evidence/confidence, coordinate systems, task patterns |
 | Decisions | `documentation/adr/` | architectural decision records (numbered) |
 | How-to (implement) | `.agents/guidelines/` (README) | stack-specific guidance plus feature documentation, testing, changelog, and atomic commits |
 | Reference | `documentation/reference/` | `external_models_and_services`, api, cli, config, env vars, service registry, db tables |
 | Community notes | `documentation/community-notes/` (README) | practical caveats (e.g. AlphaGenome-not-for-bacteria) |
-| Backend code | `src/backend/cellxp/` | agent/, api/, services/, domain/, storage/, jobs/, cli/, config/ (mostly stubs) |
+| Backend code | `src/backend/cellxp/` | harness/, agent/ (compatibility), api/, services/, domain/, storage/, jobs/, cli/, config/ |
 | Frontend code | `src/frontend/` | Next.js app/, components/, lib/ (mostly stubs) |
 | Tests / evals | `tests/`, `evals/` | unit/integration/e2e; golden queries + rubrics |
 

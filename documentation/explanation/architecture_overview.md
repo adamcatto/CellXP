@@ -12,9 +12,9 @@ CellXP has four logical tiers:
 
 1. **Frontend** — a Next.js chat-driven workspace using CopilotKit v2 for agent chat and CellXP
    renderers for typed scientific panes.
-2. **API / orchestration** — a FastAPI app hosting the LangGraph agent, canonical REST/SSE
-   endpoints, and an additive AG-UI adapter for the CopilotKit runtime.
-3. **Services** — specialized biological capabilities (variant effect, GWAS, CRISPR, structure,
+2. **API / agent runtime** — FastAPI hosting canonical REST/SSE, AG-UI projection, a
+   harness-neutral skill/policy kernel, and pluggable mature-harness adapters.
+3. **Skills / services** — specialized biological capabilities (variant effect, GWAS, CRISPR, structure,
    binding, annotation, RAG, visualization, origami), invoked by the agent.
 4. **Infrastructure** — Postgres (state/metadata), Redis (queue + cache), object storage
    (artifacts), a vector index (RAG), and GPU workers (heavy models).
@@ -27,22 +27,23 @@ CellXP has four logical tiers:
                           HTTPS / REST │      SSE      │ stream
                                        ▼               │
                        ┌──────────────────────────────────────────────┐
-                       │            API + Orchestration (FastAPI)      │
-                       │   routers • middleware • LangGraph supervisor │
+                       │             API + Agent Runtime (FastAPI)     │
+                       │  AG-UI • policy kernel • harness adapter      │
                        └───┬───────────────┬───────────────┬──────────┘
                            │               │               │
               in-process / RPC      enqueue (Redis)   read/write
                            │               │               │
             ┌──────────────▼───┐   ┌───────▼───────┐  ┌────▼─────────────────────┐
-            │  Services layer  │   │  Job workers  │  │  Storage                  │
+            │ Skills/services  │   │  Job workers  │  │  Storage                  │
             │ variant • gwas   │   │ CPU + GPU     │  │ Postgres • Redis          │
             │ crispr • struct  │   │ (Boltz/ESM…)  │  │ object store • vector idx │
             │ binding • rag …  │   └───────────────┘  └───────────────────────────┘
             └──────────────────┘
 ```
 
-For deeper treatment of *why* LangGraph and *where* the frontend/backend line sits, see
-`why_langgraph.md` and `frontend_backend_boundary.md`. Diagrams live in
+For the harness decision and frontend/backend line, see ADR-0008 and
+`frontend_backend_boundary.md`. `why_langgraph.md` documents the compatibility graph's original
+rationale. Diagrams live in
 `documentation/diagrams/`.
 
 ## 2. Backend stack
@@ -55,7 +56,9 @@ For deeper treatment of *why* LangGraph and *where* the frontend/backend line si
 | Validation / schemas | Pydantic v2 | 2.7+ | all domain models + API I/O |
 | Settings | pydantic-settings | 2.3+ | env-driven config |
 | HTTP client | httpx | 0.27+ | calls to model microservices |
-| Agent orchestration | LangGraph | 0.2+ | supervisor + subgraphs (ADR-0002) |
+| Agent skill/policy kernel | CellXP contracts | internal | typed plugins + non-bypassable policy (ADR-0008) |
+| Mature harness | Qwen Code | evaluation target | SDK/headless adapter; pinned version after evaluation |
+| Compatibility workflows | LangGraph | 0.2+ | existing supervisor/subgraphs during migration |
 | LLM primitives | langchain-core | 0.3+ | messages, tool interfaces |
 | ORM | SQLAlchemy | 2.x | typed, async-capable |
 | Postgres driver | psycopg | 3.2+ | `psycopg[binary]` |
@@ -69,8 +72,8 @@ For deeper treatment of *why* LangGraph and *where* the frontend/backend line si
 
 ### LLM providers
 
-The orchestrator and the LLM-backed nodes (intent/risk/entity/planner/critic/report-writer) call an
-LLM behind a thin **provider abstraction** — the **LLM service** (`specs/services/llm_service.md`).
+Harness adapters and LLM-backed skills (intent/risk/entity/planning/critique/reporting) call an LLM
+behind a thin **provider abstraction** — the **LLM service** (`specs/services/llm_service.md`).
 The product is provider-pluggable; no business logic may hard-code a single vendor or endpoint.
 
 - **Local-first default: Ollama.** The default deployment serves a local open-weight model via
@@ -79,7 +82,8 @@ The product is provider-pluggable; no business logic may hard-code a single vend
 - **Pluggable remote providers.** Hosted providers (OpenAI-compatible, Anthropic, etc.) are
   selectable via env for higher-capability models without code changes.
 
-Prompt assets live in `src/backend/cellxp/agent/prompts/`. Note this is the **reasoning
+Prompt/skill assets are versioned under the adapter or skill that owns them (legacy assets remain in
+`src/backend/cellxp/agent/prompts/`). Note this is the **reasoning
 LLM** (the agent's "brain"); it is distinct from the domain **foundation models** (AlphaGenome, Evo2,
 ESMFold, …) catalogued in `documentation/reference/external_models_and_services.md`.
 
@@ -109,7 +113,7 @@ The chat-vs-workspace UX paradigm, panels, and component contracts are specified
 
 CopilotKit is an **experience layer**, not a scientific or persistence boundary. The browser calls a
 same-origin Next.js CopilotKit runtime route, which brokers AG-UI to FastAPI. FastAPI maps AG-UI
-events to canonical CellXP runs, steps, evidence, artifacts, and LangGraph interrupts. Native/CLI
+events to canonical CellXP runs, steps, evidence, artifacts, and runtime interrupts. Native/CLI
 clients continue to consume CellXP REST/SSE directly. CopilotKit Enterprise Intelligence is optional
 and is not the v1 source of truth for sessions or checkpoints (`ADR-0006`,
 `specs/planning/copilotkit_integration.md`).
@@ -137,21 +141,26 @@ Service URLs are already enumerated in `.env.example`
 
 Per-service contracts live in `specs/services/`; biological methodology in `specs/biology/`.
 
-## 5. Agent / orchestration
+## 5. Agent runtime, skills, and policy
 
-A LangGraph **supervisor with subgraphs** (ADR-0002). The top-level graph
-(`agent/graph.py`) handles input normalization, intent + risk classification, entity resolution,
-planning, task selection, evidence integration, critique, human-review gating, and report
-generation (`agent/nodes/`). Domain work is delegated to subgraphs (`agent/subgraphs/`:
-variant_effect, gwas, crispr, structure, binding, annotation, rag, visualization, origami). Shared
-state schema is `agent/state.py` (see `specs/agent/state_schema.md`).
+The target architecture is a **mature harness over a CellXP-owned skill and policy kernel**
+(ADR-0008):
 
-> The agent is a **hierarchical multi-agent system** (L1 supervisor / L2 capability agents / L3
-> isolated sub-agents). Its design, the **harness/context-engineering** disciplines that make it
-> reliable, the **session/workspace** model, and the **post-training** strategy for the reasoning LLM
-> are covered in `multi_agent_architecture.md`, `harness_and_context_engineering.md`,
-> `specs/agent/session_types.md`, and `post_training.md`. Implementation patterns:
-> `.agents/guidelines/{langgraph,langchain,deepagents,langsmith}.md`.
+1. A `HarnessAdapter` translates a harness turn and events to the canonical CellXP run model.
+   Qwen Code SDK/headless streaming is the first adapter target because it already supplies coding,
+   skills, sub-agents, memory, MCP, hooks, and local OpenAI-compatible model support.
+2. Versioned `SkillPlugin`s expose bounded Pydantic inputs and provenance-bearing results. Domain
+   logic stays in `services/*`; reusable deterministic workflows may be skill implementations.
+3. The policy kernel wraps every invocation outside the harness and enforces risk clearance,
+   authorization, coordinates, budgets, provenance, sandbox scope, and actionable-output review.
+   Harness-native hooks mirror policy for quick feedback but are not an authorization boundary.
+4. Canonical storage and AG-UI remain stable if the harness changes.
+
+The implemented LangGraph supervisor (`agent/graph.py`) remains a compatibility workflow while
+capabilities are extracted. `harness/langgraph_compat.py` constructs a minimal legacy state slice
+from typed skill input; it never publishes raw `AgentState` as a model tool. See
+`specs/agent/skill_plugin_contract.md`, `harness_and_context_engineering.md`, and
+`specs/agent/graph_spec.md` (compatibility contract).
 
 ### 5.1 Orchestrating foundation models (Evo2 / AlphaGenome / ESMFold / Boltz-2 / …)
 
@@ -191,9 +200,10 @@ Key behaviors:
   (e.g. circular bacterial coordinates) so a human-trained context window is never silently misused
   on a microbial genome.
 
-- **Composition / chaining.** Models feed each other: e.g. annotate a locus → score a variant with
+- **Composition / chaining.** Skills feed each other through durable typed results: e.g. annotate a locus → score a variant with
   AlphaGenome/Evo2 → predict the affected protein's structure with ESMFold/Boltz-2 → visualize. The
-  supervisor sequences these as dependent subtasks and carries intermediate outputs in shared state.
+  harness sequences these as dependent subtasks and carries intermediate outputs by bounded state
+  and artifact/evidence handles.
 
 - **Closed-loop / inverse design.** Beyond linear chains, the agent supports goal-directed loops that
   *invert* forward models: given a desired functional effect, it proposes candidate edits, scores
@@ -225,13 +235,12 @@ Key behaviors:
 
 ### 5.2 Reasoning model and long-horizon harness
 
-LangGraph remains the L1/L2 control-flow authority. The target capable-GPU quality profile uses
-`Qwen/Qwen3.8-27B` through the provider-agnostic OpenAI-compatible service, with per-role reasoning
-budgets and schema-validated tool output. Modest-hardware local deployments retain a smaller
-explicit profile; no 27B download or remote fallback is silent. Filesystem/code-heavy work runs as
-an isolated, sandboxed L3 agent through the sanctioned deepagents seam and returns typed,
-provenance-bearing results. Prime Agent and Hermes are reference designs, not parallel production
-orchestrators (`ADR-0007`, `specs/planning/copilotkit_integration.md`).
+The target capable-GPU quality profile uses `Qwen/Qwen3.8-27B` through a provider-agnostic
+OpenAI-compatible service, with per-role reasoning budgets and schema-validated tool output.
+Modest-hardware local deployments retain a smaller explicit profile; no 27B download or remote
+fallback is silent. Qwen Code is the first mature harness adapter target and all file/code/shell
+work runs in an isolated per-run sandbox. Prime Agent and Hermes remain comparison/reference
+designs (`ADR-0007`, ADR-0008, `specs/planning/copilotkit_integration.md`).
 
 ## 6. Data & storage
 
@@ -269,8 +278,8 @@ responsive; results stream back to the run as they complete. GPU workers are dep
 - **Config**: env-driven via pydantic-settings (`config/settings.py`); never hard-code secrets.
 - **Provenance & audit**: every run, tool call, and artifact is persisted and addressable
   (`specs/data/provenance_model.md`, `specs/data/audit_log.md`).
-- **Safety**: early risk classification in the graph + human-review gate for actionable biology
-  (`safety_model.md`, ADR-0005).
+- **Safety**: kernel-enforced risk clearance before biological skills + human review before
+  actionable release (`safety_model.md`, ADR-0005, ADR-0008).
 - **Evidence & confidence**: standardized evidence objects + confidence reporting
   (`evidence_and_confidence.md`).
 - **Evaluation**: golden queries + rubrics gate releases (`evals/`, `specs/evaluation/`).
@@ -283,4 +292,5 @@ responsive; results stream back to the run as they complete. GPU workers are dep
 - ADR-0004 — specs are development contracts.
 - ADR-0005 — human review for actionable biology.
 - ADR-0006 — CopilotKit over a CellXP-owned AG-UI adapter.
-- ADR-0007 — retain LangGraph and adopt Qwen3.8 as the quality model.
+- ADR-0007 — adopt Qwen3.8 as the quality model (harness portion superseded).
+- ADR-0008 — harness-neutral skill/policy kernel; Qwen Code is the first adapter target.

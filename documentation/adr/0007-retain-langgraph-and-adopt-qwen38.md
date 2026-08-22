@@ -1,6 +1,7 @@
-# ADR-0007 — Retain the LangGraph harness and adopt Qwen3.8 as the quality model
+# ADR-0007 — Adopt Qwen3.8 as the quality model
 
-- **Status:** Accepted
+- **Status:** Partially superseded by ADR-0008. The Qwen3.8 model decision remains accepted; the
+  LangGraph-first harness decision does not.
 - **Date:** 2026-08-22
 - **Related:** `documentation/adr/0002-langgraph-supervisor-with-subgraphs.md`,
   `specs/agent/harness_and_context_engineering.md`, `specs/services/llm_service.md`,
@@ -26,7 +27,7 @@ the safety-first ordering, typed scientific state, deterministic coordinate hand
 and per-tool provenance harder to enforce. Prime's mutable continual harness and persistent Python
 kernel are especially inappropriate as the authority for review-gated biological actions.
 
-## Decision
+## Original decision
 
 1. Keep **LangGraph** as the L1/L2 production harness and source of control-flow truth
    (ADR-0002). CopilotKit is a UI/protocol integration, not an orchestrator.
@@ -49,6 +50,13 @@ kernel are especially inappropriate as the authority for review-gated biological
 7. Do not expose raw multi-megabyte model or artifact output to the reasoning window. Feed compact
    evidence summaries and artifact handles back into context; the workspace agent reads full
    payloads lazily through audited tools (`CTX-3`, `CTX-4`).
+
+## Superseding note
+
+ADR-0008 replaces items 1 and 5 and the rejected-harness alternatives below. CellXP now targets a
+harness-neutral skill/policy kernel with Qwen Code as its first mature harness adapter. LangGraph is
+temporarily retained only as a compatibility workflow implementation. Items 2–4, 6–7, and the model
+evaluation gate remain in force.
 
 ## Evaluation gate
 

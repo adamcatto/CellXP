@@ -32,7 +32,8 @@ result is slow iteration and answers whose provenance is hard to audit.
 
 ## 3. What CellXP is
 
-A full-stack, LangGraph-orchestrated agent with a chat-driven workspace. Input is **multimodal**:
+A full-stack biological agent with a chat-driven workspace, a mature pluggable harness, and
+CellXP-owned typed skills/policy enforcement (ADR-0008). Input is **multimodal**:
 a user can ask in natural language, drop in sequence data directly (FASTA, raw DNA/RNA/protein
 sequences, rsIDs, HGVS, genomic intervals, gene symbols), upload a file (e.g. a FASTA or variant
 list), or any combination — for example, paste a sequence with no prose and simply ask "what is

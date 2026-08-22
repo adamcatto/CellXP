@@ -1,18 +1,21 @@
 # Agent Graph Specification
 
-> Status: Draft v0.1. Defines the LangGraph control flow: nodes, subgraphs, edges, and how a run
-> advances. Consumes the state contract (`state_schema.md`) and is consumed by `routing_policy.md`
+> Status: **Compatibility contract** (ADR-0008). Defines the implemented LangGraph workflow while
+> capabilities migrate behind the harness-neutral skill kernel. It is no longer the target
+> top-level product harness. Consumes the state contract (`state_schema.md`) and is consumed by `routing_policy.md`
 > (edge conditions), `tool_use_policy.md` (what nodes call), `human_review_policy.md` (the gate), and
 > `evidence_integration.md`. Implementation: `src/backend/cellxp/agent/graph.py`,
 > `agent/nodes/*`, `agent/subgraphs/*`, `agent/routing.py`.
 
 ## 1. Overview
 
-A **supervisor with subgraphs** (ADR-0002): a top-level graph handles understanding, planning,
+A compatibility **supervisor with subgraphs** (ADR-0002, superseded by ADR-0008): the graph handles understanding, planning,
 routing, integration, review, and reporting; domain work is delegated to capability **subgraphs**.
 All nodes read/write the single `AgentState` (`state_schema.md`). The multi-agent layering (L1
 supervisor / L2 capability agents / L3 isolated sub-agents) is explained in
-`documentation/explanation/multi_agent_architecture.md`.
+`documentation/explanation/multi_agent_architecture.md`. New capabilities SHOULD expose bounded
+`SkillPlugin` contracts first (`skill_plugin_contract.md`); graph nodes may adapt those skills during
+the migration.
 
 ## 1.1 Architecture diagram
 

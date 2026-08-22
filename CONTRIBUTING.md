@@ -25,8 +25,8 @@ These are non-negotiable and apply to *every* contribution:
    (`specs/biology/supported_species.md`, `specs/agent/tool_use_policy.md`) — a 100% guardrail.
 5. **Provenance + confidence always.** Every claim links to evidence; every prediction carries
    confidence (`documentation/explanation/evidence_and_confidence.md`, FR-22..24).
-6. **Don't change the core agent spine** to add a capability — use the service+subgraph pattern
-   (ADR-0003, NFR-11).
+6. **Don't change a harness adapter** to add a capability — use the service + typed skill-plugin
+   pattern (ADR-0003, ADR-0008, NFR-11).
 7. **Update the changelog** per `.agents/guidelines/changelog-guidelines.md`, and add tests/evals.
 
 ## Contribution types
@@ -35,7 +35,7 @@ Pick the row that matches what you want to add; follow its owning spec.
 
 | You want to add… | Owning spec | Lands in |
 |---|---|---|
-| A **capability / task** | `specs/agent/capability-subgraphs/`, `specs/biology/` | `services/<name>/`, `agent/subgraphs/<name>/` |
+| A **capability / task** | `specs/agent/skill_plugin_contract.md`, `specs/biology/` | `services/<name>/`, harness-neutral skill registry |
 | A **model / tool / package** | `documentation/reference/external_models_and_services.md` | a service that wraps it |
 | A **species** | `specs/biology/supported_species.md` §5.1 | reference service registry |
 | A **strain** | `specs/biology/supported_species.md` §5.4 | reference service registry |
@@ -49,15 +49,16 @@ Pick the row that matches what you want to add; follow its owning spec.
 
 ### 1. New capability / task
 
-A capability = a **service** (logic) + a **capability subgraph** (orchestration).
+A capability = a **service** (logic) + a typed **skill plugin** (harness-neutral invocation).
 - **Requires:** a methodology spec in `specs/biology/` (typed inputs/outputs/models/transforms;
   `specs/biology/README.md`), a service under `services/<name>/` registered in `services/registry.py`,
-  a subgraph under `agent/subgraphs/<name>/` reachable via `route_task`, selection metadata
-  (`tool_use_policy.md`), and whether it's **actionable** (→ review gate).
-- **How-to:** write the methodology spec → add the subgraph spec (`capability-subgraphs/`) → implement
-  service + subgraph → register → add golden queries. See `specs/agent/graph_spec.md` §10.
+  a bounded Pydantic skill input/result registered in the skill registry, selection metadata
+  (`tool_use_policy.md`), and a side-effect/actionability declaration (→ policy/review kernel).
+- **How-to:** write the methodology spec → define the skill contract → implement service + skill →
+  register → add golden queries. A compatibility graph node may call the skill during migration;
+  do not expose raw `AgentState`. See `specs/agent/skill_plugin_contract.md`.
 - **Acceptance:** invokable via agent *and* API; provenance-complete, confidence-qualified output;
-  no change to the top-level spine (NFR-11); golden query passes.
+  no harness-specific domain logic (NFR-11); golden query passes.
 
 ### 2. New model / tool / package
 
@@ -84,11 +85,12 @@ output→evidence/artifact mapping with units, confidence semantics, and a golde
 
 ### 6. New harness / orchestration layer
 
-The sanctioned stack is LangGraph → `create_agent` → deepagents → LangSmith
-(`harness_and_context_engineering.md` §A4). Adding or swapping a harness layer is an **architectural
-change → requires an ADR** (`documentation/adr/`) plus updates to the relevant
-`.agents/guidelines/*`. Must preserve the guardrails (safety/review/coordinates/provenance) and the
-explicit, audited L1 control flow.
+Harnesses implement `HarnessAdapter` and may invoke capabilities only through the CellXP skill and
+policy kernel (`skill_plugin_contract.md`, ADR-0008). Qwen Code is the first adapter target;
+LangGraph is a compatibility workflow. Adding or swapping a harness is an **architectural change →
+requires an ADR** plus event/parity fixtures. It must preserve canonical
+safety/review/coordinates/provenance, sandboxing, budgets, cancellation, and replay. Harness-native
+hooks and approvals are not sufficient policy boundaries.
 
 ### 7. New macro / session type
 

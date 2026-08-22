@@ -9,8 +9,9 @@ protocol. Then read only the docs your task needs.
 ## 30-second orientation
 
 - **What:** CellXP — an agentic genomics copilot (any organism; DNA/RNA + proteins +
-  metabolites). LangGraph supervisor → capability subgraphs → external models (AlphaGenome, Evo 2,
-  ESMFold, Boltz-2). FastAPI + Next.js; local-first reasoning LLM via Ollama.
+ metabolites). Mature harness → CellXP skill/policy kernel → biological services/models
+ (AlphaGenome, Evo 2, ESMFold, Boltz-2). Qwen Code is the first harness-adapter target; LangGraph is
+ a compatibility workflow during migration. FastAPI + Next.js/CopilotKit; local-first reasoning.
 - **Phase:** **spec-first, pre-implementation.** `specs/` and `documentation/` are the source of
   truth; most of `src/` is scaffold/stubs. Trust specs over code for intent.
 - **Must-reads:** `specs/product/mission.md` → `documentation/explanation/architecture_overview.md`.
