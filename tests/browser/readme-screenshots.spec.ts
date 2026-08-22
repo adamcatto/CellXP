@@ -23,7 +23,7 @@ test('captures CopilotKit clarification in the biological workspace', async ({ p
     'Ask about a gene, variant, structure, pathway, or analysis…',
   );
   await composer.fill('Help me analyze this biological result');
-  const send = composer.locator('xpath=following-sibling::button[1]');
+  const send = page.getByTestId('copilot-send-button');
   await expect(send).toBeEnabled({ timeout: 15_000 });
   await send.click();
 
