@@ -10,9 +10,10 @@
 
 CellXP has four logical tiers:
 
-1. **Frontend** — a Next.js chat-driven workspace (the user-facing copilot).
-2. **API / orchestration** — a FastAPI app hosting the LangGraph agent, REST endpoints, and a
-   streaming channel.
+1. **Frontend** — a Next.js chat-driven workspace using CopilotKit v2 for agent chat and CellXP
+   renderers for typed scientific panes.
+2. **API / orchestration** — a FastAPI app hosting the LangGraph agent, canonical REST/SSE
+   endpoints, and an additive AG-UI adapter for the CopilotKit runtime.
 3. **Services** — specialized biological capabilities (variant effect, GWAS, CRISPR, structure,
    binding, annotation, RAG, visualization, origami), invoked by the agent.
 4. **Infrastructure** — Postgres (state/metadata), Redis (queue + cache), object storage
@@ -91,6 +92,7 @@ ESMFold, …) catalogued in `documentation/reference/external_models_and_service
 | UI runtime | React | function components, hooks |
 | Styling | Tailwind CSS | `tailwind.config.ts`, `globals.css`, `styles/theme.css` |
 | Component primitives | local `components/ui/*` (Button, Card, Dialog, Tabs) | shadcn/ui-style, headless + Tailwind |
+| Agent UI/runtime | CopilotKit v2 (OSS) + AG-UI | chat shell, tool rendering, shared state, generative UI; ADR-0006 |
 | Streaming | SSE via `fetch`/`EventSource` | `lib/streaming.ts` |
 | Data fetching | typed client in `lib/api.ts` | thin wrapper over REST |
 | 3D structure | Mol* (recommended) | `components/structure/StructureViewer3D.tsx` |
@@ -104,6 +106,13 @@ ESMFold, …) catalogued in `documentation/reference/external_models_and_service
 The chat-vs-workspace UX paradigm, panels, and component contracts are specified in
 `specs/interface/` (`workspace_interface.md`, `chat_interface.md`, `artifact_model.md`,
 `genome_browser.md`, `api_contracts.md`).
+
+CopilotKit is an **experience layer**, not a scientific or persistence boundary. The browser calls a
+same-origin Next.js CopilotKit runtime route, which brokers AG-UI to FastAPI. FastAPI maps AG-UI
+events to canonical CellXP runs, steps, evidence, artifacts, and LangGraph interrupts. Native/CLI
+clients continue to consume CellXP REST/SSE directly. CopilotKit Enterprise Intelligence is optional
+and is not the v1 source of truth for sessions or checkpoints (`ADR-0006`,
+`specs/planning/copilotkit_integration.md`).
 
 ## 4. Services layer
 
@@ -214,6 +223,16 @@ Key behaviors:
   service-level change behind the same tool contract; the orchestration graph does not change
   (`NFR-11`, ADR-0003). External model endpoints are configured via env (`*_SERVICE_URL`).
 
+### 5.2 Reasoning model and long-horizon harness
+
+LangGraph remains the L1/L2 control-flow authority. The target capable-GPU quality profile uses
+`Qwen/Qwen3.8-27B` through the provider-agnostic OpenAI-compatible service, with per-role reasoning
+budgets and schema-validated tool output. Modest-hardware local deployments retain a smaller
+explicit profile; no 27B download or remote fallback is silent. Filesystem/code-heavy work runs as
+an isolated, sandboxed L3 agent through the sanctioned deepagents seam and returns typed,
+provenance-bearing results. Prime Agent and Hermes are reference designs, not parallel production
+orchestrators (`ADR-0007`, `specs/planning/copilotkit_integration.md`).
+
 ## 6. Data & storage
 
 | Store | Tech | Holds |
@@ -263,3 +282,5 @@ responsive; results stream back to the run as they complete. GPU workers are dep
 - ADR-0003 — keep service boundaries logical (promote to microservices only when needed).
 - ADR-0004 — specs are development contracts.
 - ADR-0005 — human review for actionable biology.
+- ADR-0006 — CopilotKit over a CellXP-owned AG-UI adapter.
+- ADR-0007 — retain LangGraph and adopt Qwen3.8 as the quality model.

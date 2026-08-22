@@ -5,7 +5,8 @@
 > behavior** (streamed answer, collapsible thinking, tool-call/activity log, progressive
 > artifacts, clarification & review cards) is owned by `streaming_protocol.md`. The chat lives
 > inside the **workspace** (`workspace_interface.md`) and shares state with **interactive panes**
-> (`interactive_panes.md`).
+> (`interactive_panes.md`). The web implementation uses CopilotKit v2 over the AG-UI adapter
+> (ADR-0006); the behavior and scientific rendering contracts in this spec remain framework-neutral.
 
 ## 1. Goals
 
@@ -18,6 +19,9 @@
   turns, and reference earlier artifacts/evidence without copy-pasting.
 - **Mirrors the streaming model.** Every chat element corresponds to a typed event/object from
   `streaming_protocol.md` or `state_schema.md`; nothing is render-only.
+- **Registered generative UI.** CopilotKit tool rendering may choose and place a registered CellXP
+  component, but scientific values come only from typed artifact/evidence contracts. Arbitrary
+  model-generated React/plot code is not a valid renderer.
 
 ## 2. Layout
 
@@ -208,6 +212,9 @@ Overrides apply to the current turn only; persistent changes go through session 
 - **Activity** is a compact column of rows (tool calls + plan revisions); each row expands to
   show input summary, params, tool version, and output preview. Long jobs show liveness
   ("queued", "running 40%", elapsed).
+- Backend tools render through named CopilotKit renderers (with a safe catch-all). Frontend-only
+  tools may change ephemeral workspace UI, but cannot perform biology, approve actionable output,
+  or bypass canonical run/audit endpoints.
 - **Reasoning is presentational**: it MAY not replay on reconnect; only its `reasoning.summary`
   is guaranteed durable (`streaming_protocol.md` §9). The chat MUST handle the
   reasoning-missing case gracefully.

@@ -48,6 +48,9 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-08-22** — Accept the CopilotKit-over-AG-UI experience architecture and Qwen3.8 quality-model
+  strategy (ADR-0006/0007), with a phased plan that preserves CellXP's LangGraph safety,
+  provenance, artifact, and canonical REST/SSE contracts.
 - **2026-06-23** — Package concrete pinned AlphaGenome 0.6.1 and Evo 2 0.6.0 SDK workers, an
   Open Targets/PLINK/SuSiE/coloc GWAS worker, and an Azimuth/CFD/Cas-OFFinder CRISPR worker with
   version/index attestations, fail-closed production readiness, deployment manifests, and opt-in

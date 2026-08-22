@@ -184,6 +184,27 @@ LLM_REQUEST_TIMEOUT_S=300
 LLM_MAX_TOKENS=4096
 ```
 
+### 4.2.1 Qwen3.8 quality profile
+
+ADR-0007 selects `Qwen/Qwen3.8-27B` as the target capable-GPU quality model. A representative vLLM
+launch (hardware-specific tensor parallelism, quantization, and sequence concurrency omitted) MUST
+include the model's official protocol parsers:
+
+```bash
+vllm serve Qwen/Qwen3.8-27B \
+  --max-model-len 262144 \
+  --reasoning-parser qwen3 \
+  --enable-auto-tool-choice \
+  --tool-call-parser qwen3_coder \
+  --enable-prefix-caching
+```
+
+Deployments MUST pin the model revision and record serving runtime/version, quantization, tensor
+parallelism, context cap, and parser flags in provenance. The advertised 262k window is a ceiling,
+not a prompt-packing target: node context slices and compaction remain mandatory (`CTX-1..5`).
+Time-to-first-token, tool-call validity, and memory/concurrency measurements determine profile
+defaults; a hardware profile must not claim Qwen readiness merely because weights can be loaded.
+
 ### 4.3 Throughput & latency
 
 - vLLM's **continuous batching** dramatically increases tokens/sec under concurrency. Plan
