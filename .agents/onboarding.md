@@ -70,6 +70,10 @@ Every folder below has a `README.md` index where noted — **read the README bef
   its specs, documentation, planning, tests/how-to-run instructions, indexes, and changelog as
   applicable; follow `.agents/guidelines/feature-documentation.md`.
 - **Commits:** keep commits atomic — only the files you touched, with explicit paths; see `.agents/guidelines/atomic-commits.md`.
+- **Pull requests:** make every PR self-contained and highly descriptive. Include motivation,
+  implementation/architecture, a review guide, visual evidence when useful, exact test results and
+  their interpretation, limitations/follow-ups, and documentation/planning impact. Keep it updated
+  after follow-up commits; see `.agents/guidelines/pull-request-guidelines.md`.
 - **Contributions / extension points** (new species, strain, assay, capability, model, harness, macro): `CONTRIBUTING.md`.
 
 ## 6. "Where do I put / find X?" quick table
@@ -98,3 +102,5 @@ Every folder below has a `README.md` index where noted — **read the README bef
 - Make code/specs internally consistent (update cross-references and IDs).
 - Update `CHANGELOG.md` if the change is notable.
 - If you hit a non-obvious caveat, drop a `documentation/community-notes/` entry.
+- Reconcile the draft PR with the final diff: remove stale claims/test counts and attach or embed
+  relevant screenshots, recordings, traces, diagrams, or test reports.

@@ -143,6 +143,10 @@ catalog entry, coordinate convention, …).
    (`.agents/skills`/`split-to-prs` if helpful).
 3. Add tests/evals; update the changelog (`.agents/guidelines/changelog-guidelines.md`).
 4. Ensure guardrails pass (safety, coordinates, review-gate, provenance) — these block merge.
+5. Keep the PR title/body synchronized with the branch. Include motivation, implementation and
+   review guidance, visual evidence where useful, exact test results plus interpretation, known
+   limitations, and documentation/planning impact
+   (`.agents/guidelines/pull-request-guidelines.md`).
 
 ## Related
 

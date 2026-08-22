@@ -14,6 +14,7 @@ guideline disagree on intent, the spec wins; when they disagree on mechanics, fi
 | `feature-documentation.md` | synchronizing specs, docs, planning, tests, and changelog for feature changes |
 | `changelog-guidelines.md` | maintaining `CHANGELOG.md` |
 | `atomic-commits.md` | staging and committing only the files you touched (path-scoped commits) |
+| `pull-request-guidelines.md` | writing evidence-rich PR titles/bodies with visuals, results, interpretation, and caveats |
 | `testing.md` | writing and running the test pyramid (pytest, Playwright, evals, CI triggers) |
 | `setup-scripts.md` | maintaining bootstrap, dependency initialization, and model downloads |
 

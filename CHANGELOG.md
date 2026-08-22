@@ -28,6 +28,9 @@ category).
   bind the frontend to `0.0.0.0`, and stop baking loopback `NEXT_PUBLIC_API_BASE` into remote browsers.
 
 ### Changed
+- **2026-08-22** — Require descriptive, continuously updated pull requests with motivation,
+  implementation context, review guidance, visual evidence where useful, exact test results and
+  interpretation, limitations, and documentation impact.
 - **2026-08-22** — Refactor the project README around the working CopilotKit product, honest model/
   harness status, local quickstart, and deterministic Playwright screenshots of HITL and scientific
   artifact rendering.

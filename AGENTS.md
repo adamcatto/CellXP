@@ -18,5 +18,8 @@ protocol. Then read only the docs your task needs.
 - **Conventions:** specs = what/why (normative); `.agents/guidelines/` = how-to. Stable IDs
   (`FR-*`/`NFR-*`/`CR-*`). Update `CHANGELOG.md` per `.agents/guidelines/changelog-guidelines.md`.
   Extension points in `CONTRIBUTING.md`.
+- **Pull requests:** keep the title/body current and highly descriptive: motivation, architecture,
+  review guide, screenshots/recordings where useful, exact test results, interpretation, limitations,
+  and documentation impact. Follow `.agents/guidelines/pull-request-guidelines.md`.
 
 Everything else (full repo map, "where do I put X", token tips) is in `.agents/onboarding.md`.
