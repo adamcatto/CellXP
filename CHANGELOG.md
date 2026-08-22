@@ -28,6 +28,9 @@ category).
   bind the frontend to `0.0.0.0`, and stop baking loopback `NEXT_PUBLIC_API_BASE` into remote browsers.
 
 ### Changed
+- **2026-08-22** — Refactor the project README around the working CopilotKit product, honest model/
+  harness status, local quickstart, and deterministic Playwright screenshots of HITL and scientific
+  artifact rendering.
 - **2026-08-22** — Replace the LangGraph-first target architecture with a harness-neutral typed
   skill/plugin registry and CellXP-owned policy hooks (ADR-0008); select Qwen Code as the first
   mature harness adapter while retaining the tested graph as a compatibility workflow.
