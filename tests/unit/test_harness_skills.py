@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import asyncio
 
-from pydantic import BaseModel
-
 from cellxp.agent.state import Step, Subtask
 from cellxp.domain.artifacts import ArtifactRef
 from cellxp.domain.enums import ArtifactType, RiskDecision, SubtaskType, TaskStatus
@@ -22,6 +20,7 @@ from cellxp.harness import (
     SkillSpec,
 )
 from cellxp.harness.langgraph_compat import CapabilitySkillInput, legacy_capability_plugin
+from pydantic import BaseModel
 
 
 class _Input(BaseModel):
