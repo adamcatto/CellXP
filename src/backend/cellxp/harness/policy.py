@@ -77,10 +77,12 @@ class ActionableReviewPolicyHook:
         invocation: SkillInvocation,
         result: SkillResult,
     ) -> SkillResult:
-        if result.outcome is not SkillOutcome.SUCCESS:
-            return result
         subjects = [artifact.id for artifact in result.artifacts if artifact.actionable]
-        if plugin.spec.side_effect is SkillSideEffect.ACTIONABLE and not subjects:
+        if (
+            result.outcome is SkillOutcome.SUCCESS
+            and plugin.spec.side_effect is SkillSideEffect.ACTIONABLE
+            and not subjects
+        ):
             subjects = [f"skill:{plugin.spec.name}"]
         pending = [
             subject
@@ -159,6 +161,22 @@ class SkillExecutor:
 
             pending = plugin.handler(arguments, invocation.context)
             result = await pending if inspect.isawaitable(pending) else pending
+
+            if result.outcome is SkillOutcome.SUCCESS:
+                try:
+                    data = plugin.output_model.model_validate(result.data)
+                except ValidationError as exc:
+                    result = result.model_copy(
+                        update={
+                            "outcome": SkillOutcome.RECOVERABLE_FAILURE,
+                            "data": None,
+                            "detail": (
+                                f"invalid_skill_result: {exc.error_count()} validation error(s)"
+                            ),
+                        }
+                    )
+                else:
+                    result = result.model_copy(update={"data": data.model_dump(mode="json")})
 
             for hook in self.hooks:
                 result = hook.after(plugin, invocation, result)

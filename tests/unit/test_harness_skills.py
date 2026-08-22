@@ -27,6 +27,10 @@ class _Input(BaseModel):
     value: int
 
 
+class _Output(BaseModel):
+    doubled: int
+
+
 def _plugin(
     handler,
     *,
@@ -43,6 +47,7 @@ def _plugin(
             implementation="test",
         ),
         input_model=_Input,
+        output_model=_Output,
         handler=handler,
     )
 
@@ -65,6 +70,7 @@ def _invoke(executor: SkillExecutor, **kwargs) -> SkillResult:
 def test_registry_is_append_only_and_projects_bounded_tool_schema() -> None:
     plugin = _plugin(
         lambda arguments, context: SkillResult(
+            data={"doubled": arguments.value * 2},
             steps=[Step(name="test", status=TaskStatus.DONE)]
         )
     )
@@ -83,6 +89,9 @@ def test_registry_is_append_only_and_projects_bounded_tool_schema() -> None:
     assert definition["inputSchema"]["properties"] == {
         "value": {"title": "Value", "type": "integer"}
     }
+    assert definition["outputSchema"]["properties"] == {
+        "doubled": {"title": "Doubled", "type": "integer"}
+    }
     assert "AgentState" not in str(definition)
 
 
@@ -92,7 +101,10 @@ def test_invalid_arguments_and_missing_risk_fail_before_handler() -> None:
     def handler(arguments, context):
         nonlocal calls
         calls += 1
-        return SkillResult(steps=[Step(name="test", status=TaskStatus.DONE)])
+        return SkillResult(
+            data={"doubled": arguments.value * 2},
+            steps=[Step(name="test", status=TaskStatus.DONE)],
+        )
 
     registry = SkillRegistry()
     registry.register(_plugin(handler))
@@ -119,6 +131,7 @@ def test_actionable_result_is_withheld_until_canonical_approval() -> None:
     registry.register(
         _plugin(
             lambda arguments, context: SkillResult(
+                data={"doubled": arguments.value * 2},
                 steps=[Step(name="design", status=TaskStatus.DONE)],
                 artifacts=[artifact],
             ),
@@ -135,6 +148,33 @@ def test_actionable_result_is_withheld_until_canonical_approval() -> None:
     assert pending.release is SkillRelease.AWAITING_REVIEW
     assert pending.review_subject_ids == ["guide-pool-1"]
     assert approved.release is SkillRelease.RELEASABLE
+
+
+def test_invalid_output_is_not_released_and_partial_actionable_artifacts_stay_withheld() -> None:
+    artifact = ArtifactRef(
+        id="partial-guide-pool",
+        type=ArtifactType.GUIDE_TABLE,
+        title="Partial candidates",
+        actionable=True,
+    )
+    registry = SkillRegistry()
+    registry.register(
+        _plugin(
+            lambda arguments, context: SkillResult(
+                data={"not_doubled": arguments.value},
+                steps=[Step(name="partial_design", status=TaskStatus.DONE)],
+                artifacts=[artifact],
+            ),
+            side_effect=SkillSideEffect.ACTIONABLE,
+        )
+    )
+
+    result = _invoke(SkillExecutor(registry))
+
+    assert result.outcome is SkillOutcome.RECOVERABLE_FAILURE
+    assert result.data is None
+    assert result.release is SkillRelease.AWAITING_REVIEW
+    assert result.review_subject_ids == ["partial-guide-pool"]
 
 
 def test_legacy_capability_wrapper_constructs_only_bounded_state() -> None:

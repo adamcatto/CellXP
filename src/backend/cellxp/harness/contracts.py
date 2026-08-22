@@ -103,6 +103,7 @@ SkillHandler = Callable[
 class SkillPlugin:
     spec: SkillSpec
     input_model: type[BaseModel]
+    output_model: type[BaseModel]
     handler: SkillHandler
 
     def tool_definition(self) -> dict[str, Any]:
@@ -112,6 +113,7 @@ class SkillPlugin:
             "name": self.spec.name,
             "description": self.spec.description,
             "inputSchema": self.input_model.model_json_schema(),
+            "outputSchema": self.output_model.model_json_schema(),
             "metadata": {
                 "version": self.spec.version,
                 "kind": self.spec.kind.value,

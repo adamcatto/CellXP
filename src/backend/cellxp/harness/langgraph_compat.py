@@ -45,6 +45,10 @@ class CapabilitySkillInput(BaseModel):
     prior_artifacts: list[ArtifactRef] = Field(default_factory=list)
 
 
+class CapabilitySkillOutput(BaseModel):
+    subtasks: list[Subtask] = Field(default_factory=list)
+
+
 def _models(model: type[BaseModel], values: object) -> list[Any]:
     if not isinstance(values, list):
         return []
@@ -93,7 +97,7 @@ def legacy_capability_plugin(
             outcome = SkillOutcome.SUCCESS
         return SkillResult(
             outcome=outcome,
-            data={"subtasks": [subtask.model_dump(mode="json") for subtask in subtasks]},
+            data=CapabilitySkillOutput(subtasks=subtasks).model_dump(mode="json"),
             steps=steps,
             evidence=evidence,
             artifacts=artifacts,
@@ -113,6 +117,7 @@ def legacy_capability_plugin(
             requires_coordinate_context=requires_coordinate_context,
         ),
         input_model=CapabilitySkillInput,
+        output_model=CapabilitySkillOutput,
         handler=invoke,
     )
 
@@ -140,6 +145,7 @@ def production_compatibility_registry() -> SkillRegistry:
 
 __all__ = [
     "CapabilitySkillInput",
+    "CapabilitySkillOutput",
     "LegacyNode",
     "legacy_capability_plugin",
     "production_compatibility_registry",
