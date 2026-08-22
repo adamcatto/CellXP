@@ -103,10 +103,12 @@ def test_risk_classifier_blocks_actionable_without_review():
 
 **Do**
 
-- Compile the supervisor (or subgraph) with an **in-memory checkpointer** for speed.
+- Test skill input/output validation and authoritative policy hooks independently of any harness.
+- For compatibility parity, compile the LangGraph workflow with an **in-memory checkpointer**.
 - Stub LLM via injected fake returning schema-valid JSON (see `langchain.md`).
 - Stub services via the service registry / dependency overrides (`test_service_registry.py` pattern).
-- Cover: safety block, pause/resume, review gate, partial failure (`NFR-6`), task-selector re-entry.
+- Cover: safety block, pause/resume, review gate, partial failure (`NFR-6`), skill discovery,
+  budgets/cancellation, and compatibility workflow parity.
 
 **Don't**
 

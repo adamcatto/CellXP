@@ -1,6 +1,6 @@
 # Agent Runtime Serving
 
-> Status: Draft v0.1. How the **FastAPI + LangGraph agent runtime** is deployed, replicated,
+> Status: Draft v0.1. How the **FastAPI agent runtime, policy kernel, and harness adapters** are deployed, replicated,
 > and kept correct across restarts, replicas, and reconnects. The agent's design is in
 > `specs/agent/*`; this spec defines the **process and replication topology** that lets it run
 > in regimes 1–3 (`README.md`) without changing the agent contract. Distinct from
@@ -8,7 +8,9 @@
 
 ## 1. Scope
 
-The agent runtime is split between a lightweight FastAPI gateway and a dedicated graph executor.
+The agent runtime is split between a lightweight FastAPI gateway and dedicated harness-executor
+workers. The implemented worker is currently the LangGraph compatibility executor; Qwen Code is the
+first mature adapter target (ADR-0008).
 The FastAPI process:
 
 - hosts the REST + SSE endpoints (`specs/interface/api_contracts.md`),
@@ -17,9 +19,10 @@ The FastAPI process:
 - dispatches heavy work to the job layer (`control-flow/concurrency.md`,
   `domain_model_serving.md`).
 
-The graph-executor worker compiles and executes LangGraph, writes checkpoints and run events, and
-dispatches heavy domain jobs. This spec defines: process model, replication, SSE sequencing, checkpointing &
-resumption, graceful shutdown, capacity limits, and observability.
+An executor runs the selected harness/workflow adapter through the CellXP policy kernel, writes
+checkpoints and canonical run events, and dispatches heavy domain jobs. The compatibility executor
+still compiles LangGraph. This spec defines: process model, replication, SSE sequencing,
+checkpointing/resumption, graceful shutdown, capacity limits, and observability.
 
 ## 2. Process model
 
@@ -36,20 +39,21 @@ resumption, graceful shutdown, capacity limits, and observability.
                               │ start / resume / cancel
                               ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│  graph-executor process                                             │
+│  harness-executor process                                           │
 │  ├─ Redis Streams consumer group                                    │
-│  ├─ LangGraph supervisor + capability subgraphs                     │
+│  ├─ policy kernel + HarnessAdapter                                   │
+│  │    └─ current: LangGraph compatibility workflow                  │
 │  ├─ Postgres checkpointer + run/event repository                     │
 │  └─ heavy-job clients (per-class Redis streams / remote workers)    │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Single role per process.** API containers run uvicorn `--workers 1`; graph-executor containers
+- **Single role per process.** API containers run uvicorn `--workers 1`; executor containers
   run one bounded consumer loop. Horizontal scaling is at the container/pod level.
 - **Asyncio everywhere.** All I/O is async; service calls that are intrinsically synchronous
   (CPU heavy) run via `asyncio.to_thread` or are dispatched as jobs. Blocking the event loop
   for > 100 ms is a bug.
-- **All execution is outside the API process.** Graph executors and domain-model workers are
+- **All execution is outside the API process.** Harness executors and domain-model workers are
   separate processes. The API validates, persists run identity, enqueues commands, and serves
   snapshots/events only.
 
@@ -63,18 +67,19 @@ resumption, graceful shutdown, capacity limits, and observability.
 
 Replicas are **stateless** with respect to **durable** run identity: run state, checkpoints,
 artifacts, evidence, and audit live in Postgres + object store + Redis. Any replica can take a
-request for any run; graph executors claim commands through one consumer group.
+request for any run; harness executors claim commands through one consumer group.
 
-**No shared file system.** Anything that needs to be shared lives in Postgres, Redis, or the
-object store — not in process-local files. The deepagents virtual filesystem
-(`session_types.md` §2 `files`) is backed by the persistence layer, not the host FS.
+**No shared file system.** Anything that needs to be shared lives in Postgres, Redis, or the object
+store—not in process-local files. Harness scratch files are sandboxed per run; durable session files
+(`session_types.md` §2 `files`) are backed by the persistence layer.
 
 ## 4. SSE sequencing
 
 Any API replica can serve an SSE connection. Executors allocate event sequences transactionally in
 the durable repository; API replicas replay those events and tail for new commits. POST `/runs`
-commits the queued snapshot before it enqueues one idempotent `graph.start` command. Interaction
-endpoints enqueue `graph.resume`; cancellation enqueues `graph.cancel`.
+commits the queued snapshot before it enqueues one idempotent start command. Existing deployments
+retain the versioned `graph.start`/`graph.resume`/`graph.cancel` command names for wire compatibility;
+new adapters map them to canonical start/resume/cancel semantics.
 
 Reconnect/replay uses `Last-Event-ID` and the durable event log; ephemeral events
 (`reasoning.*`, `activity.update`) MAY be dropped on replay
@@ -82,7 +87,7 @@ Reconnect/replay uses `Last-Event-ID` and the durable event log; ephemeral event
 
 ## 5. Checkpointing & resumption
 
-LangGraph's checkpointer is configured to persist to **Postgres** for the run's durable state
+The selected adapter's checkpoint bridge persists canonical run state to **Postgres**
 (messages, plan, subtasks, steps, evidence, artifact refs, errors, status) and to **Redis** for
 short-lived ephemeral state (per-step counters, in-flight reasoning buffers). On executor restart
 or command redelivery:
@@ -90,23 +95,22 @@ or command redelivery:
 - a different replica MUST be able to **resume an awaiting-input/awaiting-review run** from
   Postgres state with no data loss; pending clarification / review cards re-stream
   (`streaming_protocol.md` §9, `control-flow/pause_and_resume.md`),
-- in-flight (running) graph execution that was interrupted by an executor crash is **resumed
+- in-flight execution interrupted by an executor crash is **resumed
   from the last checkpoint**, not restarted from scratch; idempotent steps de-dupe via
   `input_hash`,
 - non-idempotent steps must declare themselves as such; the resumer's policy is "re-run only if
   the step's `Provenance.idempotent=true`" — others surface as `error.added` requiring user
   input or are skipped per the run's policy (`control-flow/replanning_and_budget.md`).
 
-Checkpoint cadence is per-node-completion by default; long nodes opt into intra-node
-checkpointing where it matters (e.g. the planner persisting subtasks one-by-one as it builds
-the plan).
+Checkpoint cadence is per canonical skill/step completion by default; long operations opt into
+intra-step checkpointing. The LangGraph compatibility adapter checkpoints per node.
 
 ## 6. Concurrency model
 
-Per graph-executor replica:
+Per harness-executor replica:
 
 - `AGENT_MAX_CONCURRENT_RUNS` (default tuned per regime; 4 in regime 1, e.g. 32 in regime 3):
-  the maximum number of runs an executor replica will keep in active graph execution
+  the maximum number of runs an executor replica will keep in active execution
   simultaneously. Excess `POST /runs` returns `429` (`api_contracts.md` §2) with a clear
   back-off; the client retries against the load balancer.
 - `AGENT_MAX_LLM_CONCURRENT` (per role, per replica): bounded by the reasoning-LLM backend's
@@ -125,7 +129,7 @@ Per cluster (regime 3):
 On SIGTERM:
 
 1. An API replica stops accepting new connections (`/healthz` flips to "draining").
-2. A graph executor stops reserving commands, finishes its current node, and checkpoints state.
+2. A harness executor stops reserving commands, finishes its current bounded step, and checkpoints.
 3. SSE clients reconnect to any API replica using `Last-Event-ID`.
 4. Background tasks (audit flush, cache pruning) complete to a quiescent point.
 5. The process exits within `SHUTDOWN_GRACE_S` (default 30 s) or is force-killed by the
@@ -154,10 +158,10 @@ up the run from its last checkpoint.
 ## 10. Observability
 
 - **Structured logs** with `request_id`, `run_id`, `session_id`, `tenant_id`, latency, status.
-- **Tracing**: every API request and every node execution is a span; LangSmith integration is
+- **Tracing**: every API request and every harness/skill step is a span; LangSmith integration is
   opt-in (`.agents/guidelines/langsmith.md`).
 - **Metrics**: request RPS/latency, run-start RPS, runs-in-progress, run completion status mix,
-  per-node latency, LLM tokens, job-queue depths.
+  per-skill/step latency, LLM tokens, job-queue depths.
 - **Audit log** (`specs/data/audit_log.md`) writes are non-blocking (queued) but durable before
   the user receives the corresponding response.
 - Logs MUST NOT contain secrets, raw prompts, or raw biological payloads (`API-10`).

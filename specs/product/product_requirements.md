@@ -48,7 +48,8 @@ operator** (runs the system).
 ### 5.1 Conversation & orchestration
 
 - **FR-1** The system MUST accept a free-text query and return a synthesized natural-language answer.
-- **FR-2** The system MUST classify query **intent** and route to the appropriate capability/subgraph.
+- **FR-2** The system MUST classify query **intent** and route to the appropriate typed
+  capability/workflow skill.
 - **FR-3** The system MUST classify query **risk/safety** early and gate or refuse accordingly
   (see §5.8).
 - **FR-4** The system MUST resolve biological **entities** from the query (genes, variants,
@@ -157,7 +158,7 @@ attach provenance + confidence, and be invokable both directly (API) and via the
 
 ### 5.7 Runs, history & reproducibility
 
-- **FR-30** The system MUST persist runs and expose a run inspector (timeline of nodes/tool calls,
+- **FR-30** The system MUST persist runs and expose a run inspector (timeline of harness/skill/tool calls,
   inputs/outputs).
 - **FR-31** Users MUST be able to revisit prior runs and their artifacts.
 - **FR-32** The system SHOULD support re-running a prior run with identical inputs to verify
@@ -207,13 +208,15 @@ attach provenance + confidence, and be invokable both directly (API) and via the
   non-color-only encodings and data export.
 - **NFR-10 Testability/evals** — capabilities MUST be covered by golden-query evals + rubrics; CI
   gates on them.
-- **NFR-11 Extensibility** — adding a new capability MUST follow the service+subgraph pattern without
-  changing the agent's core contract.
+- **NFR-11 Extensibility** — adding a new capability MUST follow the service + harness-neutral skill
+  pattern without changing a harness adapter or the policy kernel.
 
 ## 7. Constraints
 
-- **CR-1** Stack is fixed by `architecture_overview.md` (Python/FastAPI/LangGraph backend, Next.js
-  frontend, Postgres/Redis/object-store/vector index).
+- **CR-1** Stack is fixed by `architecture_overview.md` (Python/FastAPI skill and policy runtime,
+  pluggable mature-harness adapters, Next.js/CopilotKit frontend,
+  Postgres/Redis/object-store/vector index). LangGraph is the compatibility workflow runtime during
+  migration, not a required product harness.
 - **CR-2** Specs are contracts (ADR-0004); implementation MUST conform or the spec is revised first.
 - **CR-3** Service boundaries are logical first, microservices only when justified (ADR-0003).
 - **CR-4** Organism-agnostic: no capability may hard-code human-only assumptions.

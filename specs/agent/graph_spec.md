@@ -57,7 +57,7 @@ flowchart TD
       VI[visualization]
     end
 
-    CAP -. heavy / noisy subtasks .-> L3[L3 isolated sub-agents - deepagents task + virtual FS]
+    CAP -. heavy / noisy subtasks .-> L3[L3 isolated sub-agent skill + sandbox]
     L3 -. distilled, cited results .-> EI
 ```
 

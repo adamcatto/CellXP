@@ -127,7 +127,8 @@ At least one of `message` or `inputs` is required. Referenced artifacts MUST bel
 authorized workspace unless an explicit copy/import operation has occurred. A duplicate
 `client_request_id` within a session returns the original run rather than dispatching twice.
 The endpoint commits the queued run and one durable `run.status=queued` event, enqueues an
-idempotent graph-executor command, and returns `202` without executing LangGraph in the API process.
+idempotent harness-executor command, and returns `202` without executing an agent harness in the API
+process. The current compatibility transport retains legacy `graph.*` command names.
 Queue unavailability returns `503`; a committed run that could not be enqueued remains recoverable
 by the command outbox/reconciler and MUST NOT be dispatched twice.
 

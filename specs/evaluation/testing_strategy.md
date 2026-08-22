@@ -9,7 +9,8 @@
 
 ## 1. Purpose
 
-CellXP spans a Next.js client, FastAPI/LangGraph orchestration, biological services, async GPU workers,
+CellXP spans a Next.js client, FastAPI skill/policy runtime, pluggable harness adapters,
+LangGraph compatibility workflows, biological services, async GPU workers,
 and pluggable storage. A single `pytest` invocation is not enough. This spec defines:
 
 1. **Tiers** — static analysis through browser e2e and model evals.
@@ -71,9 +72,10 @@ at least one unit test. P0 classes (`NFR-3`, safety classifiers) MUST have edge-
 
 ### 3.2 T2 — Integration
 
-**Scope:** LangGraph supervisor and capability subgraphs with **stubbed or recorded** LLM + model
-services. Exercises: safety block, clarification pause/resume, human-review gate (`FR-25/26`),
-partial-results degradation (`NFR-6`), task-selector loop, concurrency append-only rules.
+**Scope:** skill registry/policy kernel and active harness adapters with **stubbed or recorded** LLM +
+model services. Compatibility coverage also executes the LangGraph workflow. Exercises: safety
+block, clarification pause/resume, human-review gate (`FR-25/26`), partial-results degradation
+(`NFR-6`), tool/loop budgets, typed I/O, and compatibility parity.
 
 **Rule:** every actionable capability MUST have a gate-enforcement integration test (pattern:
 `tests/integration/test_crispr_gate.py`).
@@ -160,7 +162,7 @@ they follow the same trigger rules as T1 for UI logic.
 |---|---|---|
 | T4 full backend e2e | nightly on `main` | `specs/agent/*`, `specs/interface/*`, storage/jobs paths change |
 | T5 Browser e2e | nightly on `main` | `src/frontend/**`, `specs/interface/{chat,workspace,genome_browser,streaming}*` |
-| T6 Golden evals | nightly on `main` | `specs/agent/**`, `specs/services/llm*`, prompts, harness, capability subgraphs |
+| T6 Golden evals | nightly on `main` | `specs/agent/**`, `specs/services/llm*`, prompts, policy kernel, harness adapters, capability skills/workflows |
 | T7 Live model | weekly + manual `workflow_dispatch` | model version bump, `specs/services/*`, worker/GPU infra |
 | T8 Perf | weekly | API streaming, job worker, visualization tiling changes |
 

@@ -1,16 +1,19 @@
-# Capability Subgraphs
+# Capability Workflows (LangGraph compatibility profiles)
 
-Per-subgraph specifications for the **domain** subgraphs the supervisor delegates to. Each file
-details one capability subgraph's contract: the `Subtask` it consumes, its internal **steps**
+These files specify reusable **domain workflow contracts**. The implemented LangGraph compatibility
+runtime exposes them as subgraphs; the target harness exposes bounded versions as typed
+`SkillPlugin`s (`skill_plugin_contract.md`). Each file details one capability's contract: the
+`Subtask`/skill input it consumes, its internal **steps**
 (light prep + heavy core), the models/services it invokes, the evidence/artifacts it produces,
 whether it is actionable (review-gated), and organism notes.
 
-Parent specs: `specs/agent/graph_spec.md` §5, `specs/agent/state_schema.md`,
+Parent specs: `specs/agent/skill_plugin_contract.md`, `graph_spec.md` §5 (compatibility mapping),
+`specs/agent/state_schema.md`,
 `specs/agent/tool_use_policy.md`. Models: `documentation/reference/external_models_and_services.md`
 (cited *catalog §N*). Impl: `src/backend/cellxp/agent/subgraphs/*`. Methodology:
 `specs/biology/*`. Service contracts: `specs/services/*`.
 
-## Uniform subgraph contract
+## Uniform capability contract
 
 - **In:** the selected `Subtask` (+ relevant `normalized_inputs`/`entities`).
 - **Do:** run internal steps; call services via the registry (`tool_use_policy.md`); record each step

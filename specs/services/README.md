@@ -1,8 +1,9 @@
 # Services Specs
 
 The **capability boundary** between the agent and the world. Each service wraps a coherent
-biological/computational capability behind a typed contract so the LangGraph supervisor and
-capability subgraphs (`specs/agent/capability-subgraphs/*`) can dispatch work without coupling to
+biological/computational capability behind a typed contract so harness-neutral skills and
+compatibility workflows (`specs/agent/skill_plugin_contract.md`,
+`capability-subgraphs/*`) can dispatch work without coupling to
 specific vendors, model revisions, or transport details. Services are *logical* boundaries
 (ADR-0003): they live under `src/backend/cellxp/services/<name>/` and can be promoted to
 out-of-process HTTP microservices without changing the agent contract.

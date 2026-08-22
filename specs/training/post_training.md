@@ -62,7 +62,8 @@ The pipeline SHOULD support, in order:
     degenerate always-refuse policy.
   - **PT-3.6.3** Citation/grounding reward MUST be **entailment/quote/accession-based** (the source
     actually supports the claim), not mere presence of a citation, to resist reward hacking.
-  - **PT-3.6.4** RL rollouts MUST be **on-policy against the real agent harness** or a
+  - **PT-3.6.4** RL rollouts MUST be **on-policy against the active HarnessAdapter through the real
+    CellXP skill/policy kernel** or a
     **faithfully mocked/cached tool layer** (recorded real tool outputs), and MUST run in a
     **sandbox with no real side effects** (no actual edits/orders; actionable outputs simulated).
   - **PT-3.6.5** RL prompt/task datasets MUST be versioned and **disjoint** from eval sets (`PT-4.1`).

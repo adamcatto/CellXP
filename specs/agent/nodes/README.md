@@ -1,7 +1,8 @@
-# Agent Nodes
+# Compatibility Graph Nodes
 
-Per-node specifications for the **top-level** graph nodes. Each file details one node's contract:
-what state it reads/writes, its behavior, errors, and (for LLM-backed nodes) its prompt asset.
+Per-node specifications for the implemented LangGraph compatibility workflow (ADR-0008). Each file
+details one node's contract: what state it reads/writes, behavior, errors, and prompt assets. These
+are not the public harness or model-tool contract; new capability work targets typed skills.
 
 Parent specs: `specs/agent/graph_spec.md` §4 (node catalog), `specs/agent/state_schema.md` (state
 contract). Implementation: `src/backend/cellxp/agent/nodes/*`, prompts in

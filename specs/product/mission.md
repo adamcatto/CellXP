@@ -60,9 +60,10 @@ but anything that proposes *actionable* biology (e.g. a CRISPR edit, a primer, a
 or any consequential side effect — is routed through a human-review gate before it is presented as a
 recommendation or committed.
 
-Under the hood the agent is a **hierarchical multi-agent system** (a supervisor that plans and routes,
-capability sub-agents that execute, and isolated sub-agents for deep/expensive subtasks;
-`documentation/explanation/multi_agent_architecture.md`). Work happens inside persistent, typed
+Under the hood the agent is a **hierarchical multi-agent system** (a mature harness that plans and
+routes, typed capability/workflow skills that execute through the policy kernel, and isolated
+sub-agents for deep/expensive subtasks; `documentation/explanation/multi_agent_architecture.md`).
+Work happens inside persistent, typed
 **sessions (workspaces)** — e.g. a *variant interpretation*, *genome editing*, or *strain
 optimization* session — that carry defaults, memory, and accumulated artifacts across many runs
 (`specs/agent/session_types.md`). As it works, the agent **streams** its activity progressively:

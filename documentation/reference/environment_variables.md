@@ -16,7 +16,9 @@ code.
 | `GRAPH_JOB_STREAM` | `cellxp:graph-commands` | Redis Stream for versioned graph commands |
 | `GRAPH_CONSUMER_GROUP` | `cellxp-graph-executors` | Consumer group shared by graph executors |
 
-Production API containers use `RUNTIME_BACKEND=queued`; graph-executor containers use `durable`.
+Production API containers use `RUNTIME_BACKEND=queued`; current LangGraph compatibility-executor
+containers use `durable`. `GRAPH_*` names are retained wire/config compatibility during the
+harness-adapter migration (ADR-0008).
 Run `docker compose -f infra/compose/docker-compose.runtime.yml up --build` for the detached local
 stack. The API commits run identity before queue dispatch and does not execute LangGraph inline.
 

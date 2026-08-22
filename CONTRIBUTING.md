@@ -5,10 +5,9 @@ species/strains, assays, harnesses, artifacts, and field knowledge. This guide i
 can be contributed*, *what each contribution requires*, and *roughly how to do it*. Each path points
 to the authoritative spec that owns the contract.
 
-> Status: Draft v0.1. The repo is **spec-first** (pre-implementation): today most contributions are
-> specs/docs. Concrete mechanics (registries, CLIs, plugin loading) are still being designed — places
-> marked **TODO (impl)** will firm up as the system is built. Don't block on them; propose against the
-> contracts below.
+> Status: Draft v0.1; active implementation. Typed service and skill registries are implemented,
+> while external plugin packaging/loading and some CLIs remain in design. Places marked
+> **TODO (impl)** will firm up as the system is built; propose against the contracts below.
 
 ## Ground rules (read first)
 

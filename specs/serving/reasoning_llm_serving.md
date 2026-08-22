@@ -38,7 +38,7 @@ GPU residency, a separate process to manage, and operational complexity that buy
   is where vLLM dominates.
 - The chosen model is large enough to need **tensor parallelism across multiple GPUs** (≥ 70B,
   or 30B with 4-bit on a tight VRAM budget) — Ollama is single-process.
-- The agent runs many parallel subagents per turn (a deepagents-style spawn fan-out) and the
+- The active harness runs many parallel sub-agents per turn and the
   reasoning LLM is the bottleneck — batched throughput matters.
 - A team standardizes on an **OpenAI-compatible local endpoint** behind a router so different
   apps share one serving plane.
@@ -54,7 +54,7 @@ via the existing `LLMProvider` interface, and never let the choice leak into bus
 
 ```
                 ┌──────────────────────────────────┐
-                │   FastAPI + LangGraph (1 proc)   │
+                │ FastAPI + harness/skill runtime  │
                 │   LLMProvider("ollama")          │
                 └──────────────┬───────────────────┘
                                │ httpx (HTTP, native streaming)
@@ -100,10 +100,10 @@ OLLAMA_MAX_LOADED_MODELS=1
 
 ### 3.4 Concurrency under sub-agent fan-out
 
-CellXP is a hierarchical multi-agent system (`multi_agent_architecture.md`,
-`.agents/guidelines/deepagents.md`): a supervisor can spawn L2 capability agents that can spawn
-L3 isolated sub-agents, and several of those may call the reasoning LLM in parallel within a
-single user turn (e.g. a planner spawning concurrent investigators, a critic running alongside
+CellXP is a hierarchical multi-agent system (`multi_agent_architecture.md`, ADR-0008): the active
+harness can invoke capability skills and isolated sub-agents, and several may call the reasoning
+LLM in parallel within a single user turn (e.g. a planner spawning concurrent investigators, a
+critic running alongside
 a report writer). Ollama serializes requests per loaded model by default; without tuning, that
 fan-out becomes wall-clock additive.
 
@@ -145,7 +145,7 @@ or per-role model heterogeneity that forces model-swap thrash.
 
 ```
                 ┌────────────────────────────────────────┐
-                │   FastAPI + LangGraph (N replicas)      │
+                │ FastAPI + harness runtime (N replicas)  │
                 │   LLMProvider("openai_compatible")      │
                 │   base_url = LLM_BASE_URL (internal LB) │
                 └──────────────┬──────────────────────────┘

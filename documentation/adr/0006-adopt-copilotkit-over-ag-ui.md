@@ -2,14 +2,14 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-22
-- **Related:** `specs/planning/copilotkit_integration.md`,
+- **Related:** `specs/planning/copilotkit_integration.md`, ADR-0008,
   `specs/interface/{api_contracts,streaming_protocol,artifact_model,interactive_panes}.md`,
   `documentation/adr/0002-langgraph-supervisor-with-subgraphs.md`
 
 ## Context
 
 CellXP already owns the difficult backend contracts: typed scientific artifacts, ordered run
-events, durable LangGraph checkpoints, provenance, and graph-enforced clarification/review pauses.
+events, durable checkpoints, provenance, and kernel-enforced clarification/review pauses.
 Its handwritten React chat implements those contracts but duplicates commodity chat behavior and
 does not provide CopilotKit's polished chat shell, frontend-tool rendering, generative UI, or shared
 agent-state hooks.
@@ -29,7 +29,8 @@ LangGraph/FastAPI adapter is not a safe drop-in for CellXP:
 ## Decision
 
 Use **CopilotKit v2** for the React chat/runtime layer and **AG-UI** as an additive protocol adapter.
-CellXP remains authoritative for orchestration, state, persistence, safety, and scientific data.
+CellXP's run store and policy kernel remain authoritative for state, persistence, safety, and
+scientific data; the selected mature harness is replaceable.
 
 Concretely:
 
@@ -47,7 +48,8 @@ Concretely:
    and selected workspace context). Large payloads remain behind artifact IDs/storage references.
 6. Translate CellXP clarification and review pauses to the standard AG-UI interrupt lifecycle.
    Resume payloads are correlated back to the original CellXP run and pass through the existing
-   graph checkpoint and audit path. Frontend-only approval tools MUST NOT replace the review gate.
+   canonical checkpoint and audit path. Frontend-only or harness-native approval tools MUST NOT
+   replace the review gate.
 7. Start with CopilotKit OSS. Evaluate Enterprise Intelligence later for cross-device realtime
    threads and hosted inspection only. If adopted, CellXP IDs and retention policy remain
    authoritative and private sequence/artifact payloads stay in CellXP storage.
@@ -58,9 +60,8 @@ Concretely:
 
 - A polished chat surface and generative/tool UI arrive without replacing scientific renderers.
 - AG-UI becomes a standards-based browser adapter while the existing API remains portable.
-- LangGraph interrupts, provenance, review decisions, and artifact schemas retain one source of
-  truth.
-- CopilotKit can be upgraded or replaced without changing capability subgraphs.
+- Runtime interrupts, provenance, review decisions, and artifact schemas retain one source of truth.
+- CopilotKit or the mature harness can be replaced without changing typed capability skills.
 
 **Negative / accepted trade-offs**
 
@@ -74,8 +75,8 @@ Concretely:
 
 - **Replace the CellXP API with CopilotKit's LangGraph adapter.** This loses current interrupt,
   artifact, audit, and non-React client guarantees.
-- **Use frontend `useHumanInTheLoop` approval as the safety gate.** An LLM-selected frontend tool is
-  bypassable; actionable biology must remain graph-enforced.
+- **Use frontend `useHumanInTheLoop` or harness approval as the safety gate.** Either is bypassable;
+  actionable biology must remain policy-kernel-enforced.
 - **Adopt Copilot Intelligence as the initial persistence layer.** It duplicates already-built
   state and introduces licensing/data-governance work before it provides a unique v1 capability.
 - **Let the model emit arbitrary UI code.** Scientific views use registered, schema-validated

@@ -27,7 +27,7 @@ contracts** above those config variables.
 |---|---|---|
 | `reasoning_llm_serving.md` | how the agent's reasoning LLM (Ollama default, vLLM/hosted-API opt-ins) is served, scaled, and selected per role | the agent's "brain" sits behind the `LLMProvider` interface; this is where the brain actually runs |
 | `domain_model_serving.md` | how the biological foundation models (Boltz-2, ESMFold, AlphaGenome, Evo 2, RFdiffusion, LigandMPNN, …) are served and scheduled | the heaviest compute; GPU workers + job queue |
-| `agent_runtime_serving.md` | how the FastAPI + LangGraph supervisor runs (replicas, concurrency, checkpoints, sticky-session sequencing, graceful shutdown) | the orchestrator that ties it all together |
+| `agent_runtime_serving.md` | how FastAPI, the policy kernel, and harness executors run (replicas, concurrency, checkpoints, sequencing, graceful shutdown) | the runtime that ties adapters and typed skills together |
 | `frontend_deployment.md` | how the Next.js web app is built/served now and how the macOS native shell ports onto the same wire contract | the user-facing surface and its portability story |
 
 ## Shared conventions
@@ -58,7 +58,7 @@ contracts** above those config variables.
 
 | Concern | Regime 1: single-user local | Regime 2: workstation / lab | Regime 3: multi-tenant cloud |
 |---|---|---|---|
-| API + LangGraph | 1 uvicorn process | 1–2 replicas behind reverse proxy | N replicas, autoscaled |
+| API + agent runtime | 1 uvicorn/local executor | 1–2 API + executor replicas | N API/executor replicas, independently autoscaled |
 | Reasoning LLM | Ollama (`gemma4:4b`) on host | Ollama on host or shared GPU | **vLLM / SGLang / TGI** (or hosted API) |
 | Domain models (Boltz/ESMFold/…) | CPU fallback (slow) or one GPU job | Dedicated GPU worker(s), Redis queue | GPU worker pool, autoscaled per queue |
 | Postgres | local container | local container or lab DB | managed Postgres |
@@ -75,9 +75,9 @@ The serving specs read *across* the other spec families:
 
 - They consume the **service contracts** (`specs/services/*`) and decide which services live
   in-process vs as standalone workers (`ADR-0003`).
-- They consume the **agent contract** (`specs/agent/state_schema.md`,
-  `specs/agent/control-flow/*`) and decide how many supervisors, how checkpoints work, and how
-  pauses survive restarts.
+- They consume the **agent contract** (`specs/agent/skill_plugin_contract.md`,
+  `state_schema.md`, `control-flow/*`) and decide how many harness executors run, how checkpoints
+  work, and how pauses survive restarts.
 - They consume the **data contracts** (`specs/data/*`) and pick backends (`file://` vs S3,
   local vector store vs hosted).
 - They feed the **interface contracts** (`specs/interface/*`) by guaranteeing the SSE/REST
