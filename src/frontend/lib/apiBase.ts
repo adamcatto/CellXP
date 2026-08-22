@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE = 'http://localhost:8000/api/v1';
+const DEFAULT_API_BASE = '/api/v1';
 
 function normalizeBase(url: string): string {
   return url.replace(/\/$/, '');
@@ -30,11 +30,6 @@ export function getApiBase(): string {
       return `${window.location.protocol}//${window.location.hostname}:${port}/api/v1`;
     }
     return base;
-  }
-
-  if (typeof window !== 'undefined') {
-    const port = process.env.NEXT_PUBLIC_API_PORT ?? '8001';
-    return `${window.location.protocol}//${window.location.hostname}:${port}/api/v1`;
   }
 
   return DEFAULT_API_BASE;
