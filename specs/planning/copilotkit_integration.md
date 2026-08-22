@@ -1,8 +1,8 @@
 # CopilotKit, AG-UI, and Reasoning-Harness Integration Plan
 
-> Status: **in progress**. Accepted decisions: ADR-0006 and ADR-0007. This plan sequences the
-> integration without replacing CellXP's canonical REST/SSE, artifact, provenance, safety, or
-> LangGraph contracts.
+> Status: **Phase A foundation implemented; Phase B hardening in progress**. Accepted decisions:
+> ADR-0006 and ADR-0007. This plan sequences the integration without replacing CellXP's canonical
+> REST/SSE, artifact, provenance, safety, or LangGraph contracts.
 
 ## 1. Outcome
 
@@ -105,7 +105,7 @@ The AG-UI state projection is deliberately smaller than `AgentState`:
 
 ## 5. Delivery phases
 
-### Phase A — protocol and chat foundation (in progress)
+### Phase A — protocol and chat foundation (implemented)
 
 - Add the Next.js CopilotKit v2 runtime and chat component.
 - Add a custom FastAPI AG-UI endpoint over the CellXP runtime.

@@ -171,3 +171,53 @@ def test_artifacts_are_named_tool_calls_with_refs_not_payloads() -> None:
     assert "payload" not in args["delta"]
     assert "storage_ref" not in args["delta"]
     assert project_state(snapshot)["cellxp"]["model"]["name"] == "Qwen/Qwen3.8-27B"
+
+
+def test_actionable_review_projects_standard_confirmation_interrupt() -> None:
+    run_input = RunAgentInput.model_validate(_input("session-review", "agui-review"))
+    artifact = {
+        "id": "guide-table-1",
+        "run_id": "cellxp-review",
+        "type": "guide_table",
+        "title": "Candidate guides",
+        "status": "ready",
+        "actionable": True,
+        "review_status": "pending",
+        "created_at": "2026-08-22T00:00:00Z",
+    }
+    review = {
+        "id": "review-1",
+        "run_id": "cellxp-review",
+        "artifact_ref": artifact,
+        "rationale": "Guide sequences are actionable biological output.",
+        "risks": ["Off-target effects require review."],
+    }
+    snapshot = {
+        "id": "cellxp-review",
+        "session_id": "session-review",
+        "status": "awaiting_review",
+        "steps": [],
+        "evidence": [],
+        "artifacts": [artifact],
+        "errors": [],
+        "pending_review": review,
+        "provider": "openai_compatible",
+        "model": "Qwen/Qwen3.8-27B",
+    }
+
+    events = [
+        event.model_dump(mode="json", by_alias=True, exclude_none=True)
+        for event in snapshot_events(run_input, snapshot)
+    ]
+    finished = events[-1]
+    interrupt = finished["outcome"]["interrupts"][0]
+
+    assert finished["outcome"]["type"] == "interrupt"
+    assert interrupt["id"] == review["id"]
+    assert interrupt["reason"] == "confirmation"
+    assert interrupt["metadata"]["review"]["artifact_ref"]["id"] == artifact["id"]
+    assert interrupt["responseSchema"]["properties"]["decision"]["enum"] == [
+        "approve",
+        "reject",
+        "request_changes",
+    ]
