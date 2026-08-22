@@ -15,7 +15,7 @@ router = APIRouter(tags=["ag-ui"])
 
 @router.post("/ag-ui")
 async def run_agent(run_input: RunAgentInput, request: Request) -> StreamingResponse:
-    encoder = EventEncoder(accept=request.headers.get("accept"))
+    encoder = EventEncoder(accept=request.headers.get("accept") or "text/event-stream")
 
     async def frames():
         async for event in ag_ui_event_stream(runtime, run_input):

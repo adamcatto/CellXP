@@ -180,11 +180,11 @@ def _tool_events(snapshot: dict[str, Any]) -> Iterable[BaseEvent]:
     for step in snapshot.get("steps", []):
         tool_call_id = f"step:{step['id']}"
         yield ToolCallStartEvent(
-            toolCallId=tool_call_id,
-            toolCallName=step.get("tool") or "cellxp_tool",
+            tool_call_id=tool_call_id,
+            tool_call_name=step.get("tool") or "cellxp_tool",
         )
         yield ToolCallArgsEvent(
-            toolCallId=tool_call_id,
+            tool_call_id=tool_call_id,
             delta=json.dumps(
                 {
                     "step": {
@@ -195,10 +195,10 @@ def _tool_events(snapshot: dict[str, Any]) -> Iterable[BaseEvent]:
                 separators=(",", ":"),
             ),
         )
-        yield ToolCallEndEvent(toolCallId=tool_call_id)
+        yield ToolCallEndEvent(tool_call_id=tool_call_id)
         yield ToolCallResultEvent(
-            messageId=f"tool-result:{step['id']}",
-            toolCallId=tool_call_id,
+            message_id=f"tool-result:{step['id']}",
+            tool_call_id=tool_call_id,
             content=json.dumps(
                 {
                     "run_id": run_id,
@@ -214,20 +214,20 @@ def _tool_events(snapshot: dict[str, Any]) -> Iterable[BaseEvent]:
     for artifact in snapshot.get("artifacts", []):
         tool_call_id = f"artifact:{artifact['id']}"
         yield ToolCallStartEvent(
-            toolCallId=tool_call_id,
-            toolCallName="render_cellxp_artifact",
+            tool_call_id=tool_call_id,
+            tool_call_name="render_cellxp_artifact",
         )
         yield ToolCallArgsEvent(
-            toolCallId=tool_call_id,
+            tool_call_id=tool_call_id,
             delta=json.dumps(
                 {"artifact": _bounded_artifact(artifact)},
                 separators=(",", ":"),
             ),
         )
-        yield ToolCallEndEvent(toolCallId=tool_call_id)
+        yield ToolCallEndEvent(tool_call_id=tool_call_id)
         yield ToolCallResultEvent(
-            messageId=f"artifact-result:{artifact['id']}",
-            toolCallId=tool_call_id,
+            message_id=f"artifact-result:{artifact['id']}",
+            tool_call_id=tool_call_id,
             content=json.dumps(
                 {"artifact_id": artifact["id"], "status": artifact.get("status", "ready")},
                 separators=(",", ":"),
@@ -241,7 +241,7 @@ def _interrupt_for(snapshot: dict[str, Any]) -> Interrupt | None:
             id=clarification["id"],
             reason="input_required",
             message=clarification["question"],
-            responseSchema={
+            response_schema={
                 "type": "object",
                 "properties": {
                     "selected_option_ids": {"type": "array", "items": {"type": "string"}},
@@ -260,7 +260,7 @@ def _interrupt_for(snapshot: dict[str, Any]) -> Interrupt | None:
             id=review["id"],
             reason="confirmation",
             message="Review this actionable biological output before it can be used.",
-            responseSchema={
+            response_schema={
                 "type": "object",
                 "properties": {
                     "decision": {
@@ -292,9 +292,9 @@ def snapshot_events(
 
     if report := snapshot.get("report"):
         message_id = f"report:{snapshot['id']}"
-        yield TextMessageStartEvent(messageId=message_id, role="assistant")
-        yield TextMessageContentEvent(messageId=message_id, delta=report)
-        yield TextMessageEndEvent(messageId=message_id)
+        yield TextMessageStartEvent(message_id=message_id, role="assistant")
+        yield TextMessageContentEvent(message_id=message_id, delta=report)
+        yield TextMessageEndEvent(message_id=message_id)
 
     # Emit a final state after messages/tool calls so clients finish with canonical IDs and status.
     yield StateSnapshotEvent(snapshot=project_state(snapshot, workspace))
@@ -309,16 +309,16 @@ def snapshot_events(
 
     if interrupt := _interrupt_for(snapshot):
         yield RunFinishedEvent(
-            threadId=run_input.thread_id,
-            runId=run_input.run_id,
+            thread_id=run_input.thread_id,
+            run_id=run_input.run_id,
             result={"cellxpRunId": snapshot["id"], "status": snapshot["status"]},
             outcome=RunFinishedInterruptOutcome(interrupts=[interrupt]),
         )
         return
 
     yield RunFinishedEvent(
-        threadId=run_input.thread_id,
-        runId=run_input.run_id,
+        thread_id=run_input.thread_id,
+        run_id=run_input.run_id,
         result={"cellxpRunId": snapshot["id"], "status": snapshot["status"]},
         outcome=RunFinishedSuccessOutcome(),
     )
@@ -351,7 +351,8 @@ def start_or_resume(
 
     if run_input.resume:
         state = run_input.state if isinstance(run_input.state, dict) else {}
-        cellxp_state = state.get("cellxp") if isinstance(state.get("cellxp"), dict) else {}
+        raw_cellxp_state = state.get("cellxp")
+        cellxp_state = raw_cellxp_state if isinstance(raw_cellxp_state, dict) else {}
         cellxp_run_id = cellxp_state.get("run_id")
         if not isinstance(cellxp_run_id, str) or not cellxp_run_id:
             raise HTTPException(status_code=422, detail="resume requires cellxp.run_id in state")
@@ -395,9 +396,9 @@ async def ag_ui_event_stream(
     a later optimization; the current runtime only guarantees reconstructable terminal snapshots.
     """
     yield RunStartedEvent(
-        threadId=run_input.thread_id,
-        runId=run_input.run_id,
-        parentRunId=run_input.parent_run_id,
+        thread_id=run_input.thread_id,
+        run_id=run_input.run_id,
+        parent_run_id=run_input.parent_run_id,
     )
     try:
         snapshot, workspace = start_or_resume(runtime, run_input)

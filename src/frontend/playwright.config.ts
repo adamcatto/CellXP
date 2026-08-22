@@ -24,6 +24,10 @@ export default defineConfig({
             process.env.CELLXP_API_BASE ?? '/api/v1',
           CELLXP_API_PROXY_TARGET:
             process.env.CELLXP_API_PROXY_TARGET ?? 'http://127.0.0.1:8001',
+          // Existing journeys continue to exercise the canonical REST/SSE fallback. CopilotKit's
+          // AG-UI contract is covered separately by backend protocol tests and manual browser smoke.
+          NEXT_PUBLIC_CELLXP_CHAT_MODE:
+            process.env.NEXT_PUBLIC_CELLXP_CHAT_MODE ?? 'native',
         },
       },
 });
