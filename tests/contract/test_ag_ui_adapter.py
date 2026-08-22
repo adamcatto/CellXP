@@ -6,11 +6,11 @@ import json
 
 import pytest
 from ag_ui.core import RunAgentInput
-from fastapi.testclient import TestClient
 
 from cellxp.api.ag_ui import project_state, snapshot_events
 from cellxp.api.main import app
 from cellxp.api.runtime import runtime
+from fastapi.testclient import TestClient
 
 pytestmark = pytest.mark.contract
 

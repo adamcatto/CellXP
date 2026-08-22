@@ -68,9 +68,8 @@ def _message_text(message: Any) -> str | None:
 
 def latest_user_message(run_input: RunAgentInput) -> str:
     for message in reversed(run_input.messages):
-        if getattr(message, "role", None) == "user":
-            if text := _message_text(message):
-                return text
+        if getattr(message, "role", None) == "user" and (text := _message_text(message)):
+            return text
     raise HTTPException(status_code=422, detail="AG-UI input contains no user text message")
 
 
@@ -409,6 +408,6 @@ async def ag_ui_event_stream(
             yield event
     except HTTPException as exc:
         yield RunErrorEvent(message=str(exc.detail), code=f"http_{exc.status_code}")
-    except Exception:
+    except Exception:  # noqa: BLE001 - protocol boundary converts all internals to a safe error
         # The protocol boundary must not expose raw exceptions, paths, model payloads, or credentials.
         yield RunErrorEvent(message="CellXP could not complete this agent run.", code="adapter_error")
