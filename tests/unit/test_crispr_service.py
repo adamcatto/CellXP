@@ -5,8 +5,13 @@ from cellxp.domain.evidence import Confidence, Provenance
 from cellxp.domain.models import GenomicInterval
 from cellxp.services.base import ServiceOutcome
 from cellxp.services.crispr import (
-    CrisprRequest, CrisprResult, CrisprService, EditOutcomeResult, Guide,
-    GuideScoringResult, OffTargetResult,
+    CrisprRequest,
+    CrisprResult,
+    CrisprService,
+    EditOutcomeResult,
+    Guide,
+    GuideScoringResult,
+    OffTargetResult,
 )
 
 
@@ -33,10 +38,12 @@ class Backend:
 
 
 def request(**updates):
-    values = dict(
-        target=GenomicInterval(chrom="chr1", start=100, end=200),
-        organism="Homo sapiens", assembly="GRCh38", edit_type="knockout",
-    )
+    values = {
+        "target": GenomicInterval(chrom="chr1", start=100, end=200),
+        "organism": "Homo sapiens",
+        "assembly": "GRCh38",
+        "edit_type": "knockout",
+    }
     values.update(updates)
     return CrisprRequest(**values)
 

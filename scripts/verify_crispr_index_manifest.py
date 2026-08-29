@@ -6,7 +6,11 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from cellxp.services.crispr.worker_contract import IndexManifest, manifest_sha256, verify_index_files
+from cellxp.services.crispr.worker_contract import (
+    IndexManifest,
+    manifest_sha256,
+    verify_index_files,
+)
 
 
 def main() -> int:

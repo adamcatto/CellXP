@@ -1,9 +1,8 @@
 """T4 lifecycle checks for workspace revisions, reproduction, and cancellation."""
 
-from fastapi.testclient import TestClient
-
 from cellxp.api.main import app
 from cellxp.api.runtime import runtime
+from fastapi.testclient import TestClient
 
 
 def test_session_revision_guard_and_run_reproduction() -> None:

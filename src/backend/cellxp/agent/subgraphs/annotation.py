@@ -35,10 +35,9 @@ from cellxp.domain.enums import (
 )
 from cellxp.domain.evidence import Confidence, EvidenceItem, Provenance
 from cellxp.domain.models import GenomicInterval
-from cellxp.services.base import ServiceOutcome, ServiceResult
+from cellxp.services.base import ServiceOutcome
 from cellxp.services.reference import EntityResolveRequest, ReferenceGenomeService
 from cellxp.services.reference.annotations import (
-    AnnotationFeature,
     AnnotationRequest,
     AnnotationResult,
 )

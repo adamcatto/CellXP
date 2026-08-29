@@ -1,5 +1,7 @@
 """RAG service package (X2); importing it registers :class:`RagService`."""
 
+from .pubmed import NcbiLiteratureClient
+from .retriever import LocalRagBackend, TextEmbedder
 from .schemas import (
     CitationExtractRequest,
     CitationRecord,
@@ -11,36 +13,34 @@ from .schemas import (
     IndexRequest,
     IndexResult,
     RagBackend,
-    RetrieveRequest,
     RetrievedChunk,
     RetrievedDocument,
+    RetrieveRequest,
     SearchHit,
     SearchRequest,
     SearchResult,
 )
 from .service import RagService
-from .pubmed import NcbiLiteratureClient
-from .retriever import LocalRagBackend, TextEmbedder
 
 __all__ = [
-    "RagService",
-    "RagBackend",
-    "SearchRequest",
-    "SearchResult",
-    "SearchHit",
-    "RetrieveRequest",
-    "RetrievedDocument",
-    "RetrievedChunk",
     "CitationExtractRequest",
     "CitationRecord",
     "CitationSet",
+    "ContextBundle",
+    "ContextRequest",
+    "ContextSnippet",
     "IndexDocument",
     "IndexRequest",
     "IndexResult",
-    "ContextRequest",
-    "ContextSnippet",
-    "ContextBundle",
-    "NcbiLiteratureClient",
     "LocalRagBackend",
+    "NcbiLiteratureClient",
+    "RagBackend",
+    "RagService",
+    "RetrieveRequest",
+    "RetrievedChunk",
+    "RetrievedDocument",
+    "SearchHit",
+    "SearchRequest",
+    "SearchResult",
     "TextEmbedder",
 ]

@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 
 import httpx
-
 from cellxp.services.rag.pubmed import NcbiLiteratureClient
 from cellxp.services.rag.schemas import SearchRequest
 

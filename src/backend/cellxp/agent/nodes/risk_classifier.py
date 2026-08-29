@@ -59,7 +59,7 @@ def _classify(query: str) -> RiskAssessment:
 
 
 def make_risk_classifier(
-    audit_repo: "AuditRepository | None" = None,
+    audit_repo: AuditRepository | None = None,
 ) -> Callable[[AgentState], dict[str, object]]:
     """Return a risk_classifier node function with an optionally injected audit repository.
 

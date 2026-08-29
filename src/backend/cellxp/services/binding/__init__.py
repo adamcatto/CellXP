@@ -15,15 +15,13 @@ from .motifs import MotifHit, MotifScanRequest, MotifScanResult
 from .service import BindingService
 
 __all__ = [
-    "BindingService",
-    # delta types
     "BindingDelta",
     "BindingDeltaRequest",
     "BindingDeltaResult",
     "BindingPred",
     "BindingRequest",
     "BindingResult",
-    # motif types
+    "BindingService",
     "MotifHit",
     "MotifScanRequest",
     "MotifScanResult",

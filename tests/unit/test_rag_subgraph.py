@@ -11,8 +11,8 @@ from cellxp.services.rag.schemas import (
     CitationSet,
     IndexRequest,
     IndexResult,
-    RetrieveRequest,
     RetrievedDocument,
+    RetrieveRequest,
     SearchRequest,
     SearchResult,
 )

@@ -31,7 +31,7 @@ class RedisJobQueue:
         self.group = group
 
     @classmethod
-    def from_url(cls, url: str, **kwargs: Any) -> "RedisJobQueue":
+    def from_url(cls, url: str, **kwargs: Any) -> RedisJobQueue:
         return cls(Redis.from_url(url, decode_responses=True), **kwargs)
 
     def setup(self) -> None:

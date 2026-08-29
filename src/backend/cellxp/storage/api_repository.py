@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import func, select
@@ -16,7 +16,7 @@ from . import models as orm
 
 def _iso(value: datetime) -> str:
     if value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
+        value = value.replace(tzinfo=UTC)
     return value.isoformat()
 
 
@@ -65,7 +65,7 @@ class ApiRepository:
             row = db.get(orm.WorkspaceSession, session_id)
             if row is None or row.deleted_at is not None:
                 return False
-            row.deleted_at = datetime.now(timezone.utc)
+            row.deleted_at = datetime.now(UTC)
             return True
 
     def save_run(self, snapshot: dict[str, Any], request: CreateRunRequest) -> None:

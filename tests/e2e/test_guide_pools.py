@@ -1,7 +1,6 @@
-from fastapi.testclient import TestClient
-
 from cellxp.api.main import app
 from cellxp.api.runtime import runtime
+from fastapi.testclient import TestClient
 
 
 def test_api_persists_and_revises_ordered_guide_pool():

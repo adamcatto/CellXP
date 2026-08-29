@@ -1,15 +1,18 @@
 """Supervisor integration for the annotation capability subgraph (L1, FR-16)."""
 
-from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.types import Command
-
 from cellxp.agent.graph import build_graph, production_capability_nodes
 from cellxp.agent.subgraphs import annotation as annotation_module
 from cellxp.domain.enums import IntentType, RunStatus
-from cellxp.services.base import ServiceOutcome, ServiceResult
+from cellxp.services.base import ServiceResult
 from cellxp.services.reference import EntityResolveRequest, EntityResolveResult, ResolvedEntity
-from cellxp.services.reference.annotations import AnnotationFeature, AnnotationRequest, AnnotationResult
+from cellxp.services.reference.annotations import (
+    AnnotationFeature,
+    AnnotationRequest,
+    AnnotationResult,
+)
 from cellxp.services.reference.genome import ReferenceGenomeService
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.types import Command
 
 
 class _Snap25AnnotationReferenceService(ReferenceGenomeService):

@@ -11,23 +11,23 @@ from __future__ import annotations
 from .database import Base, make_engine, make_session_factory, session_scope
 from .object_store import (
     FilesystemObjectStore,
-    S3ObjectStore,
     ObjectRef,
     ObjectStore,
+    S3ObjectStore,
     object_store_from_url,
 )
 from .repositories import AppendOnlyError, StateRepository
 
 __all__ = [
+    "AppendOnlyError",
     "Base",
-    "make_engine",
-    "make_session_factory",
-    "session_scope",
+    "FilesystemObjectStore",
     "ObjectRef",
     "ObjectStore",
-    "FilesystemObjectStore",
     "S3ObjectStore",
-    "object_store_from_url",
     "StateRepository",
-    "AppendOnlyError",
+    "make_engine",
+    "make_session_factory",
+    "object_store_from_url",
+    "session_scope",
 ]

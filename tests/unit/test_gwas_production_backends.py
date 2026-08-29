@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import httpx
-
 from cellxp.domain.models import Variant
 from cellxp.services.gwas import (
-    EbiGwasQtlBackend, GwasRequest, HttpGwasBackend, OpenTargetsGwasBackend,
+    EbiGwasQtlBackend,
+    GwasRequest,
+    HttpGwasBackend,
+    OpenTargetsGwasBackend,
 )
 
 
@@ -65,7 +67,7 @@ def test_http_worker_retries_transient_status_and_validates_result() -> None:
     assert calls == 2
 
 
-def test_environment_selection_is_opt_in(monkeypatch) -> None:  # noqa: ANN001
+def test_environment_selection_is_opt_in(monkeypatch) -> None:
     from cellxp.services.gwas.backends import gwas_backend_from_environment
 
     monkeypatch.delenv("GWAS_BACKEND", raising=False)

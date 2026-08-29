@@ -39,7 +39,7 @@ class CoordinateFrame(BaseModel):
     chain_map: dict[str, str] = Field(default_factory=dict)
 
     @model_validator(mode="after")
-    def _require_genomic_context(self) -> "CoordinateFrame":
+    def _require_genomic_context(self) -> CoordinateFrame:
         if self.kind == "genomic":
             missing = [
                 name
@@ -100,7 +100,7 @@ class ArtifactRef(BaseModel):
     created_at: str = Field(default_factory=utc_now_iso)
 
     @model_validator(mode="after")
-    def _validate_summary_size(self) -> "ArtifactRef":
+    def _validate_summary_size(self) -> ArtifactRef:
         if _json_size(self.summary) > OBJECT_INLINE_MAX:
             raise ValueError(f"summary exceeds OBJECT_INLINE_MAX ({OBJECT_INLINE_MAX})")
         return self
@@ -149,7 +149,7 @@ class ArtifactManifest(BaseModel):
     updated_at: str = Field(default_factory=utc_now_iso)
 
     @model_validator(mode="after")
-    def _validate_lifecycle_and_size(self) -> "ArtifactManifest":
+    def _validate_lifecycle_and_size(self) -> ArtifactManifest:
         if self.status == "ready" and self.payload is None and self.storage_ref is None:
             raise ValueError("ready artifact requires an inline payload or storage_ref")
         if self.actionable and self.review_status == "not_required":

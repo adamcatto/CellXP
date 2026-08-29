@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
@@ -24,7 +24,7 @@ class GuidePoolRepository:
     def save(
         self, source_artifact_id: str, request: SaveGuidePoolRequest, *, pool_id: str | None = None
     ) -> GuidePoolResponse:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with self.factory.begin() as db:
             row = db.get(orm.GuidePool, pool_id) if pool_id else None
             if row is None:

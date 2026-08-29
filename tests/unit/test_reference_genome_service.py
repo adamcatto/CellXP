@@ -14,10 +14,10 @@ Coverage:
 
 from __future__ import annotations
 
-
 from cellxp.domain.enums import OrganismClass, Strand, TaskStatus, Topology
 from cellxp.domain.models import GenomicInterval, Variant
 from cellxp.services.base import ServiceOutcome
+from cellxp.services.reference.annotations import AnnotationRequest
 from cellxp.services.reference.genome import (
     ASSEMBLY_CATALOG,
     SPECIES_PROFILES,
@@ -29,9 +29,7 @@ from cellxp.services.reference.genome import (
     SpeciesProfile,
     VariantValidationRequest,
 )
-from cellxp.services.reference.annotations import AnnotationRequest
 from cellxp.services.reference.liftover import LiftoverRequest
-
 
 # ---------------------------------------------------------------------------
 # Test double: in-memory sequence backend

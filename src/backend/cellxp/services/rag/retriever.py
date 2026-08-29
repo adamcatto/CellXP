@@ -26,8 +26,8 @@ from .schemas import (
     IndexDocument,
     IndexRequest,
     IndexResult,
-    RetrieveRequest,
     RetrievedDocument,
+    RetrieveRequest,
     SearchRequest,
     SearchResult,
 )

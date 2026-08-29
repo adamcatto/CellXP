@@ -15,7 +15,7 @@ from cellxp.agent.subgraphs.annotation import build_subgraph
 from cellxp.domain.enums import SequenceAlphabet, Strand, SubtaskType, TaskStatus
 from cellxp.domain.models import GenomicInterval
 from cellxp.domain.sequences import BiologicalSequence
-from cellxp.services.base import ServiceOutcome, ServiceResult
+from cellxp.services.base import ServiceResult
 from cellxp.services.reference import EntityResolveRequest, EntityResolveResult, ResolvedEntity
 from cellxp.services.reference.annotations import (
     AnnotationFeature,

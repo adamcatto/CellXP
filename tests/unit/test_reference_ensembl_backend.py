@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import httpx
-
 from cellxp.domain.enums import Strand
 from cellxp.domain.models import GenomicInterval
 from cellxp.services.base import ServiceOutcome

@@ -14,7 +14,7 @@ from cellxp.jobs.tasks import GRAPH_CANCEL, GRAPH_RESUME, GRAPH_START
 from cellxp.jobs.worker import run_worker
 
 
-def handlers(runtime: DurableRuntime):  # noqa: ANN201
+def handlers(runtime: DurableRuntime):
     def start(payload: dict[str, Any]) -> None:
         runtime.execute_queued(str(payload["run_id"]))
 

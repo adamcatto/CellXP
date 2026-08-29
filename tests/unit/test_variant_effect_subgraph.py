@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 from cellxp.agent.nodes.evidence_integrator import run as evidence_integrator_run
 from cellxp.agent.state import (
     AgentState,
@@ -31,7 +30,6 @@ from cellxp.services.alphagenome.schemas import (
 from cellxp.services.binding.delta import BindingDelta, BindingDeltaRequest, BindingDeltaResult
 from cellxp.services.binding.service import BindingService
 
-
 # ---------------------------------------------------------------------------
 # Mock model backends
 # ---------------------------------------------------------------------------
@@ -50,13 +48,13 @@ class _MockAlphaBackend:
         ]
         return VariantEffectResult(per_variant=effects)
 
-    def score_sequences(self, req):  # noqa: ANN001
+    def score_sequences(self, req):
         ...
 
-    def predict_tracks(self, req):  # noqa: ANN001
+    def predict_tracks(self, req):
         ...
 
-    def score_splicing(self, req):  # noqa: ANN001
+    def score_splicing(self, req):
         ...
 
 

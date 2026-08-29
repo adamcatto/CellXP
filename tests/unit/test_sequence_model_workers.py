@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
-
 from cellxp.services.alphagenome.alphagenome_worker import app as alphagenome_app
 from cellxp.services.alphagenome.evo_worker import app as evo_app
 from cellxp.services.alphagenome.sdk_backends import AlphaGenomeSdkBackend, Evo2SdkBackend
+from fastapi.testclient import TestClient
 
 
 class _Genome:

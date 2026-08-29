@@ -27,7 +27,7 @@ def run_worker(
             raise KeyError(f"no handler registered for job task {job.task!r}")
         try:
             handler(job.payload)
-        except Exception:
+        except Exception:  # noqa: BLE001
             queue.retry(job)
         else:
             queue.acknowledge(job)

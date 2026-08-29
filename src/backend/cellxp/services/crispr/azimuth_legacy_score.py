@@ -1,11 +1,10 @@
-#!/usr/bin/env python2
 # mypy: ignore-errors
 """JSON subprocess bridge for the pinned Python-2 Azimuth v2.0 environment."""
 
-from __future__ import print_function
 
 import json
 import sys
+
 from cStringIO import StringIO
 
 REVISION = "73522accfde9d609563231efcc5f3b284af78566"

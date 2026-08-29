@@ -1,7 +1,6 @@
 """Repository round-trip + append-only tests (Wave 0, RS-2/RS-3, PROV-2/PROV-3)."""
 
 import pytest
-
 from cellxp.agent.state import (
     AgentState,
     Budget,
@@ -32,7 +31,9 @@ from cellxp.domain.evidence import Confidence, EvidenceItem, Provenance
 from cellxp.domain.ids import new_id
 from cellxp.domain.safety import RiskAssessment
 from cellxp.storage.database import make_session_factory, session_scope
-from cellxp.storage.models import Base, Step as StepRow, Subtask as SubtaskRow
+from cellxp.storage.models import Base
+from cellxp.storage.models import Step as StepRow
+from cellxp.storage.models import Subtask as SubtaskRow
 from cellxp.storage.repositories import AppendOnlyError, StateRepository
 
 
@@ -148,9 +149,8 @@ def test_minimal_state_roundtrips(factory):
 
 
 def test_load_unknown_run_raises(factory):
-    with session_scope(factory) as s:
-        with pytest.raises(KeyError):
-            StateRepository(s).load(new_id())
+    with session_scope(factory) as s, pytest.raises(KeyError):
+        StateRepository(s).load(new_id())
 
 
 def test_delete_append_only_row_refused(factory):

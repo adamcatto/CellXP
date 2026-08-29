@@ -1,8 +1,6 @@
 """Artifact contract tests (Wave 0)."""
 
 import pytest
-from pydantic import ValidationError
-
 from cellxp.domain.artifacts import (
     OBJECT_INLINE_MAX,
     AccessibilityMetadata,
@@ -14,6 +12,7 @@ from cellxp.domain.artifacts import (
 )
 from cellxp.domain.clock import utc_now_iso
 from cellxp.domain.enums import ArtifactType, CoordinateSystem
+from pydantic import ValidationError
 
 
 def test_artifact_ref_defaults():

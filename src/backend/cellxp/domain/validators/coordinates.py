@@ -51,10 +51,9 @@ def validate_interval(
         )
 
     crossing = is_origin_crossing(interval.start, interval.end)
-    if crossing and interval.start != interval.end:
+    if crossing and interval.start != interval.end and topology is not Topology.CIRCULAR:
         # start > end: only legal as a circular wrap.
-        if topology is not Topology.CIRCULAR:
-            raise CoordinateError(
+        raise CoordinateError(
                 f"start ({interval.start}) > end ({interval.end}) is only valid on a circular "
                 f"contig; {interval.chrom!r} is {topology.value}",
                 field="start",

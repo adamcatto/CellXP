@@ -7,9 +7,10 @@ import hashlib
 import json
 import os
 import time
-from datetime import datetime, timezone
+from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 import httpx
 
@@ -19,7 +20,7 @@ def _sha256(path: Path) -> str:
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def collect_deployed_acceptance(
@@ -94,7 +95,7 @@ def collect_deployed_acceptance(
         pending = paused.get("pending_review") if paused.get("status") == "awaiting_review" else None
         checks["review_requested"] = isinstance(pending, dict)
         if not isinstance(pending, dict):
-            raise RuntimeError("deployed CRISPR run did not emit a review request")
+            raise RuntimeError("deployed CRISPR run did not emit a review request")  # noqa: TRY004
         review_id = str(pending["id"])
         artifact = pending.get("artifact_ref", {})
         artifact_id = str(artifact.get("id", "")) if isinstance(artifact, dict) else ""

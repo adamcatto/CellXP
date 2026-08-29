@@ -4,14 +4,15 @@ Importing this package registers `ReferenceGenomeService` in the global service 
 """
 
 from .annotations import AnnotationFeature, AnnotationRequest, AnnotationResult
+from .ensembl import EnsemblRestBackend
 from .genome import (
     ASSEMBLY_CATALOG,
     SPECIES_PROFILES,
     AssemblyInfo,
     ContigInfo,
+    EntityBackend,
     EntityResolveRequest,
     EntityResolveResult,
-    EntityBackend,
     LiftoverBackend,
     ReferenceCatalog,
     ReferenceGenomeService,
@@ -24,33 +25,30 @@ from .genome import (
     VariantValidationResult,
 )
 from .liftover import LiftoverRequest, LiftoverResult, LiftoverSegment
-from .ensembl import EnsemblRestBackend
 
 __all__ = [
-    # genome service + catalog
-    "ReferenceGenomeService",
     "ASSEMBLY_CATALOG",
     "SPECIES_PROFILES",
+    "AnnotationFeature",
+    "AnnotationRequest",
+    "AnnotationResult",
     "AssemblyInfo",
     "ContigInfo",
-    "SpeciesProfile",
-    "SequenceBackend",
-    "EntityBackend",
-    "LiftoverBackend",
     "EnsemblRestBackend",
-    # request / result types
+    "EntityBackend",
     "EntityResolveRequest",
     "EntityResolveResult",
-    "ResolvedEntity",
-    "SequenceFetchRequest",
-    "SequenceFetchResult",
-    "VariantValidationRequest",
-    "VariantValidationResult",
-    "ReferenceCatalog",
+    "LiftoverBackend",
     "LiftoverRequest",
     "LiftoverResult",
     "LiftoverSegment",
-    "AnnotationRequest",
-    "AnnotationResult",
-    "AnnotationFeature",
+    "ReferenceCatalog",
+    "ReferenceGenomeService",
+    "ResolvedEntity",
+    "SequenceBackend",
+    "SequenceFetchRequest",
+    "SequenceFetchResult",
+    "SpeciesProfile",
+    "VariantValidationRequest",
+    "VariantValidationResult",
 ]

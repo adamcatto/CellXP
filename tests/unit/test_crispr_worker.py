@@ -9,27 +9,26 @@ import types
 
 import httpx
 import pytest
-from fastapi.testclient import TestClient
-
 from cellxp.services.crispr.backends import HttpCrisprBackend
-from cellxp.services.crispr.worker import app
 from cellxp.services.crispr.runtime import parse_cas_offinder_line, rule_set_2_contexts
 from cellxp.services.crispr.schemas import GuideScoringRequest
+from cellxp.services.crispr.worker import app
 from cellxp.services.crispr.worker_contract import (
     index_manifest,
     packaged_worker_manifest,
     production_backend,
 )
+from fastapi.testclient import TestClient
 
 
-def _fixture_client(monkeypatch) -> TestClient:  # noqa: ANN001
+def _fixture_client(monkeypatch) -> TestClient:
     monkeypatch.setenv("CELLXP_CRISPR_WORKER_MODE", "contract_fixture")
     index_manifest.cache_clear()
     production_backend.cache_clear()
     return TestClient(app)
 
 
-def test_fixture_health_attests_mode_and_circular_microbe(monkeypatch) -> None:  # noqa: ANN001
+def test_fixture_health_attests_mode_and_circular_microbe(monkeypatch) -> None:
     health = _fixture_client(monkeypatch).get("/health")
     assert health.status_code == 200
     body = health.json()
@@ -39,7 +38,7 @@ def test_fixture_health_attests_mode_and_circular_microbe(monkeypatch) -> None: 
     assert len(body["source_manifest_sha256"]) == 64
 
 
-def test_fixture_never_accepts_rule_set_2_label(monkeypatch) -> None:  # noqa: ANN001
+def test_fixture_never_accepts_rule_set_2_label(monkeypatch) -> None:
     client = _fixture_client(monkeypatch)
     payload = {
         "guides": ["GAGTCCGAGCAGAAGAAGAA"],
@@ -70,7 +69,7 @@ def test_rule_set_2_requires_real_context_and_validates_spacer_pam() -> None:
     })) == [context]
 
 
-def test_production_endpoint_rejects_guide_only_before_runtime(monkeypatch, tmp_path) -> None:  # noqa: ANN001
+def test_production_endpoint_rejects_guide_only_before_runtime(monkeypatch, tmp_path) -> None:
     index_file = tmp_path / "grch38.fa"
     index_file.write_bytes(b">chr1\nACGT\n")
     manifest_path = tmp_path / "manifest.json"
@@ -97,7 +96,7 @@ def test_production_endpoint_rejects_guide_only_before_runtime(monkeypatch, tmp_
     assert "real 30-bp genomic_contexts" in response.json()["detail"]
 
 
-def test_fixture_microbe_request_uses_attested_circular_assembly(monkeypatch) -> None:  # noqa: ANN001
+def test_fixture_microbe_request_uses_attested_circular_assembly(monkeypatch) -> None:
     response = _fixture_client(monkeypatch).post("/v1/design-guides", json={
         "target": "lacZ",
         "organism": "Escherichia coli",
@@ -109,7 +108,7 @@ def test_fixture_microbe_request_uses_attested_circular_assembly(monkeypatch) ->
     assert "topology=circular" in response.json()["rationale"]
 
 
-def test_unknown_assembly_is_rejected_before_scoring(monkeypatch) -> None:  # noqa: ANN001
+def test_unknown_assembly_is_rejected_before_scoring(monkeypatch) -> None:
     response = _fixture_client(monkeypatch).post("/v1/on-target-scores", json={
         "guides": ["GAGTCCGAGCAGAAGAAGAA"],
         "organism": "Homo sapiens",
@@ -119,7 +118,7 @@ def test_unknown_assembly_is_rejected_before_scoring(monkeypatch) -> None:  # no
     assert "no attested off-target index" in response.json()["detail"]
 
 
-def test_production_rejects_index_checksum_mismatch(monkeypatch, tmp_path) -> None:  # noqa: ANN001
+def test_production_rejects_index_checksum_mismatch(monkeypatch, tmp_path) -> None:
     index_file = tmp_path / "grch38.index"
     index_file.write_bytes(b"actual index")
     manifest_path = tmp_path / "manifest.json"
@@ -138,7 +137,7 @@ def test_production_rejects_index_checksum_mismatch(monkeypatch, tmp_path) -> No
     assert "checksum mismatch" in response.json()["detail"]
 
 
-def test_production_runtime_must_attest_exact_source_revisions(monkeypatch, tmp_path) -> None:  # noqa: ANN001
+def test_production_runtime_must_attest_exact_source_revisions(monkeypatch, tmp_path) -> None:
     index_file = tmp_path / "index.bin"
     index_file.write_bytes(b"index")
     manifest_path = tmp_path / "manifest.json"
@@ -154,7 +153,7 @@ def test_production_runtime_must_attest_exact_source_revisions(monkeypatch, tmp_
     }))
 
     class Runtime:
-        def attest(self):  # noqa: ANN201
+        def attest(self):
             return {"source_revisions": {"cas-offinder": "wrong"}}
 
     module = types.ModuleType("test_crispr_runtime")

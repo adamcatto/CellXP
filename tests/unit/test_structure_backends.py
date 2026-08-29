@@ -7,7 +7,6 @@ import subprocess
 from pathlib import Path
 
 import pytest
-
 from cellxp.domain.enums import SequenceAlphabet
 from cellxp.domain.sequences import BiologicalSequence
 from cellxp.services.structure.backends import (

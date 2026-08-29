@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import pytest
-
 from cellxp.domain.enums import ConfidenceBand
+from cellxp.domain.errors import CoordinateError
 from cellxp.domain.evidence import Confidence
 from cellxp.domain.models import Variant
 from cellxp.services.alphagenome.client import AlphaGenomeService
@@ -30,9 +30,7 @@ from cellxp.services.alphagenome.transforms import (
     variant_id,
 )
 from cellxp.services.base import ServiceOutcome
-from cellxp.domain.errors import CoordinateError
 from cellxp.services.reference.genome import ASSEMBLY_CATALOG
-
 
 # ---------------------------------------------------------------------------
 # Oracle selection (AGS-1)

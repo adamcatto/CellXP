@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
-
 from cellxp.api.main import app
 from cellxp.api.runtime import DurableRuntime
 from cellxp.api.schemas import CreateRunRequest, CreateSessionRequest
 from cellxp.domain.clock import utc_now_iso
+from fastapi.testclient import TestClient
 
 RUN_ID = "00000000-0000-4000-8000-000000000001"
 PENDING_ID = "00000000-0000-4000-8000-000000000002"

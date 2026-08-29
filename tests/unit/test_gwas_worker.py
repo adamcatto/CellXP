@@ -4,16 +4,23 @@ from __future__ import annotations
 
 import json
 
-from fastapi.testclient import TestClient
-
 from cellxp.domain.evidence import Provenance
 from cellxp.domain.models import GenomicInterval
 from cellxp.services.gwas import (
-    ColocBatchResult, ColocRequest, ColocResult, CredibleSet, CredibleVariant, FineMapRequest,
-    FineMapResult, LdPair, LdRequest, LdResult,
+    ColocBatchResult,
+    ColocRequest,
+    ColocResult,
+    CredibleSet,
+    CredibleVariant,
+    FineMapRequest,
+    FineMapResult,
+    LdPair,
+    LdRequest,
+    LdResult,
 )
 from cellxp.services.gwas.worker_backend import GwasWorkerBackend
 from cellxp.storage.object_store import FilesystemObjectStore
+from fastapi.testclient import TestClient
 
 
 def interval() -> GenomicInterval:
@@ -50,11 +57,11 @@ class Engine:
         )
 
 
-def backend(tmp_path) -> GwasWorkerBackend:  # noqa: ANN001
+def backend(tmp_path) -> GwasWorkerBackend:
     return GwasWorkerBackend(Engine(), FilesystemObjectStore(tmp_path))
 
 
-def test_worker_backend_persists_ld_finemap_and_coloc(tmp_path) -> None:  # noqa: ANN001
+def test_worker_backend_persists_ld_finemap_and_coloc(tmp_path) -> None:
     worker = backend(tmp_path)
     results = [
         worker.compute_ld(LdRequest(interval=interval(), organism="Homo sapiens",
@@ -73,7 +80,7 @@ def test_worker_backend_persists_ld_finemap_and_coloc(tmp_path) -> None:  # noqa
         assert result.provenance.output_hash
 
 
-def test_worker_http_endpoints_validate_and_persist(monkeypatch, tmp_path) -> None:  # noqa: ANN001
+def test_worker_http_endpoints_validate_and_persist(monkeypatch, tmp_path) -> None:
     from cellxp.services.gwas import worker as module
     monkeypatch.setattr(module, "get_backend", lambda: backend(tmp_path))
     client = TestClient(module.app)
@@ -85,7 +92,7 @@ def test_worker_http_endpoints_validate_and_persist(monkeypatch, tmp_path) -> No
     assert response.json()["storage_ref"].startswith("cas/")
 
 
-def test_external_engine_fails_closed_without_ld_matrix(tmp_path) -> None:  # noqa: ANN001
+def test_external_engine_fails_closed_without_ld_matrix(tmp_path) -> None:
     from cellxp.services.gwas.worker_backend import ExternalStatisticalEngine, GwasWorkerConfig
     engine = ExternalStatisticalEngine(FilesystemObjectStore(tmp_path), GwasWorkerConfig())
     request = FineMapRequest(interval=interval(), organism="Homo sapiens", assembly="GRCh38",

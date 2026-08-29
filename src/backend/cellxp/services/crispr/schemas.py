@@ -46,7 +46,7 @@ class CrisprRequest(BaseModel):
     num_guides: int = Field(default=10, ge=1, le=100)
 
     @model_validator(mode="after")
-    def _require_edit_spec(self) -> "CrisprRequest":
+    def _require_edit_spec(self) -> CrisprRequest:
         if self.edit_type in {"base_edit", "prime_edit"} and self.edit_spec is None:
             raise ValueError(f"{self.edit_type} requires edit_spec")
         return self

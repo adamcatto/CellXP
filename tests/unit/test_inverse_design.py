@@ -9,8 +9,12 @@ from cellxp.domain.models import GenomicInterval
 from cellxp.services.base import ServiceOutcome
 from cellxp.services.crispr import EditSpec
 from cellxp.services.inverse_design import (
-    CandidateAssessment, CandidateProposal, EffectTarget, InverseDesignRequest,
-    InverseDesignService, SearchBudget,
+    CandidateAssessment,
+    CandidateProposal,
+    EffectTarget,
+    InverseDesignRequest,
+    InverseDesignService,
+    SearchBudget,
 )
 
 

@@ -7,7 +7,6 @@ import os
 import urllib.request
 
 import pytest
-
 from cellxp.services.crispr.worker_contract import packaged_worker_manifest
 
 pytestmark = [pytest.mark.live, pytest.mark.slow]

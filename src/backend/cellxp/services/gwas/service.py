@@ -83,8 +83,8 @@ class GwasService(Service):
         heavy: bool = False,
     ) -> ServiceResult[T]:
         started = utc_now_iso()
-        organism = str(getattr(request, "organism"))
-        assembly = str(getattr(request, "assembly"))
+        organism = str(request.organism)
+        assembly = str(request.assembly)
         unsupported = _coverage_issue(organism, assembly)
         if unsupported:
             return ServiceResult.unsupported(

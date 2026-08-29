@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import httpx
 import pytest
-from pydantic import ValidationError
-
 from cellxp.domain.enums import ConfidenceBand
 from cellxp.domain.models import GenomicInterval, Variant
 from cellxp.services.alphagenome import (
@@ -18,6 +16,7 @@ from cellxp.services.alphagenome import (
     VariantEffectRequest,
 )
 from cellxp.services.base import ServiceOutcome
+from pydantic import ValidationError
 
 
 def _client(handler) -> httpx.Client:

@@ -1,6 +1,5 @@
-from threading import RLock
-
 import json
+from threading import RLock
 
 from fastapi import APIRouter, HTTPException, Response, status
 

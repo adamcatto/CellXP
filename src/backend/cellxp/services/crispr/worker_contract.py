@@ -74,7 +74,7 @@ def index_manifest() -> IndexManifest:
         return manifest
     except HTTPException:
         raise
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise HTTPException(status_code=503, detail=f"invalid CRISPR index manifest: {exc}") from exc
 
 
@@ -131,7 +131,7 @@ def production_backend() -> Any:
         factory = getattr(importlib.import_module(module_name), function_name)
         backend = factory(manifest, indexes)
         attestation = backend.attest()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise HTTPException(status_code=503, detail=f"CRISPR runtime failed to load: {exc}") from exc
     expected = {source.name: source.revision for source in manifest.sources}
     if attestation.get("source_revisions") != expected:

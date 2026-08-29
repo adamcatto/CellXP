@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 import os
 import pickle
 import subprocess
@@ -22,9 +22,9 @@ from .schemas import (
     CrisprResult,
     EditOutcomeRequest,
     EditOutcomeResult,
+    Guide,
     GuideScoringRequest,
     GuideScoringResult,
-    Guide,
     OffTarget,
     OffTargetRequest,
     OffTargetResult,
@@ -108,7 +108,7 @@ class ProductionCrisprRuntime:
         self, request: CrisprRequest, *, assembly_index: AssemblyIndex
     ) -> CrisprResult:
         if not isinstance(request.target, GenomicInterval):
-            raise ValueError("production guide design requires a resolved GenomicInterval target")
+            raise ValueError("production guide design requires a resolved GenomicInterval target")  # noqa: TRY004
         if request.target.assembly not in {None, request.assembly}:
             raise ValueError("target interval assembly does not match the CRISPR request")
         if request.edit_type in {"base_edit", "prime_edit"}:
@@ -197,7 +197,7 @@ class ProductionCrisprRuntime:
         raise ValueError(f"edit-outcome model for editor {request.editor!r} is not packaged")
 
     def _verify_executables(self) -> None:
-        subprocess.run([self.cas_offinder], capture_output=True, timeout=30)
+        subprocess.run([self.cas_offinder], capture_output=True, timeout=30, check=False)
         completed = subprocess.run(
             [*self.azimuth_command, "--version"], capture_output=True, check=True, timeout=30
         )
@@ -320,7 +320,7 @@ def enumerate_spcas9_candidates(
     positions = (
         list(range(target.start, target.end))
         if target.start < target.end
-        else list(range(target.start, length)) + list(range(0, target.end))
+        else list(range(target.start, length)) + list(range(target.end))
     )
     included = set(positions)
     candidates: list[SpCas9Candidate] = []

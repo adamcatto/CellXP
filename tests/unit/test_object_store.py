@@ -1,7 +1,6 @@
 """Object-store contract tests (Wave 0, object_storage.md OS-1..OS-6, provenance_model.md §6)."""
 
 import pytest
-
 from cellxp.domain.errors import IntegrityError
 from cellxp.storage.object_store import (
     FilesystemObjectStore,

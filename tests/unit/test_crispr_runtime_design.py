@@ -81,7 +81,7 @@ def test_origin_crossing_is_rejected_for_linear_reference() -> None:
         raise AssertionError("linear origin crossing must fail")
 
 
-def test_design_composes_context_scoring_off_targets_and_provenance(tmp_path, monkeypatch) -> None:  # noqa: ANN001
+def test_design_composes_context_scoring_off_targets_and_provenance(tmp_path, monkeypatch) -> None:
     guide = "GAGTCCGAGCAGAAGAAGAA"
     context = "TTGC" + guide + "AGG" + "TCA"
     fasta = tmp_path / "reference.fa"
@@ -92,11 +92,11 @@ def test_design_composes_context_scoring_off_targets_and_provenance(tmp_path, mo
     runtime.manifest = packaged_worker_manifest()
     captured = {}
 
-    def score(request, *, assembly_index):  # noqa: ANN001, ANN202
+    def score(request, *, assembly_index):
         captured["context"] = request.genomic_contexts[guide]
         return GuideScoringResult(scores={guide: 0.8})
 
-    def off_targets(request, *, assembly_index):  # noqa: ANN001, ANN202
+    def off_targets(request, *, assembly_index):
         captured["off_target_assembly"] = request.assembly
         return OffTargetResult(hits={guide: [OffTarget(
             locus=GenomicInterval(assembly="test", chrom="chr1", start=0, end=20),

@@ -60,7 +60,7 @@ def test_release_biology_catalogs_are_sourced_and_explicit() -> None:
             "ordered_capabilities",
         )), f"{label}: explicit expected constraint required"
         for field in ("added_at", "last_reviewed_at"):
-            datetime.fromisoformat(str(record[field]).replace("Z", "+00:00"))
+            datetime.fromisoformat(str(record[field]))
 
 
 def test_release_capability_and_composition_floors() -> None:

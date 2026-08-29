@@ -1,7 +1,5 @@
 """Relational schema structural tests (Wave 0, relational_schema.md §4, RS-4/RS-5)."""
 
-from sqlalchemy import inspect
-
 from cellxp.domain.enums import RunStatus
 from cellxp.storage.database import make_engine, pg_enum
 from cellxp.storage.models import (
@@ -10,6 +8,7 @@ from cellxp.storage.models import (
     Run,
     WorkspaceSession,
 )
+from sqlalchemy import inspect
 
 
 def test_metadata_creates_all_history_tables():

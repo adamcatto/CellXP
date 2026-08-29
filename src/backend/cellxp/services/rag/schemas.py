@@ -6,7 +6,6 @@ from typing import Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field, field_validator
 
-
 SourceType = Literal["literature", "database"]
 
 

@@ -1,7 +1,6 @@
 """Service base + registry contract tests (Wave 0)."""
 
 import pytest
-
 from cellxp.agent.state import RunError, Step
 from cellxp.services.base import Service, ServiceOutcome, ServiceResult
 from cellxp.services.registry import ServiceRegistry

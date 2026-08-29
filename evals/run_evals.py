@@ -7,12 +7,12 @@ import hashlib
 import json
 import os
 import time
-from datetime import datetime, timezone
+from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 import httpx
-
 
 CATALOG_DIR = Path(__file__).parent / "golden_queries"
 REQUIRED_FIELDS = frozenset({"id", "capability", "expected", "added_at", "last_reviewed_at"})
@@ -53,7 +53,7 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
             continue
         value = json.loads(raw_line)
         if not isinstance(value, dict):
-            raise ValueError(f"{path}:{line_number}: record must be a JSON object")
+            raise ValueError(f"{path}:{line_number}: record must be a JSON object")  # noqa: TRY004
         records.append(value)
     return records
 
@@ -179,7 +179,7 @@ def dispatch_api_runs(
         for path in paths:
             for query in load_jsonl(path):
                 query_id = str(query["id"])
-                started_at = datetime.now(timezone.utc).isoformat()
+                started_at = datetime.now(UTC).isoformat()
                 record: dict[str, object] = {
                     "query_id": query_id, "catalog": str(path.relative_to(catalog_dir)),
                     "dispatched_at": started_at,
@@ -222,7 +222,7 @@ def dispatch_api_runs(
                     record.update(
                         {
                             "session_id": session_id, "run_id": run_id,
-                            "completed_at": datetime.now(timezone.utc).isoformat(),
+                            "completed_at": datetime.now(UTC).isoformat(),
                             "snapshot": snapshot,
                         }
                     )
@@ -242,7 +242,7 @@ def dispatch_api_runs(
     )
     manifest: dict[str, object] = {
         "schema_version": "1.0", "archive_id": archive_id,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "build_revision": os.getenv("CELLXP_BUILD_REVISION", "unknown"),
         "api_base_url": api_base_url.rstrip("/"),
         "catalogs": [

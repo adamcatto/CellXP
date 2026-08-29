@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import ValidationError
-
 from cellxp.storage.rag_vector_index import (
     RagChunkMetadata,
     RagVectorChunk,
     SQLiteRagVectorIndex,
 )
+from pydantic import ValidationError
 
 
 def _chunk(

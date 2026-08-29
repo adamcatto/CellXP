@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from cellxp.domain.enums import ArtifactType, ConfidenceBand, SequenceAlphabet
 from cellxp.domain.evidence import Provenance
 from cellxp.domain.models import GenomicInterval
@@ -27,7 +26,6 @@ from cellxp.services.structure.transforms import (
     select_structure_model,
     validate_kind_alphabet,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers / mock backend
