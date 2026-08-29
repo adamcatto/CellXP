@@ -85,7 +85,7 @@ def _evaluate(gates: Sequence[Gate], evidence: Mapping[str, Any]) -> dict[str, A
             status = "blocked"
         elif gate.expected is not None:
             status = "passed" if observed == gate.expected else "failed"
-        elif not isinstance(observed, (int, float)) or gate.minimum is not None and observed < gate.minimum or gate.maximum is not None and observed > gate.maximum:
+        elif not isinstance(observed, (int, float)) or (gate.minimum is not None and observed < gate.minimum) or (gate.maximum is not None and observed > gate.maximum):
             status = "failed"
         else:
             status = "passed"
