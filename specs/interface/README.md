@@ -59,11 +59,13 @@ transformation, coordinate logic, or review-decision policy may live in a platfo
 
 ## Stack (from `architecture_overview.md` §3)
 
-Next.js (App Router) · TypeScript (strict) · React · Tailwind · local `components/ui/*`
-primitives · SSE via `fetch`/`EventSource` (`lib/streaming.ts`) · typed client in `lib/api.ts`
-generated from FastAPI's OpenAPI · **Mol\*** for 3D structure · custom Canvas/SVG for genome
-tracks · visx / D3 for scientific plots. Code lives in `src/frontend/`. Native macOS port is
-planned via a thin shell over the same REST/SSE wire contract (`api_contracts.md` §10).
+Next.js (App Router) · TypeScript (strict) · React · Tailwind · **CopilotKit v2** chat/runtime over
+AG-UI · local `components/ui/*` primitives · canonical SSE via `fetch`/`EventSource`
+(`lib/streaming.ts`) · typed client in `lib/api.ts` generated from FastAPI's OpenAPI · **Mol\*** for
+3D structure · custom Canvas/SVG for genome tracks · visx / D3 for scientific plots. CopilotKit
+owns chat mechanics and tool-render slots; CellXP owns typed scientific renderers and the dock.
+Code lives in `src/frontend/`. Native macOS remains a thin client over canonical REST/SSE; it does
+not depend on CopilotKit (`api_contracts.md` §10, ADR-0006).
 
 ## Related
 

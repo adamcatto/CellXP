@@ -1,7 +1,8 @@
 # Agent State Schema
 
-> Status: Draft v0.1 — **keystone contract**. Defines the shared state object that flows through the
-> LangGraph agent and the run/event shapes the API and frontend consume. The UI specs
+> Status: Draft v0.1 — **keystone contract**. Defines canonical run/event substructures and the
+> `AgentState` projection used by the LangGraph compatibility workflow. Harness adapters consume
+> bounded state/context projections, not raw `AgentState`. The UI specs
 > (`specs/interface/*`), API contract (`api_contracts.md`), data model (`specs/data/*`), and the
 > other agent specs all derive from this document. Implementation lives in
 > `src/backend/cellxp/agent/state.py`; when code and this spec diverge, reconcile here
@@ -10,7 +11,7 @@
 ## 1. Purpose & scope
 
 This spec defines:
-1. the **`AgentState`** object passed between graph nodes (the in-run working memory),
+1. canonical run substructures and the compatibility **`AgentState`** passed between graph nodes,
 2. the **substructures** it contains (inputs, entities, plan, steps, evidence, artifacts, review,
    errors),
 3. the **reducers** (how concurrent/streamed updates merge), and
@@ -23,8 +24,9 @@ reference the shapes defined here.
 
 ## 2. Design principles
 
-- **One source of truth per run.** All node outputs are reductions into `AgentState`; nothing
-  important lives only in a node's local scope.
+- **One source of truth per run.** Important outputs are persisted as canonical run, step, evidence,
+  artifact, review, and audit records; no harness-private memory is authoritative. The compatibility
+  graph reduces those shapes through `AgentState`.
 - **Append-only where it aids provenance.** Evidence, artifacts, steps, and errors accumulate
   (LangGraph `Annotated[..., add]` reducers) so the trace is complete and reproducible (`FR-24`).
 - **Everything addressable.** Runs, messages, subtasks, steps, evidence, and artifacts carry stable

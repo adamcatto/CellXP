@@ -5,7 +5,14 @@ from cellxp.agent.subgraphs.crispr import build_subgraph
 from cellxp.domain.enums import ConfidenceBand, SubtaskType, TaskStatus
 from cellxp.domain.evidence import Confidence, Provenance
 from cellxp.domain.models import GenomicInterval
-from cellxp.services.crispr import CrisprResult, CrisprService, EditOutcomeResult, Guide, GuideScoringResult, OffTargetResult
+from cellxp.services.crispr import (
+    CrisprResult,
+    CrisprService,
+    EditOutcomeResult,
+    Guide,
+    GuideScoringResult,
+    OffTargetResult,
+)
 
 
 class Backend:

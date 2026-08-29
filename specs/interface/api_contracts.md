@@ -11,6 +11,10 @@ The API supports a TypeScript web client first and later native clients without 
 database, or object-store internals. It uses JSON REST resources for durable state, SSE for ordered
 run events, and multipart uploads for files.
 
+The web client additionally uses `POST /ag-ui`, an AG-UI protocol adapter consumed through the
+same-origin Next.js CopilotKit runtime. This endpoint maps to the resources below; it is not a second
+system of record. The canonical REST/SSE API remains available to every client (ADR-0006).
+
 - JSON fields use `snake_case`; timestamps are UTC ISO-8601; IDs are opaque UUIDv7/ULID strings.
 - All responses include `X-Request-ID`; mutating requests accept `Idempotency-Key`.
 - API schemas are generated as OpenAPI 3.1 and are the source for a checked-in/generated TypeScript
@@ -123,7 +127,8 @@ At least one of `message` or `inputs` is required. Referenced artifacts MUST bel
 authorized workspace unless an explicit copy/import operation has occurred. A duplicate
 `client_request_id` within a session returns the original run rather than dispatching twice.
 The endpoint commits the queued run and one durable `run.status=queued` event, enqueues an
-idempotent graph-executor command, and returns `202` without executing LangGraph in the API process.
+idempotent harness-executor command, and returns `202` without executing an agent harness in the API
+process. The current compatibility transport retains legacy `graph.*` command names.
 Queue unavailability returns `503`; a committed run that could not be enqueued remains recoverable
 by the command outbox/reconciler and MUST NOT be dispatched twice.
 
@@ -211,6 +216,24 @@ available the server emits `stream.reset` containing a snapshot URL and next seq
 Streams close after a terminal lifecycle event. Network closure does not cancel a run. Multiple
 read-only stream consumers are allowed and receive the same ordered durable events.
 
+### 8.1 AG-UI adapter
+
+`POST /ag-ui` accepts AG-UI `RunAgentInput` and returns the protocol's encoded event stream. AG-UI's
+published camelCase wire schema is an intentional exception to CellXP JSON naming. The adapter:
+
+- maps `threadId` to an authorized CellXP `session_id`;
+- maps each new user turn to idempotent run creation and retains the canonical CellXP `run_id` in
+  the bounded state projection;
+- emits lifecycle, answer, tool-call, state, and interrupt events from canonical run state/events;
+- represents artifacts by reference and never embeds large payloads;
+- maps `resume[]` entries to the matching pending clarification/review on the same session and
+  resumes only through the existing checkpoint/audit path;
+- emits state/messages needed for resume before an interrupt outcome;
+- treats AG-UI disconnect as read-side disconnect, not cancellation.
+
+The Next.js CopilotKit runtime is an auth/context broker only. It MUST NOT run scientific
+transformations, decide review outcomes, or persist an independent authoritative run.
+
 ## 9. Authentication, Privacy, and Cross-Origin Use
 
 Local single-user mode may use loopback-bound session authentication, but the API still enforces
@@ -252,6 +275,9 @@ platform UI client.
   work inline; production execution is performed by Redis-backed workers.
 - **API-12** Actionable exports MUST fail closed until approval and MUST link the export to the
   persisted review and hash-chain-verified audit trail.
+- **API-13** The AG-UI adapter MUST preserve canonical session/run/artifact IDs, authorization,
+  idempotency, payload-size limits, and graph-enforced interrupt semantics; frontend tools MUST NOT
+  become an alternate execution or approval path.
 
 ## 12. Related
 

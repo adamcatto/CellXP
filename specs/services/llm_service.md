@@ -30,6 +30,20 @@ provider (see §5) without code changes; per-role overrides (§5) let `planner` 
 
 Higher-capability **remote providers remain pluggable** for users who opt in (see §5).
 
+### 2.1 Capable-GPU quality profile
+
+The target workstation/cluster quality profile is `Qwen/Qwen3.8-27B` served through the
+`openai_compatible` provider (ADR-0007). It is a dense multimodal 27B model with native long context,
+controllable reasoning, coding/agent optimization, and structured tool calls when the serving
+runtime uses the official Qwen parsers. It is **not** the unconditional local quickstart default:
+the profile requires explicit hardware/quantization and must clear structured-output, biology,
+safety, and latency eval gates before a deployment makes it default.
+
+Per-role reasoning effort/token budgets SHOULD use one loaded quality model before introducing
+model swapping: low/no reasoning for latency-bound classification, higher budgets for planning,
+critique, and long-horizon synthesis. Model revision, quantization, parser/runtime configuration,
+reasoning effort, and usage are provenance-bearing call parameters.
+
 ## 3. Interface (provider-agnostic)
 
 A thin `LLMProvider` abstraction over `langchain-core` message/tool primitives. All callers depend on
@@ -71,6 +85,10 @@ Remote providers read their own `*_API_KEY` / `*_BASE_URL`. Selection is config-
 logic may hard-code a provider**. Optional per-role overrides (e.g. a stronger model for `planner`
 than for `report_writer`) MAY be supported via `LLM_MODEL_<ROLE>` without changing call sites.
 
+An OpenAI-compatible endpoint may be local (for example vLLM/SGLang serving Qwen3.8) and is not
+intrinsically a remote-data egress. Egress policy is determined by the configured endpoint's trust
+boundary, not its protocol.
+
 ## 6. Configuration (env)
 
 ```
@@ -105,8 +123,9 @@ LLM_MODEL=gemma4:4b
 
 ## 9. Open questions
 
-- Default is `gemma4:4b`; confirm its context window is sufficient for planning over long
-  inputs, or set a larger Gemma 4 variant as the default ceiling.
+- Default is `gemma4:4b`; confirm its context window is sufficient for planning over long inputs.
+  ADR-0007 selects Qwen3.8-27B as the capable-GPU quality target, but the exact modest-hardware
+  fallback and promotion eval results remain open.
 - Whether embeddings live here or in a separate embedding service for RAG.
 - Per-role model overrides: ship in v1 or defer.
 

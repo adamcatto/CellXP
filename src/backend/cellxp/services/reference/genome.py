@@ -42,7 +42,6 @@ from cellxp.services.registry import registry
 from .annotations import AnnotationRequest, AnnotationResult
 from .liftover import LiftoverRequest, LiftoverResult
 
-
 # ---------------------------------------------------------------------------
 # Catalog types
 # ---------------------------------------------------------------------------

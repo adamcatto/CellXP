@@ -16,7 +16,6 @@ from cellxp.domain.enums import OrganismClass
 from cellxp.domain.evidence import Confidence, Provenance
 from cellxp.domain.models import GenomicInterval, Variant
 
-
 # ---------------------------------------------------------------------------
 # Variant-effect types (FR-13)
 # ---------------------------------------------------------------------------

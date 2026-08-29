@@ -25,6 +25,11 @@ each event has a `type`, a monotonic `seq`/`id`, the `run_id`, and a typed `data
 client maintains a local copy of run state and **patches it per event** (by object id) rather than
 re-fetching.
 
+The CopilotKit web chat consumes an **AG-UI projection** of this stream through `POST /api/v1/ag-ui`
+(`api_contracts.md` §8.1, ADR-0006). AG-UI lifecycle/message/tool/state/interrupt events are a
+presentation adapter, not an alternate run log: canonical ordering, replay, artifact identity,
+payload limits, and review decisions remain owned by the CellXP run/event contracts.
+
 ## 3. Surfaces (channels) in the UI
 
 The stream multiplexes several logical channels into one timeline. Each event `type` targets a

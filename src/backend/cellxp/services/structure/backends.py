@@ -7,15 +7,16 @@ persist coordinate payloads through the configured immutable object store.
 
 from __future__ import annotations
 
-import json
 import importlib
+import json
 import os
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import httpx
 
@@ -50,7 +51,7 @@ class StructureRuntimeConfig:
     esmfold_revision: str = ESMFOLD_REVISION
 
     @classmethod
-    def from_env(cls) -> "StructureRuntimeConfig":
+    def from_env(cls) -> StructureRuntimeConfig:
         timeout = int(os.getenv("STRUCTURE_JOB_TIMEOUT_SECONDS", "1800"))
         if timeout < 1:
             raise ValueError("STRUCTURE_JOB_TIMEOUT_SECONDS must be positive")

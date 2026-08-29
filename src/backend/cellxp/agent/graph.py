@@ -20,7 +20,6 @@ from cellxp.agent.nodes import (
     risk_classifier,
     task_selector,
 )
-from cellxp.storage.audit_repository import AuditRepository
 from cellxp.agent.routing import route_after_entities, route_after_risk, route_task
 from cellxp.agent.state import (
     AgentState,
@@ -34,6 +33,7 @@ from cellxp.agent.state import (
 )
 from cellxp.domain.clock import utc_now_iso
 from cellxp.domain.enums import IntentType, RunStatus, TaskStatus
+from cellxp.storage.audit_repository import AuditRepository
 
 Node = Callable[[AgentState], dict[str, object]]
 CAPABILITY_NODES = (

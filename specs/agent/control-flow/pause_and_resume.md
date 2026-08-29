@@ -1,7 +1,8 @@
 # Pause & Resume (human-in-the-loop)
 
-> Status: Draft v0.1. The two durable pauses and how runs resume. Mechanism: LangGraph interrupts +
-> state checkpointing (`graph_spec.md` §8).
+> Status: Draft v0.1. The two canonical durable pauses and how runs resume. Harness adapters MUST
+> map them to persisted runtime interrupts. The compatibility path uses LangGraph interrupts +
+> checkpoints (`graph_spec.md` §8; ADR-0008).
 
 ## 1. Two pause points
 
@@ -32,7 +33,8 @@ survives process restarts and can be resumed minutes or days later.
 ## 5. API surface
 
 The API exposes resume endpoints (answer-clarification, submit-review-decision) that re-enter the
-graph at the paused node (`api_contracts.md`); the corresponding `clarification.requested` /
+selected harness/workflow at its persisted continuation (`api_contracts.md`); the corresponding
+`clarification.requested` /
 `review.requested` events tell the client to prompt. The interactive presentation of these prompts —
 option cards, recommended option, multi-select, and the "yes, and …" free-text affordance — is
 specified in `specs/interface/streaming_protocol.md` §7–§8.

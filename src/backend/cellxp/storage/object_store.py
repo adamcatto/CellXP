@@ -14,8 +14,8 @@ new key, never an overwrite (OS-4). A read whose bytes don't hash to the stored 
 from __future__ import annotations
 
 import hashlib
-from pathlib import Path
 from io import BytesIO
+from pathlib import Path
 from typing import Any, BinaryIO, Protocol, runtime_checkable
 from urllib.parse import urlparse
 

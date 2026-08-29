@@ -34,11 +34,11 @@ def classify_intents(state: AgentState) -> list[IntentType]:
         return [IntentType.OUT_OF_DOMAIN]
 
     intents = [intent for intent, phrases in _RULES if any(phrase in query for phrase in phrases)]
-    if normalized.variants or any(
-        identifier.lower().startswith("rs") for identifier in normalized.identifiers
-    ):
-        if IntentType.VARIANT_EFFECT not in intents:
-            intents.append(IntentType.VARIANT_EFFECT)
+    if (
+        normalized.variants
+        or any(identifier.lower().startswith("rs") for identifier in normalized.identifiers)
+    ) and IntentType.VARIANT_EFFECT not in intents:
+        intents.append(IntentType.VARIANT_EFFECT)
     if normalized.sequences and not intents:
         alphabets = {sequence.alphabet for sequence in normalized.sequences}
         intents.append(

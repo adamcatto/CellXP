@@ -118,9 +118,10 @@ Append-only consequential-event trail — schema in `audit_log.md`.
 
 ## 5. Run-state checkpointing vs history
 
-- **In-run** state is checkpointed by the **LangGraph checkpointer** (Redis or Postgres) to enable
-  durable pauses/resume (`control-flow/pause_and_resume.md`) and crash recovery. This is ephemeral
-  working state keyed by `(run_id, checkpoint_id)`.
+- **In-run** working state is checkpointed through the active harness adapter (Redis or Postgres) to
+  enable durable pause/resume (`control-flow/pause_and_resume.md`) and crash recovery. The LangGraph
+  compatibility adapter uses its checkpointer. Working state is keyed by `(run_id, checkpoint_id)`
+  and never replaces canonical run/evidence/artifact/review history.
 - **History** (the tables above) is the durable, queryable record written as the run progresses and
   finalized at completion. The checkpointer is an implementation detail; these tables are the
   contract. `run_id` joins both.

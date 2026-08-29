@@ -5,16 +5,28 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import Literal
 
-from cellxp.agent.state import AgentState, ExecutionCursor, NormalizedInputs, RunError, Step, Subtask
-from cellxp.domain.clock import utc_now_iso
+from cellxp.agent.state import (
+    AgentState,
+    ExecutionCursor,
+    NormalizedInputs,
+    RunError,
+    Step,
+    Subtask,
+)
 from cellxp.domain.artifacts import ArtifactRef
+from cellxp.domain.clock import utc_now_iso
 from cellxp.domain.enums import TaskStatus
 from cellxp.domain.evidence import EvidenceItem
+from cellxp.domain.models import GenomicInterval, Variant
 from cellxp.services.base import ServiceOutcome
 from cellxp.services.gwas import (
-    ColocRequest, FineMapRequest, GeneReference, GwasRequest, GwasService, LdRequest,
+    ColocRequest,
+    FineMapRequest,
+    GeneReference,
+    GwasRequest,
+    GwasService,
+    LdRequest,
 )
-from cellxp.domain.models import GenomicInterval, Variant
 from cellxp.services.reference import (
     EntityResolveRequest,
     ReferenceGenomeService,
@@ -341,7 +353,7 @@ def _optional_str(value: object) -> str | None:
     return str(value) if value else None
 
 
-def _merge_partial(result, active, label, steps, evidence, artifacts, errors) -> None:  # noqa: ANN001
+def _merge_partial(result, active, label, steps, evidence, artifacts, errors) -> None:
     steps.extend(result.steps)
     evidence.extend(item.model_copy(update={"subtask_id": active.id}) for item in result.evidence)
     artifacts.extend(item.model_copy(update={"subtask_id": active.id}) for item in result.artifacts)

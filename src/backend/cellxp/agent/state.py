@@ -9,10 +9,9 @@ reconcile the spec first (ADR-0004).
 from __future__ import annotations
 
 from operator import add
-from typing import Any, Literal, TypedDict, TypeVar
+from typing import Annotated, Any, Literal, TypedDict, TypeVar
 
 from pydantic import BaseModel, Field
-from typing_extensions import Annotated
 
 from cellxp.domain.artifacts import ArtifactRef
 from cellxp.domain.clock import utc_now_iso
@@ -284,8 +283,25 @@ class AgentState(TypedDict, total=False):
 
 
 __all__ = [
-    "Message", "RawInput", "NormalizedInputs", "Entity", "ClarificationOption",
-    "ClarificationAnswer", "Clarification", "Plan", "Subtask", "ExecutionCursor", "Step",
-    "Report", "ReviewItem", "ReviewState", "RunError", "Budget", "AgentState",
-    "ArtifactRef", "EvidenceItem", "RiskAssessment", "merge_by_id",
+    "AgentState",
+    "ArtifactRef",
+    "Budget",
+    "Clarification",
+    "ClarificationAnswer",
+    "ClarificationOption",
+    "Entity",
+    "EvidenceItem",
+    "ExecutionCursor",
+    "Message",
+    "NormalizedInputs",
+    "Plan",
+    "RawInput",
+    "Report",
+    "ReviewItem",
+    "ReviewState",
+    "RiskAssessment",
+    "RunError",
+    "Step",
+    "Subtask",
+    "merge_by_id",
 ]

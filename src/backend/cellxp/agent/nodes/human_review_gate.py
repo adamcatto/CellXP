@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 def make_human_review_gate(
-    audit_repo: "AuditRepository | None" = None,
+    audit_repo: AuditRepository | None = None,
 ) -> Callable[[AgentState], dict[str, object]]:
     """Return a human_review_gate node with an optionally injected AuditRepository."""
 

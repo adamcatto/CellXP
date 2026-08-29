@@ -1,7 +1,6 @@
 """Sequence contract tests (Wave 0): normalization, alphabets, FASTA, reverse complement."""
 
 import pytest
-
 from cellxp.domain.enums import SequenceAlphabet
 from cellxp.domain.errors import SequenceError
 from cellxp.domain.sequences import (

@@ -1,10 +1,10 @@
-# Why LangGraph
+# Why the compatibility workflow used LangGraph
 
-> Long-form companion to **ADR-0002**. The ADR is the decision and the trade-offs; this
-> document is the why-it-fits in narrative form, written for a contributor who is new to the
-> codebase and asking the very reasonable question "why this framework, in this place, at
-> this stage?" Structural contract: `specs/agent/graph_spec.md`. Practical implementation
-> patterns: `.agents/guidelines/langgraph.md`.
+> Historical companion to **ADR-0002**, which ADR-0008 supersedes for top-level orchestration.
+> This rationale still explains the implemented compatibility workflow and where an explicit
+> deterministic workflow plugin remains useful. It does not define the target product harness.
+> Current contract: `specs/agent/skill_plugin_contract.md`; compatibility contract:
+> `specs/agent/graph_spec.md`.
 
 ## 1. The shape of the problem
 

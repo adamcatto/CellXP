@@ -19,13 +19,13 @@ properties:
 - **Compositional.** A single user turn typically chains several (e.g. variant resolution →
   variant scoring → folding → visualization).
 
-The serving plane MUST accommodate this without leaking GPU/runtime details into the agent
-graph (`NFR-11`, `ADR-0003`).
+The serving plane MUST accommodate this without leaking GPU/runtime details into harness adapters or
+skill callers (`NFR-11`, `ADR-0003`, ADR-0008).
 
 ## 2. Architecture
 
 ```
-       LangGraph supervisor (in API process)
+       HarnessAdapter → CellXP skill/policy kernel
                  │
                  ▼  ServiceResult[T] over Service interface
        ┌──────────────────────┐
@@ -46,7 +46,8 @@ graph (`NFR-11`, `ADR-0003`).
                  └────────────────────────┘
 ```
 
-The agent never sees workers directly. Services own the in-process logic; **jobs** own the
+The harness never sees workers directly. Typed skills call services; services own the in-process
+logic; **jobs** own the
 GPU/heavy paths; the queue + checkpointed run state make liveness, retries, and reconnection
 work uniformly (`control-flow/concurrency.md`, `streaming_protocol.md` §5).
 

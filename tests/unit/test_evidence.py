@@ -1,7 +1,6 @@
 """Evidence/confidence/provenance contract tests (Wave 0)."""
 
 import pytest
-
 from cellxp.domain.enums import ConfidenceBand, SourceKind
 from cellxp.domain.evidence import Confidence, EvidenceItem, Provenance
 from cellxp.domain.models import EvidenceItem as ReexportedEvidenceItem

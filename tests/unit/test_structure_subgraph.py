@@ -29,7 +29,6 @@ from cellxp.services.structure.schemas import (
 )
 from cellxp.services.structure.service import StructureService
 
-
 # ---------------------------------------------------------------------------
 # Mock backend
 # ---------------------------------------------------------------------------

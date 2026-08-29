@@ -1,25 +1,27 @@
 # deepagents Implementation Guidelines
 
 `deepagents` is an opinionated agent harness on top of LangChain/LangGraph (planning + virtual
-filesystem + sub-agents + context compaction + skills). We use it for **L3 isolated sub-agents** and
-**filesystem-heavy work**, not to replace the hand-built L1 supervisor. Specs:
-`documentation/explanation/multi_agent_architecture.md`, `harness_and_context_engineering.md`.
+filesystem + sub-agents + context compaction + skills). It is an optional
+compatibility/comparison path after ADR-0008; Qwen Code is the first target `HarnessAdapter`.
+Nothing here overrides the skill/policy kernel. Specs:
+`documentation/explanation/multi_agent_architecture.md`, `harness_and_context_engineering.md`,
+`specs/agent/skill_plugin_contract.md`.
 
-> Install: `pip install deepagents`. It runs on the LangGraph runtime, so checkpointing, streaming,
-> and human-in-the-loop interoperate with our graph.
+> This package is not required by the target product path. Pin and evaluate it before using these
+> patterns in a compatibility experiment.
 
 ## When to use it
 
-- **Sub-agents with isolated context** — literature sweeps, inverse-design/optimization loops, long
-  multi-file assembly: run them in a `task` sub-agent so the supervisor's window stays clean
+- **Existing compatibility experiments with isolated context** — literature sweeps, optimization,
+  long multi-file assembly: run them in a `task` sub-agent so the parent window stays clean
   (`multi_agent_architecture.md` §4).
 - **Filesystem operations** — when a run must read/write/search many intermediate files (scratchpads,
   candidate sets, fetched documents), use the built-in filesystem tools instead of stuffing the
   prompt.
 - **Context compaction** — long threads: rely on its summarize-and-offload-to-disk behavior.
 
-Do **not** use it for a single deterministic model call (that's a capability **step**) or for the
-safety-critical top-level ordering (that stays explicit LangGraph).
+Do **not** use it for a deterministic model call (that's a typed skill) or as the authority for
+safety, review, provenance, coordinates, or budgets (those stay in the CellXP policy kernel).
 
 ## Creating an agent / sub-agent
 
@@ -54,7 +56,7 @@ agent = create_deep_agent(
 
 | Backend | Behavior | Use for |
 |---|---|---|
-| `StateBackend()` (default) | files live in LangGraph **state** (`files`), shared between supervisor & sub-agents, persisted in the checkpoint | run-scoped scratchpads, candidate sets, offloaded tool outputs |
+| `StateBackend()` (default) | files live in LangGraph **state** (`files`), shared between parent & sub-agents, persisted in the checkpoint | run-scoped scratchpads, candidate sets, offloaded tool outputs |
 | `FilesystemBackend(root_dir=...)` | real local disk | artifacts/files a user keeps; larger data |
 | `StoreBackend()` | LangGraph **store** (durable, cross-thread) | **session/workspace memory** (`session_types.md`) |
 | `CompositeBackend` | route paths to different backends | mix scratch (state) + durable (store) + disk |
@@ -62,7 +64,7 @@ agent = create_deep_agent(
 
 - Map our concepts: **run scratchpad → `StateBackend`**; **session memory → `StoreBackend`**;
   **persisted artifacts → `FilesystemBackend`/object store** (`specs/data/*`).
-- Files a sub-agent writes to `StateBackend` remain available to the supervisor after the sub-agent
+- Files a sub-agent writes to `StateBackend` remain available to the parent after the sub-agent
   finishes — use this to **return large results by reference** instead of inlining them.
 
 ## Filesystem permissions
@@ -93,7 +95,8 @@ agent = create_deep_agent(
 
 ## Don't
 
-- Don't run the top-level safety-first graph as a deep agent (keep L1 explicit).
+- Don't run a production turn outside `HarnessAdapter` or invoke domain services around the policy
+  kernel.
 - Don't default to `FilesystemBackend` on shared infra without permissions — prefer `StateBackend`
   for run scratch.
 - Don't let sub-agents return raw transcripts; return distilled, cited results.

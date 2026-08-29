@@ -19,7 +19,7 @@ from pydantic import BaseModel, field_validator
 from .enums import Strand
 from .evidence import EvidenceItem  # re-exported: canonical shape lives in domain/evidence.py
 
-__all__ = ["GenomicInterval", "Variant", "EvidenceItem"]
+__all__ = ["EvidenceItem", "GenomicInterval", "Variant"]
 
 
 class GenomicInterval(BaseModel):

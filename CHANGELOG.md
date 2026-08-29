@@ -13,6 +13,8 @@ category).
 ## [Unreleased]
 
 ### Fixed
+- **2026-08-22** — Make the browser REST client use the existing same-origin `/api/v1` proxy when
+  no explicit API base is configured, avoiding cross-origin session bootstrap failures.
 - **2026-06-23** — Resolve gene symbols to genomic intervals before annotation when a query names a
   gene (e.g. "is SNAP25 expressed in cerebellum?") but provides no explicit interval or FASTA.
 - **2026-06-23** — Wire the annotation capability subgraph into the supervisor so `/annotate`
@@ -26,6 +28,15 @@ category).
   bind the frontend to `0.0.0.0`, and stop baking loopback `NEXT_PUBLIC_API_BASE` into remote browsers.
 
 ### Changed
+- **2026-08-22** — Require descriptive, continuously updated pull requests with motivation,
+  implementation context, review guidance, visual evidence where useful, exact test results and
+  interpretation, limitations, and documentation impact.
+- **2026-08-22** — Refactor the project README around the working CopilotKit product, honest model/
+  harness status, local quickstart, and deterministic Playwright screenshots of HITL and scientific
+  artifact rendering.
+- **2026-08-22** — Replace the LangGraph-first target architecture with a harness-neutral typed
+  skill/plugin registry and CellXP-owned policy hooks (ADR-0008); select Qwen Code as the first
+  mature harness adapter while retaining the tested graph as a compatibility workflow.
 - **2026-06-23** — Document the no-mandatory-hosted-model policy, the local
   `alphagenome-pytorch` migration, and an honest quickstart covering API smoke, frontend preview,
   automated browser journeys, and current end-to-end browser limitations.
@@ -48,6 +59,12 @@ category).
   (contract-freeze → spine → fan-out). FC-1 in `future-additions.md` now cross-referenced as roadmap L8.
 
 ### Added
+- **2026-08-22** — Add the CopilotKit v2 chat foundation, same-origin runtime broker, custom FastAPI
+  AG-UI adapter, bounded shared workspace context, registered biological artifact rendering, and
+  graph-backed clarification/review interrupts while retaining the native REST/SSE fallback.
+- **2026-08-22** — Accept the CopilotKit-over-AG-UI experience architecture and Qwen3.8 quality-model
+  strategy (ADR-0006/0007), preserving CellXP's policy, provenance, artifact, and canonical REST/SSE
+  contracts independently of the selected harness.
 - **2026-06-23** — Package concrete pinned AlphaGenome 0.6.1 and Evo 2 0.6.0 SDK workers, an
   Open Targets/PLINK/SuSiE/coloc GWAS worker, and an Azimuth/CFD/Cas-OFFinder CRISPR worker with
   version/index attestations, fail-closed production readiness, deployment manifests, and opt-in

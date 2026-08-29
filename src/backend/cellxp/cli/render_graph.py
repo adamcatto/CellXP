@@ -1,5 +1,7 @@
 from pathlib import Path
+
 from cellxp.agent.graph import app
+
 
 def main():
     out_dir = Path("documentation/diagrams")
@@ -9,7 +11,7 @@ def main():
     try:
         png = app.get_graph(xray=True).draw_mermaid_png()
         (out_dir / "cellxp_graph.png").write_bytes(png)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         print(f"PNG rendering skipped: {exc}")
 
 if __name__ == "__main__":

@@ -94,20 +94,19 @@ catastrophic.
   refusal converted to a silent fallback.
 - **Owner area.** `specs/agent/tool_use_policy.md`, per-service `*_service.md` specs.
 
-## R5 — LangGraph or upstream dependency churn
+## R5 — Agent-harness or compatibility-runtime churn
 
 - **S 3 / L 4**
-- **Description.** A LangGraph (or langchain-core, deepagents) major update breaks our
-  graph compilation, checkpointer, or interrupt semantics. We have to choose between
-  pinning indefinitely and a non-trivial port.
+- **Description.** A Qwen Code SDK/event/permission change or a LangGraph compatibility update
+  breaks adapter streaming, skill discovery, checkpoints, or interrupt semantics.
 - **Mitigation.**
-  - LangGraph-specific code isolated to `agent/` (per `ADR-0002` "what we accept").
-  - Pinned floor versions in `pyproject.toml`.
-  - Integration tests cover graph compilation and checkpoint round-trip.
-  - `why_langgraph.md` § "what we accept by choosing it" pre-acknowledges this.
-- **Watch signal.** LangGraph release notes flagging interrupt / checkpoint / state-merge
-  changes; any CI failure on dependency upgrade PR.
-- **Owner area.** `specs/agent/*`, `.agents/guidelines/langgraph.md`.
+  - Domain logic and policy remain behind harness-neutral typed skills (ADR-0008).
+  - Pin harness/runtime releases and contract-test event, permission, cancellation, and resume
+    fixtures before upgrades.
+  - Integration tests cover skill-policy enforcement and compatibility graph checkpoint parity.
+- **Watch signal.** Harness release notes flagging stream/SDK/hook/permission changes; LangGraph
+  interrupt/checkpoint changes; any adapter contract failure on an upgrade PR.
+- **Owner area.** `specs/agent/*`, `src/backend/cellxp/harness/`.
 
 ## R6 — Local-first regression (creep toward cloud-required defaults)
 
@@ -275,7 +274,7 @@ A few recurring patterns worth naming explicitly:
   stops being practiced." Mitigated structurally (registries, manifests, README read-
   orders) so the easy path is the right path.
 - **Dependency-evolution risks.** R5, R9, R12 share an upstream-software-changes shape.
-  The mitigation in all three is isolation (LangGraph in `agent/`, Mol\* behind a viewer
+  The mitigation in all three is isolation (harnesses behind adapters/skills, Mol\* behind a viewer
   contract, LLM behind a provider interface) so a forced swap is local rather than systemic.
 
 ## Review cadence

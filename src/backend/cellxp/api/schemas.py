@@ -57,7 +57,7 @@ class CreateRunRequest(BaseModel):
     client_request_id: str = Field(min_length=1, max_length=200)
 
     @model_validator(mode="after")
-    def _require_content(self) -> "CreateRunRequest":
+    def _require_content(self) -> CreateRunRequest:
         if not self.message and not self.inputs:
             raise ValueError("at least one of message or inputs is required")
         return self
@@ -97,7 +97,7 @@ class SaveGuidePoolRequest(BaseModel):
     expected_revision: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
-    def _unique_guides(self) -> "SaveGuidePoolRequest":
+    def _unique_guides(self) -> SaveGuidePoolRequest:
         if len(set(self.guide_ids)) != len(self.guide_ids):
             raise ValueError("guide_ids must be unique")
         return self

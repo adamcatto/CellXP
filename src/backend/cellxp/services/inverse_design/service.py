@@ -12,8 +12,12 @@ from cellxp.services.reference import ASSEMBLY_CATALOG, SPECIES_PROFILES
 from cellxp.services.registry import registry
 
 from .schemas import (
-    CandidateAssessment, CandidateProposal, EditCandidate, InverseDesignBackend,
-    InverseDesignRequest, InverseDesignResult,
+    CandidateAssessment,
+    CandidateProposal,
+    EditCandidate,
+    InverseDesignBackend,
+    InverseDesignRequest,
+    InverseDesignResult,
 )
 
 

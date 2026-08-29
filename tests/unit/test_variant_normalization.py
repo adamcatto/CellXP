@@ -6,7 +6,6 @@ feed the zero-tolerance coordinate guardrail (`success_metrics.md` D1), so these
 """
 
 import pytest
-
 from cellxp.domain.enums import OrganismClass, VariantNotation
 from cellxp.domain.errors import DomainValidationError, VariantError
 from cellxp.domain.validators.alleles import validate_allele, validate_variant_alleles
@@ -19,7 +18,6 @@ from cellxp.domain.variants import (
     parse_rsid,
     parse_vcf_variant,
 )
-
 
 # --- notation detection -----------------------------------------------------------------
 

@@ -5,12 +5,15 @@ from __future__ import annotations
 import os
 
 import pytest
-
-from cellxp.domain.models import Variant
+from cellxp.domain.models import GenomicInterval, Variant
 from cellxp.services.crispr import GuideScoringRequest, crispr_backend_from_environment
-from cellxp.services.gwas import GwasRequest, gwas_backend_from_environment
-from cellxp.services.gwas import ColocRequest, FineMapRequest, LdRequest
-from cellxp.domain.models import GenomicInterval
+from cellxp.services.gwas import (
+    ColocRequest,
+    FineMapRequest,
+    GwasRequest,
+    LdRequest,
+    gwas_backend_from_environment,
+)
 
 pytestmark = [pytest.mark.live]
 

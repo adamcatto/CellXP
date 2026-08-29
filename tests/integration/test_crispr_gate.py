@@ -1,12 +1,11 @@
 """X6 integration: actionable CRISPR output cannot bypass review (FR-25/26)."""
 
-from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.types import Command
-
 from cellxp.agent.graph import build_graph
 from cellxp.agent.state import Subtask
 from cellxp.domain.artifacts import ArtifactRef
 from cellxp.domain.enums import ArtifactType, ReviewGateStatus, RunStatus, TaskStatus
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.types import Command
 
 
 def _crispr_candidate(state):

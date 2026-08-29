@@ -1,6 +1,6 @@
 # Frontend / Backend Boundary
 
-> Long-form explainer for **where the line sits** between the Python FastAPI + LangGraph
+> Long-form explainer for **where the line sits** between the Python FastAPI agent runtime
 > backend and the TypeScript Next.js client (and, later, the native macOS shell). The
 > normative wire is `specs/interface/api_contracts.md`; this document is the discipline that
 > keeps the wire honest. Anchor decisions: `ADR-0004` (specs as contracts),
@@ -17,11 +17,11 @@ backend's job, full stop.
 
 ## 2. What lives on each side
 
-### Backend (Python, FastAPI + LangGraph)
+### Backend (Python, FastAPI + skill/policy runtime)
 
-- **The agent graph and its state.** Every consequential decision (intent, risk, planning,
-  routing, evidence integration, critique, review-gating, report generation) is a graph
-  node. The client never sees the internals; it sees typed events and durable state.
+- **The agent runtime and canonical state.** Planning may live in a mature harness, but every
+  capability invocation and consequential policy decision crosses typed skills and the CellXP
+  kernel. The client sees only authorized typed events and durable state.
 - **Every service** (variant effect, GWAS, CRISPR, structure, binding, annotation, RAG,
   visualization, origami) and their normalization logic.
 - **Every coordinate transform.** Reference assembly, contig naming, strand handling,
@@ -30,9 +30,9 @@ backend's job, full stop.
 - **Every artifact payload.** Genome tracks, structures, contact maps, tables, reports —
   the canonical scientific values live on the backend and stream as typed payloads
   (`specs/interface/artifact_model.md`).
-- **Every safety/review decision.** The `risk_classifier` and `human_review_gate` nodes are
-  backend; the audit log is backend; the client *renders* a review card and *posts* a
-  decision (`ADR-0005`, `specs/agent/human_review_policy.md`).
+- **Every safety/review decision.** Risk clearance and the actionable-review state machine are
+  backend policy; the audit log is backend; the client *renders* a review card and *posts* a
+  decision (`ADR-0005`, ADR-0008, `specs/agent/human_review_policy.md`).
 - **Every provenance record.** Steps, evidence, audit entries, content hashes — all
   backend-owned, all append-only (`specs/data/provenance_model.md`).
 - **Auth and authorization.** Every request is authorized at the FastAPI middleware against
@@ -64,8 +64,8 @@ The negative list is the load-bearing one. The client MUST NOT contain code that
 
 - Converts coordinates (e.g. 1-based → 0-based, GRCh37 → GRCh38). Even for display, the
   conversion is the backend's call and the convention is in the payload.
-- Decides which model to call (ESMFold vs Boltz, AlphaGenome vs Evo 2). The agent's
-  planner/task-selector decides; the client surfaces the choice.
+- Decides which model to call (ESMFold vs Boltz, AlphaGenome vs Evo 2). The harness selects an
+  authorized skill and the backend validates applicability; the client surfaces the choice.
 - Decides whether something is actionable. The backend marks
   `ArtifactRef.actionable=true`; the client renders the consequence.
 - Approves or auto-approves a review. The user clicks Approve; the audit-log entry and
@@ -73,7 +73,7 @@ The negative list is the load-bearing one. The client MUST NOT contain code that
 - Constructs a candidate artifact directly. Editor panes send an edit request; the backend
   produces the candidate (`interactive_panes.md` §6).
 - Interprets evidence. Citation rendering is fine; deciding "this citation supports this
-  claim" is not — that is the report generator + evidence integrator.
+  claim" is not — that is the backend evidence/report workflow.
 - Validates biological inputs (ref allele, organism/assembly compatibility, edit-spec
   feasibility). Client-side checks for malformed *strings* are fine; checks against
   biological reality MUST round-trip the backend.
@@ -83,7 +83,7 @@ If a feature feels like it would be quicker to write in the client because "we a
 the data on hand" — that's the moment to write it on the backend instead. The data is on
 hand for a reason.
 
-## 4. The wire (REST + SSE + uploads)
+## 4. The wire (canonical REST/SSE + AG-UI projection)
 
 The boundary's machine-readable form is **OpenAPI 3.1**, generated from FastAPI and
 versioned (`specs/interface/api_contracts.md`). Concretely:
@@ -91,6 +91,8 @@ versioned (`specs/interface/api_contracts.md`). Concretely:
 - **REST** for durable resources: sessions, runs, artifacts, reviews, uploads, exports.
 - **SSE** for ordered run events: thinking, activity, message/report deltas, artifact
   added/updated, clarification/review cards, lifecycle.
+- **AG-UI** as the browser-agent projection consumed through the same-origin CopilotKit runtime; it
+  maps to canonical runs/events and does not become a second scientific store (ADR-0006).
 - **Multipart** for uploads: streamed to object storage, content-hashed, returned as
   `UploadRef` (`api_contracts.md` §4).
 - **`application/problem+json`** for errors, with stable codes and no leakage of secrets,
@@ -100,8 +102,8 @@ versioned (`specs/interface/api_contracts.md`). Concretely:
 - **Optimistic-concurrency revisions** on update endpoints (e.g. session settings,
   `api_contracts.md` §3).
 
-Everything else flows from these primitives. There is no GraphQL, no WebSocket, no separate
-admin API. SSE is the single live channel; REST is the only durable channel.
+Everything else flows from these primitives. There is no GraphQL, no WebSocket, no separate admin
+API. REST remains the durable channel; SSE/AG-UI are projections of canonical ordered events.
 
 ## 5. Generated client and the portability contract
 

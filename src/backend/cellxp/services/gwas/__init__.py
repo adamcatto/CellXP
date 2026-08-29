@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+from .backends import (
+    DeterministicGwasBackend,
+    EbiGwasQtlBackend,
+    HttpGwasBackend,
+    OpenTargetsGwasBackend,
+    gwas_backend_from_environment,
+)
 from .schemas import (
     Association,
     ColocBatchResult,
@@ -20,10 +27,6 @@ from .schemas import (
     LdResult,
 )
 from .service import GwasService
-from .backends import (
-    DeterministicGwasBackend, EbiGwasQtlBackend, HttpGwasBackend, OpenTargetsGwasBackend,
-    gwas_backend_from_environment,
-)
 
 __all__ = [
     "Association",
@@ -32,6 +35,8 @@ __all__ = [
     "ColocResult",
     "CredibleSet",
     "CredibleVariant",
+    "DeterministicGwasBackend",
+    "EbiGwasQtlBackend",
     "FineMapRequest",
     "FineMapResult",
     "GeneReference",
@@ -39,12 +44,10 @@ __all__ = [
     "GwasRequest",
     "GwasResult",
     "GwasService",
+    "HttpGwasBackend",
     "LdPair",
     "LdRequest",
     "LdResult",
-    "DeterministicGwasBackend",
-    "EbiGwasQtlBackend",
-    "HttpGwasBackend",
     "OpenTargetsGwasBackend",
     "gwas_backend_from_environment",
 ]

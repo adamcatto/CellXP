@@ -14,8 +14,15 @@ from cellxp.domain.evidence import Confidence, Provenance
 from cellxp.domain.models import Variant
 
 from .schemas import (
-    Association, ColocBatchResult, ColocRequest, FineMapRequest, FineMapResult,
-    GwasRequest, GwasResult, LdRequest, LdResult,
+    Association,
+    ColocBatchResult,
+    ColocRequest,
+    FineMapRequest,
+    FineMapResult,
+    GwasRequest,
+    GwasResult,
+    LdRequest,
+    LdResult,
 )
 
 T = TypeVar("T", bound=BaseModel)
@@ -223,7 +230,7 @@ class DeterministicGwasBackend:
         return ColocBatchResult(assumptions=["offline fallback does not run coloc"])
 
 
-def gwas_backend_from_environment():  # noqa: ANN201
+def gwas_backend_from_environment():
     mode = os.getenv("GWAS_BACKEND", "none").strip().lower()
     timeout = float(os.getenv("GWAS_SERVICE_TIMEOUT_SECONDS", "30"))
     retries = int(os.getenv("GWAS_SERVICE_RETRIES", "2"))

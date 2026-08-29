@@ -17,8 +17,15 @@ from cellxp.services.reference import ASSEMBLY_CATALOG, SPECIES_PROFILES
 from cellxp.services.registry import registry
 
 from .schemas import (
-    CrisprBackend, CrisprRequest, CrisprResult, EditOutcomeRequest, EditOutcomeResult,
-    GuideScoringRequest, GuideScoringResult, OffTargetRequest, OffTargetResult,
+    CrisprBackend,
+    CrisprRequest,
+    CrisprResult,
+    EditOutcomeRequest,
+    EditOutcomeResult,
+    GuideScoringRequest,
+    GuideScoringResult,
+    OffTargetRequest,
+    OffTargetResult,
 )
 
 T = TypeVar("T", bound=BaseModel)
@@ -61,8 +68,8 @@ class CrisprService(Service):
         self, operation: str, request: BaseModel, invoke: Callable[[], T], *, heavy: bool = False
     ) -> ServiceResult[T]:
         started = utc_now_iso()
-        organism = str(getattr(request, "organism"))
-        assembly = str(getattr(request, "assembly"))
+        organism = str(request.organism)
+        assembly = str(request.assembly)
         issue = _coverage_issue(organism, assembly)
         if issue:
             return ServiceResult.unsupported(issue, steps=[_step(operation, started, heavy)])
@@ -144,19 +151,19 @@ def _artifacts(operation: str, value: BaseModel, evidence: list[EvidenceItem]) -
         artifacts.append(ArtifactRef(
             type=ArtifactType.GUIDE_TABLE, title="Candidate CRISPR guide pool",
             storage_ref=getattr(value, "storage_ref", None),
-            summary={"guide_count": len(guides), "editing_system": getattr(value, "editing_system")},
+            summary={"guide_count": len(guides), "editing_system": value.editing_system},
             evidence_ids=ids, actionable=True,
         ))
         if getattr(value, "off_target_storage_ref", None):
             artifacts.append(ArtifactRef(
                 type=ArtifactType.OFF_TARGET_TABLE, title="Candidate guide off-target profile",
-                storage_ref=getattr(value, "off_target_storage_ref"), evidence_ids=ids,
+                storage_ref=value.off_target_storage_ref, evidence_ids=ids,
                 actionable=True,
             ))
     elif operation == "enumerate_off_targets" and getattr(value, "storage_ref", None):
         artifacts.append(ArtifactRef(
             type=ArtifactType.OFF_TARGET_TABLE, title="CRISPR off-target profile",
-            storage_ref=getattr(value, "storage_ref"), evidence_ids=ids, actionable=True,
+            storage_ref=value.storage_ref, evidence_ids=ids, actionable=True,
         ))
     return artifacts
 

@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from cellxp.agent.state import AgentState, ExecutionCursor, NormalizedInputs, RunError, Step, Subtask
+from cellxp.agent.state import (
+    AgentState,
+    ExecutionCursor,
+    NormalizedInputs,
+    RunError,
+    Step,
+    Subtask,
+)
 from cellxp.domain.clock import utc_now_iso
 from cellxp.domain.enums import TaskStatus
 from cellxp.services.base import ServiceOutcome

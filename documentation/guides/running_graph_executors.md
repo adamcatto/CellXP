@@ -1,4 +1,8 @@
-# Running Graph Executors
+# Running the LangGraph Compatibility Executors
+
+> This guide covers the currently deployed compatibility worker. New production harness adapters
+> use the canonical executor/checkpoint contracts in `specs/serving/agent_runtime_serving.md`
+> (ADR-0008); the `graph.*` names below remain stable during migration.
 
 Production API processes persist and enqueue run commands; they do not invoke LangGraph. Start the
 local Postgres, Redis, API, and graph-executor stack with:

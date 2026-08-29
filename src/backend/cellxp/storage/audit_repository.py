@@ -8,19 +8,19 @@ linking each new entry to the `hash` of the most recent entry in the same `run_i
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
 
-from cellxp.domain.audit import AuditEntry, Actor
+from cellxp.domain.audit import Actor, AuditEntry
 from cellxp.storage.models import AuditLog
 
 
 def _to_orm(entry: AuditEntry) -> AuditLog:
     at = datetime.fromisoformat(entry.at) if isinstance(entry.at, str) else entry.at
     if at.tzinfo is None:
-        at = at.replace(tzinfo=timezone.utc)
+        at = at.replace(tzinfo=UTC)
     return AuditLog(
         id=entry.id,
         event_type=entry.event_type,
@@ -41,7 +41,7 @@ def _from_orm(row: AuditLog) -> AuditEntry:
         # SQLite drops timezone info; restore UTC so the ISO string matches the original
         # form used when the hash was computed (+00:00 suffix).
         if at.tzinfo is None:
-            at = at.replace(tzinfo=timezone.utc)
+            at = at.replace(tzinfo=UTC)
         at_str = at.isoformat()
     else:
         at_str = str(at)

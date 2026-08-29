@@ -26,8 +26,8 @@ from cellxp.agent.state import (
     Step,
     Subtask,
 )
-from cellxp.domain.clock import utc_now_iso
 from cellxp.domain.artifacts import ArtifactRef
+from cellxp.domain.clock import utc_now_iso
 from cellxp.domain.enums import OrganismClass, TaskStatus
 from cellxp.domain.evidence import EvidenceItem
 from cellxp.services.alphagenome.client import AlphaGenomeService

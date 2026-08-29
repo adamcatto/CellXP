@@ -1,1 +1,1 @@
-digraph CellXP { User -> ChatUI -> API -> LangGraph; LangGraph -> AlphaGenome; LangGraph -> GWAS; LangGraph -> CRISPR; LangGraph -> Structure; LangGraph -> Visualization; LangGraph -> Report; }
+digraph CellXP { User -> ChatUI -> API -> HarnessAdapter -> PolicyKernel; PolicyKernel -> AlphaGenome; PolicyKernel -> GWAS; PolicyKernel -> CRISPR; PolicyKernel -> Structure; PolicyKernel -> Visualization; PolicyKernel -> Report; }

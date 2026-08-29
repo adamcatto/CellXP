@@ -178,7 +178,7 @@ class LocalRuntime:
                 state, {"configurable": {"thread_id": snapshot["id"]}}
             )
             self._apply_graph_output(record, output)
-        except Exception as exc:  # boundary converts internal failures to safe stable output
+        except Exception as exc:  # noqa: BLE001  # boundary converts internal failures to safe stable output
             snapshot["status"] = RunStatus.FAILED.value
             snapshot["errors"] = [{
                 "code": "run_failed", "message": "Run execution failed.", "fatal": True,
@@ -609,7 +609,7 @@ class DurableRuntime(LocalRuntime):
             )
 
     def audit_export(self, run_id: str, artifact_id: str, payload: dict[str, Any]) -> None:
-        from cellxp.domain.audit import AuditEventType, SYSTEM_ACTOR
+        from cellxp.domain.audit import SYSTEM_ACTOR, AuditEventType
         from cellxp.storage.audit_repository import AuditRepository
 
         snapshot = self.get_run(run_id)

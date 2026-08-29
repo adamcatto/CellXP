@@ -6,7 +6,6 @@ zero-tolerance guardrail (`success_metrics.md` D1), so these are P0.
 """
 
 import pytest
-
 from cellxp.domain.coordinates import (
     interval_contains,
     interval_from_canonical,
@@ -91,7 +90,7 @@ def test_interval_contains_linear_half_open():
 
 
 def test_interval_contains_circular():
-    kw = dict(topology=Topology.CIRCULAR, contig_length=5000)
+    kw = {"topology": Topology.CIRCULAR, "contig_length": 5000}
     assert interval_contains(4800, 200, 4900, **kw) is True
     assert interval_contains(4800, 200, 50, **kw) is True
     assert interval_contains(4800, 200, 1000, **kw) is False

@@ -1,7 +1,6 @@
 """Executable session policy tests (FR-37..39)."""
 
 import pytest
-
 from cellxp.domain.sessions import session_defaults
 
 

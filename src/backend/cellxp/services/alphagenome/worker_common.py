@@ -72,7 +72,7 @@ def production_backend(model: str) -> Any:
         verify_local_artifacts(load_manifest(model))
         factory = getattr(importlib.import_module(module_name), function_name)
         return factory(load_manifest(model))
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise HTTPException(status_code=503, detail=f"{model} runtime failed to load: {exc}") from exc
 
 
@@ -88,7 +88,7 @@ def call_production(model: str, operation: str, request: Any) -> Any:
         raise
     except (ValueError, NotImplementedError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise HTTPException(status_code=503, detail=f"{model} inference failed: {exc}") from exc
 
 

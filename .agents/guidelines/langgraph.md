@@ -1,18 +1,21 @@
-# LangGraph Implementation Guidelines
+# LangGraph Compatibility-Workflow Guidelines
 
-How we build the agent graph. Specs: `specs/agent/graph_spec.md`, `state_schema.md`,
-`control-flow/*`. Code: `src/backend/cellxp/agent/`.
+How we maintain the implemented compatibility graph while capabilities migrate to typed skills
+(ADR-0008). Specs: `specs/agent/graph_spec.md`, `skill_plugin_contract.md`, `state_schema.md`,
+`control-flow/*`. Code: `src/backend/cellxp/agent/`, adapter:
+`src/backend/cellxp/harness/langgraph_compat.py`.
 
 ## When to reach for LangGraph
 
-Use LangGraph for the **L1 supervisor** and **capability subgraphs** — anywhere we need explicit
-control of ordering (safety-first), durable pauses (review gate), and full state/provenance. For a
-lighter single-capability agent, `langchain.create_agent` may suffice (`langchain.md`); for deep
-context-heavy subtasks, use `deepagents` (`deepagents.md`).
+Use LangGraph only for an existing deterministic workflow that still needs compatibility
+checkpoint/interrupt behavior. New capabilities land as services + bounded `SkillPlugin`s and are
+invoked through the policy kernel. Do not expand this graph into the product's coding/research
+harness.
 
 ## State
 
-- One `TypedDict` `AgentState` (`agent/state.py`) is the single source of truth (`state_schema.md`).
+- `AgentState` (`agent/state.py`) is the compatibility graph's working state. Canonical run,
+  evidence, artifact, audit, and review records remain the cross-harness source of truth.
 - Use **reducers** deliberately: `Annotated[list[X], add]` for append fields
   (`messages`, `steps`, `evidence`, `artifacts`, `errors`); custom merge-by-id for `entities`/
   `clarifications`; plain last-write-wins for single-owner fields (`plan`, `cursor`, `status`, …).
@@ -38,11 +41,11 @@ context-heavy subtasks, use `deepagents` (`deepagents.md`).
 
 ## Subgraphs
 
-- Each capability is a compiled subgraph under `agent/subgraphs/` with the uniform contract: in =
+- Existing capabilities may remain subgraphs under `agent/subgraphs/` with the uniform contract: in =
   `Subtask` (+ inputs), out = appended `evidence`/`artifacts` + `Subtask.status`
   (`capability-subgraphs/README.md`).
-- Adding a capability must not change the top-level spine (`NFR-11`, ADR-0003): add a subgraph,
-  register its service, declare selection metadata, make it reachable from `route_task`.
+- Do not add new domain logic directly to the graph. Add a service + typed skill, then adapt it into
+  the compatibility workflow only when parity requires that path (`NFR-11`, ADR-0008).
 
 ## Pauses, checkpointing, resume
 
@@ -77,3 +80,4 @@ context-heavy subtasks, use `deepagents` (`deepagents.md`).
 - Don't put model weights/inference in the graph — models are tools behind services
   (`tool_use_policy.md`).
 - Don't let a node write the whole state back; return minimal deltas.
+- Don't expose raw `AgentState` as a model-facing tool schema.

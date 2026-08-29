@@ -1,6 +1,7 @@
 # ADR-0002 — LangGraph supervisor with capability subgraphs
 
-- **Status:** Accepted (v0.1)
+- **Status:** Superseded for top-level orchestration by ADR-0008; retained as a compatibility
+  workflow design during migration
 - **Date:** initial agent design
 - **Related:** `documentation/explanation/why_langgraph.md` (long-form companion),
   `documentation/explanation/architecture_overview.md` §5,
@@ -96,6 +97,7 @@ delegates to **capability subgraphs**. Concretely:
 
 ## Status notes
 
-We will revisit this if (a) LangGraph evolves in a direction incompatible with the typed-state
-+ interrupt-driven model we depend on, or (b) the multi-agent fan-out becomes the dominant
-shape and a fundamentally different runtime (e.g. an actor system) becomes a better fit.
+ADR-0008 records that revisit. The graph remains an executable compatibility workflow until the
+skill kernel and mature harness adapter reach pause/resume, review, provenance, and replay parity.
+New capabilities target typed skills first; they do not expand this graph into the product's general
+coding/research harness.

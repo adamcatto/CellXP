@@ -28,13 +28,13 @@ class _Backend:
             locus_plot_ref="objects/gwas/locus.json",
         )
 
-    def compute_ld(self, request):  # noqa: ANN001
+    def compute_ld(self, request):
         raise NotImplementedError
 
-    def fine_map(self, request):  # noqa: ANN001
+    def fine_map(self, request):
         raise NotImplementedError
 
-    def coloc(self, request):  # noqa: ANN001
+    def coloc(self, request):
         raise NotImplementedError
 
 
@@ -42,13 +42,13 @@ class _ComposedBackend(_Backend):
     def __init__(self) -> None:
         self.operations: list[str] = []
 
-    def compute_ld(self, request):  # noqa: ANN001
+    def compute_ld(self, request):
         from cellxp.services.gwas import LdPair, LdResult
         self.operations.append("ld")
         return LdResult(pairs=[LdPair(variant_a="rs1", variant_b="rs2", r2=.8)],
                         population=request.population, panel="fixture")
 
-    def fine_map(self, request):  # noqa: ANN001
+    def fine_map(self, request):
         from cellxp.services.gwas import CredibleSet, CredibleVariant, FineMapResult
         self.operations.append("fine-map")
         return FineMapResult(credible_sets=[CredibleSet(
@@ -56,7 +56,7 @@ class _ComposedBackend(_Backend):
             region=request.interval, coverage=.95,
         )], assumptions=["fixture"], input_datasets=[request.summary_stats_ref])
 
-    def coloc(self, request):  # noqa: ANN001
+    def coloc(self, request):
         from cellxp.services.gwas import ColocBatchResult, ColocResult
         self.operations.append("coloc")
         return ColocBatchResult(results=[ColocResult(

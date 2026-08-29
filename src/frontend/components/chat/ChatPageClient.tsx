@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { WorkspaceLayout } from '../workspace/WorkspaceLayout';
 import { api } from '../../lib/api';
 import type { SessionSummary } from '../../lib/types';
+import { CellXPCopilotProvider } from './CellXPCopilotProvider';
 
 interface ChatPageClientProps {
   sessionId?: string;
@@ -90,5 +91,9 @@ export function ChatPageClient({ sessionId }: ChatPageClientProps) {
     );
   }
 
-  return <WorkspaceLayout session={session} />;
+  return (
+    <CellXPCopilotProvider sessionId={session.id}>
+      <WorkspaceLayout session={session} />
+    </CellXPCopilotProvider>
+  );
 }

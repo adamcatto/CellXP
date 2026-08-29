@@ -1,470 +1,227 @@
 # CellXP
 
-CellXP is a full-stack, LangGraph-orchestrated agentic copilot for genomics and molecular biology. It turns a question about DNA, RNA, proteins, or metabolites — posed in natural language and/or as sequence data — into a grounded, reproducible, and visually legible answer, for any organism from humans to mice to bacteria.
+CellXP is an agentic workspace for genomics and molecular biology. Ask about a variant, sequence,
+protein, pathway, or design goal; CellXP plans the analysis, runs typed biological capabilities, and
+returns a cited answer with interactive scientific artifacts and a reproducible trace.
 
-> **Project status: spec-first, active implementation.** The `specs/` and `documentation/` trees
-> remain the source of truth. Core API, graph, worker, persistence, frontend, and evaluation slices
-> are implemented, while model deployment and release acceptance remain in progress. See
-> `.agents/onboarding.md` for how to navigate the repo.
+![CellXP CopilotKit workspace showing a biological-analysis clarification](documentation/assets/screenshots/copilotkit-clarification.png)
 
----
+> **Active implementation.** CopilotKit/AG-UI chat, canonical runs, typed artifacts, durable
+> clarification/review, and the harness-neutral skill-kernel foundation are implemented. Live model
+> predictions still require configured workers and weights. Qwen Code and Qwen3.8-27B are selected
+> targets, not silently enabled defaults. Specs and architecture docs remain the source of truth.
 
-## What it does
+## Why CellXP
 
-Modern genomics is bottlenecked by orchestration. Answering even a routine question — "is this non-coding variant likely regulatory, and in which tissue?", "design three CRISPR guides for this locus", "predict the structure of this RNA and show me the contact map" — requires locating the right reference assembly, normalizing messy inputs, picking and correctly invoking the right model, stitching outputs together, and producing a figure with a defensible conclusion. Each step is tractable; together they are exhausting and rarely reproducible.
+Biological questions rarely map to one model call. A useful answer may require reference/assembly
+resolution, coordinate normalization, model selection, GPU inference, literature retrieval,
+cross-model evidence integration, uncertainty reporting, visualization, and human review.
 
-CellXP collapses that into a single conversation. Input is multimodal: natural language, raw sequences (FASTA, DNA/RNA/protein, rsIDs, HGVS, genomic intervals, gene symbols), uploaded files, or any combination. The agent classifies intent, normalizes inputs, resolves biological entities, plans a sequence of subtasks, dispatches them to specialized services, integrates the evidence, and returns:
+CellXP makes that workflow conversational while keeping the important parts explicit:
 
-1. A written answer with inline citations and explicit confidence
-2. One or more interactive **artifacts** (genome-browser tracks, locus plots, 3D structures, contact maps, guide tables, origami layouts)
-3. A fully inspectable **run trace** of every tool call, input, and output
+- **Evidence, not opaque answers** — claims link to model/database evidence and confidence.
+- **Typed biological artifacts** — genome tracks, locus plots, structures, contact maps, guide
+  tables, and reports render as inspectable workspace objects rather than JSON dumps.
+- **Reproducible runs** — tool inputs, versions, outputs, provenance, and decisions are recorded.
+- **Human review for actionable biology** — candidate edits/designs remain withheld until reviewed.
+- **Organism-aware correctness** — organism, assembly, strand, and coordinate convention are
+  validated; human-only model assumptions are never applied silently.
+- **Local-first operation** — self-hosted reasoning and domain-model profiles are first class;
+  hosted providers are explicit opt-ins.
 
-This is an agentic system, not a one-shot question-answerer. It reasons over multiple steps, decomposes and revises its own plan, chains artifacts (e.g. annotate → predict effect → design a guide → visualize), persists outputs to the workspace, and proposes follow-up analyses. Anything that proposes actionable biology (a CRISPR edit, a primer, an origami design) passes through a **human-review gate** before being presented as a recommendation.
+## Product surface
 
----
+The primary browser experience uses CopilotKit v2 over a CellXP-owned AG-UI adapter:
+
+- streaming chat with visible tool activity;
+- shared, bounded workspace context;
+- clarification and actionable-review cards;
+- named generative-UI renderers that open artifacts in the dock;
+- canonical REST/SSE APIs for CLI/native clients;
+- reconnectable sessions and inspectable run/evidence/artifact records.
+
+### Scientific artifacts
+
+Artifacts are typed, versioned, deep-linkable, and backed by accessible summaries/exports. Large
+payloads stay in object storage and enter model context only through authorized handles.
+
+![Confidence-colored CellXP structure artifact](documentation/assets/screenshots/structure-artifact.png)
+
+The screenshots above are generated with deterministic Playwright fixtures. Regeneration
+instructions live in [`documentation/assets/screenshots/README.md`](documentation/assets/screenshots/README.md).
 
 ## Capabilities
 
-| Capability | What it does | Key models/tools |
+| Area | Current capability surface | Representative models/data |
 |---|---|---|
-| **Variant effect prediction** | Tissue/assay-resolved regulatory and functional effect prediction for coding and non-coding variants | AlphaGenome, Evo 2 |
-| **GWAS / QTL lookup** | Trait-association lookup, fine-mapping, LD, colocalization, Open Targets-style evidence aggregation | GWAS Catalog, Open Targets |
-| **CRISPR design** | gRNA design, on-/off-target scoring, base editing, prime editing, Cas selection | Rule Set 3, Azimuth, CRISPRscan |
-| **Inverse edit design** | Given a desired functional effect, search the edit space to find genome edits that achieve it while minimizing off-target effects — composed from forward models + CRISPR design | AlphaGenome/Evo 2 as objective |
-| **Sequence annotation** | Gene models, regulatory features, motifs, ORFs, functional elements (eukaryote + prokaryote) | AlphaGenome, DeepRegFinder |
-| **Binding-site prediction** | TF motif scanning, footprinting, occupancy deltas | AlphaGenome, FIMO/JASPAR |
-| **Structure prediction** | Protein structure, nucleic-acid structure, DNA shape, nucleosome positioning, chromatin contact maps | ESMFold, Boltz-2 |
-| **Protein function & design** | Enzyme annotation (EC, GO, domains), binder/sequence design | LigandMPNN, RFdiffusion |
-| **Metabolites & small molecules** | Protein–ligand binding/affinity, genome-scale metabolic modeling, flux analysis | — |
-| **Networks & systems analysis** | GRN inference, metabolic network reconstruction, variant→flux→phenotype reasoning | — |
-| **DNA origami / nanotech** | Scaffold routing, staple design, constraint checking, cadnano export | oxDNA, cadnano |
-| **Literature grounding (RAG)** | Retrieval and citation of primary literature and databases | PubMed, vector index |
-| **Visualization** | Interactive, exportable scientific figures for all of the above | Plotly, Mol*, IGV.js |
+| Regulatory genomics | Variant effects, sequence annotation, binding deltas | AlphaGenome, Evo 2 |
+| Association evidence | GWAS/QTL lookup, fine-mapping, colocalization | GWAS Catalog, Open Targets |
+| Structure and binding | Protein/NA structure, contacts, DNA shape | ESMFold, Boltz-2 |
+| Genome engineering | CRISPR candidates, off-target scoring, inverse edit design | Azimuth, Cas-OFFinder, forward-model oracles |
+| Systems biology | Networks, metabolism, cross-scale evidence composition | Typed service/workflow plugins |
+| Literature | Citation-preserving PubMed/RAG retrieval | PubMed, local vector index |
+| Visualization | Genome tracks, locus plots, structures, tables, reports | CellXP renderers |
+| Nanotechnology | DNA origami routing/export workflows | oxDNA, cadnano |
 
-**Organisms:** organism-agnostic by design. Human (GRCh38), mouse, and bacterial references are first-class. The architecture handles circular bacterial genomes, operon structure, and organism-specific coordinate conventions. A motivating example is *Gluconobacter oxydans* — a climate-biotech chassis for bio-based production — which the copilot supports end-to-end without special-casing.
-
----
+Human, mouse, and bacterial references are first-class. The contracts are organism-agnostic and
+include circular microbial genomes and organism-specific model applicability.
 
 ## Architecture
 
-### Agent graph
+CellXP no longer treats a LangGraph graph as the target product harness. The stable boundary is a
+typed skill/plugin runtime with a CellXP-owned policy kernel:
 
-The agent is a **hierarchical LangGraph supervisor**. The top-level graph routes through a fixed spine of core nodes; capability work fans out to independent subgraphs.
-
-```
-START
-  └─ input_normalizer       # parse/normalize inputs (sequences, rsIDs, HGVS, intervals, files)
-       └─ intent_classifier  # classify what the user is asking
-            └─ entity_resolver  # resolve biological entities (genes, variants, organisms)
-                 └─ risk_classifier  # early safety gate (FR-33/34)
-                      └─ planner      # decompose into subtasks; build the plan
-                           └─ task_selector  ──── conditional routing ────►
-                                                    ├─ variant_effect_subgraph
-                                                    ├─ gwas_subgraph
-                                                    ├─ crispr_subgraph
-                                                    ├─ annotation_subgraph
-                                                    ├─ binding_subgraph
-                                                    ├─ structure_subgraph
-                                                    ├─ origami_subgraph
-                                                    ├─ rag_subgraph
-                                                    └─ visualization_subgraph
-                                                              │
-                                                    evidence_integrator
-                                                              │
-                                                           critic
-                                                              │
-                                                    [human_review_gate]  ← for actionable outputs
-                                                              │
-                                                    report_generator
-                                                              │
-                                                            END
+```text
+CopilotKit chat + biological artifact workspace
+                    │
+          same-origin Next.js runtime
+                    │ AG-UI
+                    ▼
+FastAPI canonical runs / events / artifacts / interrupts
+                    │
+       CellXP policy kernel (authoritative)
+     risk · auth · coordinates · budgets · provenance · review
+                    │
+                    ▼
+      HarnessAdapter (Qwen Code is first target)
+                    │
+        typed SkillPlugin registry / workflows
+                    │
+     services + async CPU/GPU workers + storage
 ```
 
-Each capability subgraph owns its own service client, evidence collection, and artifact production. A `human_review_gate` node intercepts any actionable output (CRISPR designs, inverse edits, origami) before it is presented as a recommendation.
+The current LangGraph supervisor remains a **compatibility workflow** while capabilities migrate
+behind bounded skills. It does not receive new harness responsibilities. Existing capability nodes
+can run through `harness/langgraph_compat.py`, which constructs a minimal internal state slice; raw
+`AgentState` is never a model-facing tool schema.
 
-### Tech stack
+Qwen Code is the first mature adapter target because it already provides coding/file workflows,
+skills, sub-agents, memory/compaction, MCP, lifecycle hooks, sessions, sandbox support, and
+self-hosted OpenAI-compatible providers. Its hooks are useful fast feedback—not the authority for
+biological safety or approval. See
+[`ADR-0008`](documentation/adr/0008-harness-neutral-skill-kernel.md) and the
+[`skill/plugin contract`](specs/agent/skill_plugin_contract.md).
 
-| Layer | Technology |
-|---|---|
-| **Agent orchestration** | LangGraph (`langgraph>=0.2`), LangChain Core |
-| **Reasoning LLM** | Local-first via Ollama (default `gemma4:4b`); remote providers (OpenAI, Anthropic) are opt-in |
-| **Backend API** | FastAPI + Uvicorn, Python 3.11+ |
-| **Domain models** | Pydantic v2 |
-| **Async job queue** | Redis (GPU-bound tasks dispatched to worker processes) |
-| **Relational storage** | PostgreSQL 16 via SQLAlchemy 2 + psycopg 3 |
-| **Vector store** | Pluggable (pgvector / Chroma) — RAG retrieval |
-| **Object store** | Local filesystem (dev) → MinIO/S3 (production) |
-| **Frontend** | Next.js App Router, TypeScript, Tailwind CSS, pnpm |
-| **Observability** | LangSmith tracing |
-| **Linting / types** | Ruff, mypy |
+### Model profiles
 
-### Self-hosted model policy and migration plan
+- **Current modest-hardware default:** local Ollama (`gemma4:4b`) for compatibility/development.
+- **Target quality profile:** `Qwen/Qwen3.8-27B` through a pinned vLLM/SGLang
+  OpenAI-compatible endpoint, gated by biology/tool/safety/latency evaluations.
+- **Domain models:** isolated workers for AlphaGenome/Evo 2, ESMFold/Boltz-2, CRISPR, GWAS, and
+  other capabilities; model revision and provenance are recorded per call.
 
-CellXP must have no mandatory hosted-model API or access-gated model dependency. Production model
-artifacts are acquired explicitly, pinned by immutable revision and checksum, stored locally, and
-served from isolated workers. Provider APIs may exist only as optional adapters.
+No 27B download, remote provider, or private-data transfer happens silently.
 
-- **Regulatory genomics:** migrate the mammalian worker from the hosted DeepMind client to
-  [`genomicsxai/alphagenome-pytorch`](https://github.com/genomicsxai/alphagenome-pytorch), pinned to
-  a reviewed release/commit and the public, ungated
-  [`gtca/alphagenome_pytorch`](https://huggingface.co/gtca/alphagenome_pytorch) weight snapshot.
-  The code is Apache-2.0; the converted weights remain subject to the AlphaGenome Model Terms, which
-  must be recorded in the model manifest. The worker will load weights locally, extract reference
-  windows from pinned human/mouse FASTA files, run reference/alternate forward passes, and emit
-  assay/tissue deltas with full provenance.
-- **Broad-clade sequence modeling:** keep Evo 2 self-hosted for microbial and other non-mammalian
-  sequence likelihood/embedding work.
-- **Structure:** keep ESMFold and Boltz self-hosted with locally cached, checksum-pinned weights.
-  ESM and Boltz code are MIT-licensed; every weight artifact still receives an explicit license and
-  redistribution review in its manifest.
-- **Reasoning:** Ollama remains the local default. Remote reasoning providers are opt-in and must
-  never be required for the local product path.
-
-Migration order: make the browser demo functional → replace the hosted AlphaGenome adapter → run
-local model acceptance → score and close M1–M3 gates → begin M4. M4 remains blocked until the
-release gates pass.
-
-### Operating principles
-
-1. **Evidence-grounded by default.** Every non-trivial claim carries provenance: which model/tool, which version, which inputs, which references.
-2. **Confidence is explicit.** Predictions report calibrated or qualitative confidence and surface the assumptions behind them.
-3. **Human-in-the-loop for actionable biology.** Actionable outputs pass through a review gate before being presented as recommendations.
-4. **Reproducible runs.** Every answer is backed by a recorded, re-runnable trace with inputs, tool versions, parameters, and outputs persisted and addressable.
-5. **Coordinates are sacred.** Assembly, strand, and 0-/1-based conventions are always explicit and validated; silent coordinate errors are treated as critical bugs.
-6. **Local-first / private by default.** The reasoning LLM runs locally via Ollama so prompts and sequence data need not leave the deployment. Remote providers are opt-in.
-7. **Safe by construction.** Safety classification happens early in the graph, not as an afterthought.
-8. **Organism-agnostic.** No capability hard-codes human-only assumptions.
-
----
-
-## Repository layout
-
-```
-CellXP/
-├── src/
-│   ├── backend/cellxp/         # Python package (import name: cellxp)
-│   │   ├── agent/              # LangGraph graph, nodes, subgraphs, state, routing, prompts
-│   │   │   ├── graph.py        # top-level graph build + compile
-│   │   │   ├── state.py        # AgentState TypedDict
-│   │   │   ├── routing.py      # conditional edge logic
-│   │   │   ├── nodes/          # input_normalizer, intent_classifier, entity_resolver,
-│   │   │   │                   #   risk_classifier, planner, task_selector, evidence_integrator,
-│   │   │   │                   #   critic, report_generator, human_review_gate
-│   │   │   ├── subgraphs/      # per-capability subgraphs (variant_effect, gwas, crispr,
-│   │   │   │                   #   annotation, binding, structure, origami, rag, visualization)
-│   │   │   └── prompts/        # markdown prompt templates
-│   │   ├── api/                # FastAPI app, routers, middleware, dependencies
-│   │   │   └── routers/        # variants, gwas, crispr, binding, annotations, structure,
-│   │   │                       #   artifacts, runs, chat, visualizations, health
-│   │   ├── services/           # external service clients + domain logic
-│   │   │   ├── alphagenome/    # AlphaGenome client, schemas, plots, transforms
-│   │   │   ├── binding/        # motif scanning, footprinting, delta tracks
-│   │   │   ├── crispr/         # guide design, on-target/off-target scoring, base/prime editing
-│   │   │   ├── gwas/           # GWAS Catalog, Open Targets, LD, fine-mapping, QTL
-│   │   │   ├── origami/        # scaffold routing, staple design, cadnano export
-│   │   │   ├── rag/            # retriever, PubMed, vector DB, citation, claim extraction
-│   │   │   ├── reference/      # reference genome, annotations, liftover
-│   │   │   ├── structure/      # protein/NA structure, DNA shape, contact maps, nucleosome
-│   │   │   └── visualization/  # genome browser, GWAS locus plots, contact maps, motif logos
-│   │   ├── domain/             # canonical domain types (GenomicInterval, Variant, EvidenceItem),
-│   │   │                       #   enums, errors, sequences, safety, validators
-│   │   ├── storage/            # SQLAlchemy models, repositories, vector store, object store, cache
-│   │   ├── jobs/               # Redis job queue, GPU worker, task dispatch
-│   │   ├── cli/                # CLI entry points (run_agent, render_graph, seed_demo_data)
-│   │   └── config/             # settings (pydantic-settings), logging, paths
-│   └── frontend/               # Next.js App Router (TypeScript)
-│       ├── app/                # pages: /, /chat, /runs/[runId], /artifacts/[artifactId]
-│       ├── components/
-│       │   ├── chat/           # ChatPanel, ChatMessage, ChatInput, ToolCallTimeline
-│       │   ├── genome/         # GenomeBrowser, TrackViewer, GeneModelTrack, VariantTable
-│       │   ├── plots/          # ContactMapHeatmap, GwasLocusPlot, DeltaTrackPlot, MotifLogo
-│       │   ├── structure/      # StructureViewer3D, DnaShapeTrack
-│       │   ├── workspace/      # WorkspaceLayout, ArtifactPanel, EvidencePanel, RunInspector
-│       │   └── ui/             # Button, Card, Dialog, Tabs
-│       └── lib/                # API client, streaming, artifact helpers, types
-├── specs/                      # implementation-driving contracts (source of truth)
-│   ├── product/                # mission, requirements (FR-*/NFR-*/CR-*), personas, user stories
-│   ├── agent/                  # state schema, graph spec, routing/tool-use/evidence/review policies,
-│   │   ├── nodes/              #   per-node specs
-│   │   ├── capability-subgraphs/  # per-capability subgraph specs
-│   │   └── control-flow/       #   run lifecycle, pause/resume, concurrency, replanning
-│   ├── biology/                # per-capability I/O, models, transforms; supported species/assays
-│   ├── services/               # per-service contracts (alphagenome, gwas, crispr, llm, …)
-│   ├── interface/              # API contracts, chat interface, streaming protocol, artifact model
-│   ├── data/                   # storage, provenance, audit log
-│   ├── evaluation/             # testing strategy, eval plan, golden sets, rubrics
-│   ├── training/               # post-training (SFT/DPO/RLVR) — offline track
-│   └── planning/               # roadmap, future-additions, milestones, open questions, risks
-├── documentation/
-│   ├── explanation/            # architecture overview, multi-agent, safety model, evidence &
-│   │                           #   confidence, coordinate systems, task patterns, why LangGraph
-│   ├── adr/                    # architectural decision records (numbered)
-│   ├── reference/              # external models & services catalog, API, CLI, config, env vars
-│   ├── guides/                 # how-to guides
-│   ├── tutorials/              # step-by-step tutorials
-│   └── community-notes/        # practical caveats and field knowledge
-├── .agents/
-│   ├── onboarding.md           # agent session start guide (read this first)
-│   └── guidelines/             # implementation patterns: langgraph, langchain, deepagents,
-│                               #   langsmith, interactive-visualization, testing, changelog
-├── tests/                      # pytest unit / integration / e2e
-├── evals/                      # golden queries, rubrics, regression sets
-├── infra/                      # deployment infrastructure
-├── notebooks/                  # exploratory notebooks
-├── scripts/                    # utility scripts
-├── docker-compose.yml          # postgres, redis, ollama (local dev)
-├── pyproject.toml              # Python package config + tool config (ruff, mypy, pytest)
-├── Makefile                    # dev targets (see below)
-└── CONTRIBUTING.md             # extension points and contribution guide
-```
-
----
-
-## Quickstart: test the current build
-
-The deterministic backend, API contract, frontend shell, and mocked browser journeys can be tested
-now without downloading domain-model weights. Live scientific predictions require their respective
-workers and reference/model artifacts.
-
-### 1. Run the automated smoke suite
-
-```bash
-cd /opt/software/CellXP
-make test PYTHON=.venv/bin/python
-.venv/bin/ruff check src/backend tests evals
-.venv/bin/mypy src/backend/cellxp
-
-cd src/frontend
-npm run lint
-```
-
-The `make test` target excludes tests marked `live`, `gpu`, `slow`, and `eval`.
-
-### 2. Start the API without external infrastructure
-
-Use the process-local SQLite development runtime for the fastest API smoke:
-
-```bash
-cd /opt/software/CellXP
-./scripts/dev_api.sh
-```
-
-Or equivalently (uses the repo `.venv` and `src/backend` on `PYTHONPATH`):
-
-```bash
-cd /opt/software/CellXP
-PYTHONPATH="$PWD/src/backend" \
-RUNTIME_BACKEND=local \
-DATABASE_URL=sqlite:///./.cellxp/runtime.db \
-.venv/bin/python -m uvicorn cellxp.api.main:app --reload --host 0.0.0.0 --port 8001
-```
-
-Then open <http://localhost:8001/docs> or verify health:
-
-```bash
-curl http://localhost:8001/health
-```
-
-The API e2e run/stream/review contracts can be exercised directly with:
-
-```bash
-.venv/bin/pytest -q tests/e2e
-```
-
-### 3. Preview the browser workspace
-
-In another terminal:
-
-```bash
-cd /opt/software/CellXP/src/frontend
-npm run dev
-```
-
-Open <http://localhost:3000/chat>. The workspace and artifact UI render, but the current page still
-uses a placeholder session and the API does not yet configure the development cross-origin/proxy
-path. Treat this as a UI preview, not a working end-to-end chat session.
-
-Run the implemented chat, clarification, review, streaming, and accessibility browser journeys with
-their deterministic mocked API:
-
-```bash
-cd /opt/software/CellXP
-corepack pnpm --dir src/frontend test:browser
-```
-
-The next browser-readiness slice is: add a same-origin Next.js API proxy (or development CORS),
-bootstrap a real session, and replace the stub `scripts/dev_api.sh` / `scripts/dev_frontend.sh` with
-a one-command local launcher. Until that lands, use the API e2e suite for functional testing and the
-frontend/Playwright paths for UI testing.
-
----
-
-## Full development setup
+## Quickstart
 
 ### Prerequisites
 
-- Conda (the development environment pins Python 3.13)
-- NVM/Corepack (the frontend pins Node 22.9.0 and pnpm 10.17.0)
-- Docker (for Postgres, Redis, Ollama)
+- Python 3.11+
+- Node 22 and Corepack/pnpm 10
+- Docker only for the full Postgres/Redis/Ollama stack
 
-### Automated setup
-
-From a clean checkout, bootstrap the development environments, infrastructure, and configured local
-reasoning models with:
+### Install
 
 ```bash
-./scripts/setup.sh
-conda activate cellxp
-```
-
-The script is idempotent and preserves an existing `.env`. Run `./scripts/setup.sh --help` for
-component skip flags or `--dry-run`. To pull models separately, run
-`./scripts/download_models.sh`; it reads `LLM_MODEL` and future `LLM_MODEL_<ROLE>` overrides from
-`.env`. Domain foundation-model downloads will be added only as their concrete adapters and pinned
-weight revisions land.
-
-The manual steps below are equivalent and remain useful for troubleshooting.
-
-### 1. Start infrastructure
-
-```bash
-docker compose up -d
-# Pull the default reasoning model into Ollama:
-docker compose exec ollama ollama pull gemma4:4b
-```
-
-### 2. Create the development environments
-
-```bash
-conda env create -f environment.yml
-conda activate cellxp
-
-nvm use
+python3 -m venv .venv
+.venv/bin/pip install -e ".[dev]"
 corepack enable
 pnpm --dir src/frontend install --frozen-lockfile
 ```
 
-If the Conda environment already exists, synchronize it with
-`conda env update -n cellxp -f environment.yml --prune`.
-
-### 3. Configure environment
+For the complete environment, infrastructure, and configured local models, use the idempotent setup
+script:
 
 ```bash
-cp .env.example .env
-# Edit .env as needed. Defaults connect to docker compose services.
-# To use a remote LLM instead of Ollama, set OPENAI_API_KEY or ANTHROPIC_API_KEY.
+./scripts/setup.sh
 ```
 
-### 4. Run the backend API
+### Run the local development path
+
+The fast local path uses SQLite and in-process execution; it does not require Postgres or Redis.
 
 ```bash
-make dev-api
-# → http://localhost:8001 (scripts/dev_api.sh)
+# terminal 1 — FastAPI on :8001
+./scripts/dev_api.sh
+
+# terminal 2 — Next.js/CopilotKit on :3000
+./scripts/dev_frontend.sh
 ```
 
-### 5. Run the frontend
+Open <http://localhost:3000/chat>. FastAPI docs are at <http://localhost:8001/docs>.
+
+The UI and deterministic workflow are usable without model weights. A capability that needs an
+unconfigured worker reports that boundary honestly instead of fabricating a prediction.
+
+### Verify
 
 ```bash
-make dev-frontend
-# → http://localhost:3000
+make test PYTHON=.venv/bin/python
+.venv/bin/ruff check src/backend tests evals
+.venv/bin/mypy src/backend/cellxp
+
+pnpm --dir src/frontend lint
+pnpm --dir src/frontend build
+pnpm --dir src/frontend test:browser
 ```
 
-### 6. Run the GPU/async worker (for structure prediction and other heavy jobs)
+The default test suite excludes `live`, `gpu`, `slow`, and evaluation-marked tests. Model acceptance
+is opt-in and requires the corresponding worker, weight, reference, and hardware profiles.
 
-```bash
-make worker
+## Repository map
+
+```text
+src/backend/cellxp/
+├── harness/       # skill contracts, registry, policy kernel, harness adapters
+├── agent/         # LangGraph compatibility workflow, state, legacy nodes/subgraphs
+├── api/           # FastAPI REST/SSE + AG-UI adapter
+├── services/      # biological capability/model adapters
+├── domain/        # canonical coordinates, evidence, artifacts, safety types
+├── jobs/          # Redis/CPU/GPU job execution
+└── storage/       # relational, object, cache, vector, audit/provenance
+
+src/frontend/
+├── app/           # Next.js routes and CopilotKit runtime broker
+├── components/    # chat, workspace, genome, plots, structure, tables
+└── lib/           # API, streaming, artifact, and shared-state contracts
+
+specs/             # normative product/agent/biology/interface/service contracts
+documentation/     # architecture explanations, ADRs, guides, and references
+tests/             # unit, integration, contract, E2E, and Playwright coverage
+evals/             # biological correctness, safety, and regression gates
 ```
 
-### Other Makefile targets
+New contributors should start with [`.agents/onboarding.md`](.agents/onboarding.md), then read only
+the task-specific specs it points to.
 
-| Target | What it does |
-|---|---|
-| `make test` | Run pytest |
-| `make lint` | Ruff lint check |
-| `make typecheck` | mypy type check |
-| `make frontend-build` | Build the production Next.js frontend |
-| `make eval-smoke` | Validate golden-query JSONL catalogs |
-| `make render-graph` | Render the LangGraph agent graph to a PNG |
+## Safety and correctness invariants
 
----
+These are runtime policy, not prompt suggestions:
 
-## Domain models
+1. Risk clearance precedes biological capability execution.
+2. Actionable outputs cannot become recommendations or exports before canonical human review.
+3. Organism, assembly, coordinate convention, and strand are explicit for positioned work.
+4. Every substantive model/tool call records a provenance-bearing `Step`.
+5. Large/private payloads are referenced, authorized, and selectively read—not pasted into context.
+6. Code, shell, filesystem, network, and MCP tools run in bounded per-run sandboxes.
 
-The canonical positioned types live in `src/backend/cellxp/domain/models.py`. Coordinates are **always** 0-based half-open `[start, end)` internally; edge formats are converted before construction. Assembly + organism are always explicit — silent coordinate errors are treated as release blockers.
+The detailed contracts are in
+[`harness_and_context_engineering.md`](specs/agent/harness_and_context_engineering.md),
+[`human_review_policy.md`](specs/agent/human_review_policy.md), and
+[`safety_model.md`](documentation/explanation/safety_model.md).
 
-```python
-from cellxp.domain.models import GenomicInterval, Variant
+## Documentation
 
-interval = GenomicInterval(
-    species="homo_sapiens", assembly="GRCh38",
-    chrom="chr17", start=7_674_220, end=7_674_820,
-)
-
-variant = Variant(
-    chrom="chr17", pos=7_674_420,
-    ref="G", alt="A", assembly="GRCh38", rsid="rs28934578",
-)
-```
-
----
-
-## Roadmap (summary)
-
-The project is working through three milestones in sequence:
-
-- **M1 (Now):** Foundation contracts (`domain/`, `agent/state`, `services/base`, storage/provenance), core orchestration spine (normalizer → intent → risk → entity → planner), reference genome service (GRCh38 + ≥1 prokaryote), variant-effect vertical slice end-to-end, frontend M1 (chat + streaming + genome browser), safety M1 (risk classifier + audit log).
-- **M2 (Next):** GWAS/QTL, RAG/literature grounding, structure prediction, composed evidence pattern (variant → GWAS → fold → report).
-- **M3 (Next):** CRISPR design + human-review gate + inverse-design oracle (first composed actionable loop).
-- **M4–M5 (Later):** Annotation pipeline, strain optimization/GEM, DNA origami, native macOS app (Tauri), production deployment (GPU pool, MinIO, vLLM).
-
-Full detail in `specs/planning/roadmap.md` and `specs/planning/future-additions.md`.
-
----
-
-## External models and services
-
-CellXP wraps best-in-class open models rather than building its own. The catalog lives in `documentation/reference/external_models_and_services.md`.
-
-| Task | Model / service |
-|---|---|
-| Variant effect, binding, annotation | AlphaGenome |
-| Sequence-level genomics (any organism) | Evo 2 |
-| Protein structure | ESMFold, Boltz-2 |
-| Protein design | LigandMPNN, RFdiffusion |
-| gRNA scoring (on-target) | Rule Set 3 / Azimuth |
-| gRNA scoring (off-target) | CRISPRscan / Cas-OFFinder |
-| GWAS associations | GWAS Catalog REST API |
-| Target evidence aggregation | Open Targets GraphQL |
-| Literature retrieval | PubMed E-utilities |
-| DNA nanostructure simulation | oxDNA |
-| Origami design export | cadnano |
-
-The reasoning LLM (agent brain) runs locally via **Ollama** (default `gemma4:4b`) and is swappable — set `LLM_PROVIDER`, `LLM_MODEL`, and the appropriate API key in `.env`.
-
----
-
-## Safety
-
-Safety classification runs early in every graph execution (`risk_classifier` node), before any tool is invoked. Actionable outputs are held behind a `human_review_gate` node. Requests whose primary purpose is hazardous are refused or escalated. The safety model is documented in `documentation/explanation/safety_model.md`; the human-review policy is in `specs/agent/human_review_policy.md`.
-
----
+- [Product mission](specs/product/mission.md)
+- [Architecture overview](documentation/explanation/architecture_overview.md)
+- [CopilotKit and harness integration plan](specs/planning/copilotkit_integration.md)
+- [Artifact model](specs/interface/artifact_model.md)
+- [External models and services](documentation/reference/external_models_and_services.md)
+- [Roadmap](specs/planning/roadmap.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## Contributing
 
-The system is built to be extended — new capabilities/tasks, models/packages, species/strains, assays, harnesses, artifacts, evals, and community notes/caveats. See `CONTRIBUTING.md` for what each contribution requires and how to make it, and `.agents/guidelines/` for implementation patterns.
-
-Key rules:
-- Specs are contracts: change the spec first (or alongside), then the code.
-- Safety is non-bypassable: nothing may weaken the early safety gate or the human-review gate.
-- Coordinates are sacred: organism + assembly + convention are always explicit.
-- Don't change the core agent spine to add a capability — use the service + subgraph pattern.
-
----
-
-## Names
-
-| Context | Value |
-|---|---|
-| Python distribution name | `cellxp` |
-| Python import package | `cellxp` |
-| Product / display name | `CellXP` |
+Capabilities are added as typed services + harness-neutral skills, not by editing a central agent
+prompt or expanding the compatibility graph. Contributions must preserve safety, coordinates,
+provenance, confidence, review, and evaluation contracts. See [`CONTRIBUTING.md`](CONTRIBUTING.md).

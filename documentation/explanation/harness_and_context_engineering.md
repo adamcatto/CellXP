@@ -3,22 +3,23 @@
 > Status: Draft v0.1. Two disciplines that make the agent reliable: the **harness** (the scaffolding
 > around the LLM) and **context engineering** (what we put in the LLM's window, and what we keep out).
 > This is the **rationale**; the normative, testable requirements are in
-> `specs/agent/harness_and_context_engineering.md`. Companion to `multi_agent_architecture.md`;
-> implementation patterns in `.agents/guidelines/{langgraph,langchain,deepagents}.md`.
+> `specs/agent/harness_and_context_engineering.md` and `skill_plugin_contract.md`. Companion to
+> `multi_agent_architecture.md`; architectural decision: ADR-0008.
 
 ---
 
 # Part A — Harness engineering
 
-The **harness** is everything around the model that turns a stochastic next-token predictor into a
-dependable system: the graph, the tools, structured I/O, validation, retries, budgets, and guardrails.
-The model proposes; the harness disposes.
+The **agent runtime** is everything around the model that turns a stochastic next-token predictor
+into a dependable system: the mature harness adapter, typed skills, structured I/O, validation,
+retries, budgets, and CellXP's authoritative policy kernel. The model proposes; the kernel disposes.
 
 ## A1. Principles
 
-- **The graph is the harness.** Control flow lives in LangGraph (`graph_spec.md`), not in model free
-  will. The model chooses *within* nodes; the harness decides *which* node runs, in what order, and
-  what is allowed (safety-first ordering, the review gate).
+- **The policy kernel is authoritative.** A mature harness may plan and select skills, but every
+  invocation crosses CellXP-owned pre/post policy hooks. Risk ordering, budgets, provenance, and
+  actionable release never depend on prompts or harness-native hooks. LangGraph remains a
+  compatibility workflow implementation (`ADR-0008`).
 - **Deterministic where possible, LLM where necessary.** Parsing, coordinate math, model dispatch,
   and scoring are deterministic code (`steps`); the LLM is used for classification, planning,
   interpretation, and writing. Don't ask the LLM to do arithmetic the harness can do exactly.
@@ -29,8 +30,9 @@ The model proposes; the harness disposes.
 
 ## A2. The tool layer
 
-- Domain capabilities are tools behind the **service registry** (`tool_use_policy.md`); the agent
-  selects among them by task/input/organism.
+- Domain capabilities are bounded, versioned tools behind the **skill registry**
+  (`skill_plugin_contract.md`); the harness selects among the authorized subset by
+  task/input/organism.
 - Tool calls are **validated, retried, and bounded**: input adaptation per model, timeouts + backoff,
   fallbacks to alternates, and caching of pure calls (`tool_use_policy.md` §6/§7).
 - **Heavy tools are async jobs** (Redis queue + GPU workers); the harness dispatches and integrates
@@ -38,8 +40,8 @@ The model proposes; the harness disposes.
 
 ## A3. Guardrails
 
-- **Safety gate first** (`risk_classifier` before any capability) and **human-review gate** for
-  actionable output — both are harness-enforced, not prompt-suggested (`safety_model.md`,
+- **Safety gate first** (risk clearance before any capability) and **human-review gate** for
+  actionable output — both are policy-kernel-enforced, not prompt-suggested (`safety_model.md`,
   `human_review_policy.md`).
 - **Budgets** (`Budget`: tokens/wallclock/cost) bound loops and replanning; ceilings stop runaway
   inverse-design loops (`control-flow/replanning_and_budget.md`).
@@ -50,9 +52,10 @@ The model proposes; the harness disposes.
 
 | Layer | What it gives us | We use it for |
 |---|---|---|
-| **LangGraph** | explicit graph runtime, state, checkpointing, interrupts, streaming | the L1 supervisor + capability subgraphs |
-| **LangChain `create_agent`** | minimal tool-calling agent loop | simple single-capability agents where a full graph is overkill |
-| **deepagents** | opinionated harness: planning, virtual filesystem, sub-agents, context compaction, skills | L3 isolated sub-agents + filesystem-heavy work |
+| **CellXP skill/policy kernel** | typed discovery/invocation, authorization, risk, provenance, budgets, review | stable domain and policy boundary |
+| **Qwen Code** | mature coding/research loop, skills, sandbox, sub-agents, memory, MCP, hooks | first `HarnessAdapter` target |
+| **LangGraph** | explicit state machine, checkpointing, interrupts | compatibility workflows during migration |
+| **LangChain / deepagents** | provider/tool primitives and comparison harness patterns | compatibility paths and adapter evaluation |
 | **LangSmith** | tracing, evals, datasets | observability + the post-training flywheel (`post_training.md`) |
 
 ---
@@ -61,14 +64,13 @@ The model proposes; the harness disposes.
 
 Context engineering is the practice of getting the **right tokens** into each model call — enough to
 be correct, little enough to be cheap, focused enough to avoid distraction. The agent's quality is
-bounded by what each node sees.
+bounded by what each harness role or skill sees.
 
 ## B1. Principles
 
-- **Minimal sufficient context per node.** Each LLM node receives a **slice** of `AgentState`, not
-  the whole thing: `intent_classifier` gets the query + input summary; `planner` gets intent + risk +
-  resolved entities + macro registry; `report_generator` gets reconciled evidence + citation map. We
-  never dump the full transcript + all evidence into every call.
+- **Minimal sufficient context per role/skill.** Each model call receives a bounded run/workspace
+  slice, never raw `AgentState` or the whole transcript. Planning gets the task, policy summary, and
+  authorized handles; reporting gets reconciled evidence + citation map.
 - **Organism + assembly + coordinates are always in context** for any positioned reasoning — these
   are never left implicit (`coordinate_systems.md`).
 - **Evidence is packed, not pasted.** The report context contains compact evidence records
@@ -77,17 +79,16 @@ bounded by what each node sees.
 ## B2. Offloading & references (the filesystem trick)
 
 Large or numerous tool outputs (genome-wide scans, multi-sequence sets, long papers, intermediate
-design candidates) are **written to the virtual filesystem** (deepagents backend) and passed by
+design candidates) are **written to sandboxed run storage/object storage** and passed by
 **reference**, not inlined into the prompt. The model reads a file only when it needs it (`read_file`/
-`grep`/`glob`). This is how we keep long, multi-step runs within budget — see
-`.agents/guidelines/deepagents.md`. In `AgentState`, heavy payloads already live behind
-`storage_ref`/`output_ref` (`state_schema.md` §8/§10) — same idea.
+`glob`). This is how we keep long, multi-step runs within budget. Canonical state carries only
+`storage_ref`/`output_ref` handles (`state_schema.md` §8/§10).
 
 ## B3. Compaction & memory
 
 - **Thread summarization.** Long conversations/runs are periodically summarized so the working context
   stays bounded; the full transcript remains in durable state for audit
-  (deepagents context management; `state_schema.md` §18).
+  (harness context management; `state_schema.md` §18).
 - **Scoped memory.** Within a run, the cursor + plan summarize "where we are". Across runs, a
   **session/workspace** carries durable memory (resolved entities, prior artifacts, defaults) via a
   persistent store backend (`specs/agent/session_types.md`).
@@ -96,15 +97,15 @@ design candidates) are **written to the virtual filesystem** (deepagents backend
 
 ## B4. Sub-agent context isolation
 
-Spawning an L3 sub-agent gives a noisy subtask its **own** window; only its distilled result returns
-to the supervisor (`multi_agent_architecture.md` §4). This is the strongest context-control lever we
-have: the supervisor's context never sees the 40-paper sweep, just the synthesis.
+Spawning an isolated sub-agent gives a noisy subtask its **own** window; only its distilled result
+returns to the parent harness (`multi_agent_architecture.md` §4). The parent context never sees the
+40-paper sweep, just the synthesis and durable evidence handles.
 
 ## B5. Prompt assets
 
-System/role prompts are versioned files in `agent/prompts/*` (not inline strings), so context is
-reviewable and diffable, and so the post-training loop can correlate prompt versions with outcomes
-(`post_training.md`).
+System/role prompts and skill instructions are versioned assets owned by their adapter/skill (legacy
+graph prompts remain in `agent/prompts/*`), so context is reviewable and outcomes can be correlated
+with exact prompt versions (`post_training.md`).
 
 ## B6. Context budget checklist (per LLM call)
 
@@ -118,5 +119,5 @@ reviewable and diffable, and so the post-training loop can correlate prompt vers
 
 `multi_agent_architecture.md` · `post_training.md` · `specs/agent/state_schema.md` ·
 `specs/agent/tool_use_policy.md` · `specs/agent/evidence_integration.md` ·
-`specs/agent/session_types.md` · `coordinate_systems.md` ·
-`.agents/guidelines/{langgraph,langchain,deepagents,langsmith}.md`.
+`specs/agent/session_types.md` · `specs/agent/skill_plugin_contract.md` ·
+`coordinate_systems.md` · ADR-0008.

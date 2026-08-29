@@ -12,8 +12,7 @@ Covers:
 from __future__ import annotations
 
 import pytest
-
-from cellxp.agent.nodes.risk_classifier import make_risk_classifier, _QUERY_DIGEST_MAX
+from cellxp.agent.nodes.risk_classifier import _QUERY_DIGEST_MAX, make_risk_classifier
 from cellxp.domain.audit import (
     AGENT_ACTOR,
     AuditEntry,
@@ -24,7 +23,6 @@ from cellxp.domain.ids import new_id
 from cellxp.storage.audit_repository import AuditRepository
 from cellxp.storage.database import make_session_factory
 from cellxp.storage.models import APPEND_ONLY_TABLES, AuditLog, Base
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

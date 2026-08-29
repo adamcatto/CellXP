@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from cellxp.domain.enums import ConfidenceBand
 from cellxp.domain.evidence import Confidence
 from cellxp.domain.models import GenomicInterval, Variant
@@ -115,7 +114,7 @@ class _FailingBackend(_Backend):
         raise RuntimeError("upstream unavailable")
 
 
-def _assert_provenance(result) -> None:  # noqa: ANN001
+def _assert_provenance(result) -> None:
     assert result.steps
     assert result.steps[0].started_at
     assert result.steps[0].finished_at

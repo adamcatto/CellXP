@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -35,7 +35,7 @@ class AuditEventType:
 
 
 def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 class Actor(BaseModel):
@@ -79,7 +79,7 @@ class AuditEntry(BaseModel):
     prev_hash: str | None = None
     hash: str = ""
 
-    def model_post_init(self, __context: Any) -> None:
+    def model_post_init(self, __context: Any, /) -> None:
         if not self.hash:
             data = self.model_dump(mode="json")
             object.__setattr__(self, "hash", _compute_entry_hash(data))
@@ -92,9 +92,9 @@ class AuditEntry(BaseModel):
 
 
 __all__ = [
-    "Actor",
     "AGENT_ACTOR",
     "SYSTEM_ACTOR",
+    "Actor",
     "AuditEntry",
     "AuditEventType",
 ]

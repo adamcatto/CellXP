@@ -21,9 +21,15 @@ interface ArtifactPanelProps {
   artifacts: ArtifactRef[];
   initialArtifactId?: string;
   defaultViewport?: GenomeViewport;
+  onActiveArtifactChange?: (artifactId: string) => void;
 }
 
-export function ArtifactPanel({ artifacts, initialArtifactId, defaultViewport }: ArtifactPanelProps) {
+export function ArtifactPanel({
+  artifacts,
+  initialArtifactId,
+  defaultViewport,
+  onActiveArtifactChange,
+}: ArtifactPanelProps) {
   const [activeId, setActiveId] = useState<string>(
     initialArtifactId ?? artifacts[0]?.id ?? '',
   );
@@ -34,6 +40,10 @@ export function ArtifactPanel({ artifacts, initialArtifactId, defaultViewport }:
       setActiveId(artifacts[artifacts.length - 1].id);
     }
   }, [artifacts, activeId]);
+
+  useEffect(() => {
+    onActiveArtifactChange?.(activeId);
+  }, [activeId, onActiveArtifactChange]);
 
   if (artifacts.length === 0) {
     return (

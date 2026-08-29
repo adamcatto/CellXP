@@ -346,8 +346,23 @@ APPEND_ONLY_TABLES: frozenset[str] = frozenset(
 )
 
 __all__ = [
-    "Base", "User", "WorkspaceSession", "Run", "Message", "Subtask", "Step", "EvidenceItem",
-    "Artifact", "ArtifactEvidence", "GuidePool", "Clarification", "ReviewItem", "RunError", "Macro",
-    "ApiRunState", "ApiRunEvent",
-    "AuditLog", "APPEND_ONLY_TABLES",
+    "APPEND_ONLY_TABLES",
+    "ApiRunEvent",
+    "ApiRunState",
+    "Artifact",
+    "ArtifactEvidence",
+    "AuditLog",
+    "Base",
+    "Clarification",
+    "EvidenceItem",
+    "GuidePool",
+    "Macro",
+    "Message",
+    "ReviewItem",
+    "Run",
+    "RunError",
+    "Step",
+    "Subtask",
+    "User",
+    "WorkspaceSession",
 ]

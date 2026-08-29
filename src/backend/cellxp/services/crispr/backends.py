@@ -11,8 +11,14 @@ import httpx
 from pydantic import BaseModel
 
 from .schemas import (
-    CrisprRequest, CrisprResult, EditOutcomeRequest, EditOutcomeResult, GuideScoringRequest,
-    GuideScoringResult, OffTargetRequest, OffTargetResult,
+    CrisprRequest,
+    CrisprResult,
+    EditOutcomeRequest,
+    EditOutcomeResult,
+    GuideScoringRequest,
+    GuideScoringResult,
+    OffTargetRequest,
+    OffTargetResult,
 )
 
 T = TypeVar("T", bound=BaseModel)
@@ -91,7 +97,7 @@ class DeterministicCrisprBackend:
         return EditOutcomeResult(efficiencies={}, outcome_model="unavailable-offline")
 
 
-def crispr_backend_from_environment():  # noqa: ANN201
+def crispr_backend_from_environment():
     mode = os.getenv("CRISPR_BACKEND", "none").strip().lower()
     if mode == "none":
         return None

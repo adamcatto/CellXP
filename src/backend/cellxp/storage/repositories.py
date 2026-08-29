@@ -13,7 +13,7 @@ and SQLite alike.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -62,13 +62,13 @@ def _iso(value: datetime | None) -> str | None:
     if value is None:
         return None
     if value.tzinfo is None:  # tz-stripping backend (SQLite); CellXP times are UTC
-        value = value.replace(tzinfo=timezone.utc)
+        value = value.replace(tzinfo=UTC)
     return value.isoformat()
 
 
 def _req_iso(value: datetime) -> str:
     """`_iso` for a non-nullable timestamp column — always returns a string."""
-    return _iso(value) or datetime.now(timezone.utc).isoformat()
+    return _iso(value) or datetime.now(UTC).isoformat()
 
 
 def _dump(model: Any) -> dict[str, Any] | None:
@@ -113,7 +113,7 @@ class StateRepository:
             budget=_dump(state.get("budget")),
             final_report=_dump(state.get("final_report")),
             normalized_inputs=_dump(state.get("normalized_inputs")),
-            created_at=_parse_dt(state.get("created_at")) or datetime.now(timezone.utc),
+            created_at=_parse_dt(state.get("created_at")) or datetime.now(UTC),
         )
         self.session.merge(run)
 

@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import httpx
 import pytest
-
 from cellxp.services.crispr import (
-    DeterministicCrisprBackend, GuideScoringRequest, HttpCrisprBackend, OffTargetRequest,
+    DeterministicCrisprBackend,
+    GuideScoringRequest,
+    HttpCrisprBackend,
+    OffTargetRequest,
 )
 
 
@@ -40,7 +42,7 @@ def test_deterministic_scoring_is_stable_and_rejects_ambiguous_dna() -> None:
         backend.score_on_target(request.model_copy(update={"guides": ["NNNNNNNNNNNNNNNNNNNN"]}))
 
 
-def test_environment_selection_requires_url(monkeypatch) -> None:  # noqa: ANN001
+def test_environment_selection_requires_url(monkeypatch) -> None:
     from cellxp.services.crispr.backends import crispr_backend_from_environment
 
     monkeypatch.setenv("CRISPR_BACKEND", "http")

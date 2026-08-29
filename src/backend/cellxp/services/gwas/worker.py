@@ -10,11 +10,20 @@ from fastapi import FastAPI, HTTPException
 from cellxp.storage.object_store import object_store_from_url
 
 from .schemas import (
-    ColocBatchResult, ColocRequest, FineMapRequest, FineMapResult, GwasRequest, GwasResult,
-    LdRequest, LdResult,
+    ColocBatchResult,
+    ColocRequest,
+    FineMapRequest,
+    FineMapResult,
+    GwasRequest,
+    GwasResult,
+    LdRequest,
+    LdResult,
 )
 from .worker_backend import (
-    ExternalStatisticalEngine, GWAS_WORKER_REVISION, GwasWorkerBackend, GwasWorkerConfig,
+    GWAS_WORKER_REVISION,
+    ExternalStatisticalEngine,
+    GwasWorkerBackend,
+    GwasWorkerConfig,
 )
 
 app = FastAPI(title="CellXP GWAS statistical worker", version=GWAS_WORKER_REVISION)
@@ -38,13 +47,13 @@ def ready() -> dict[str, str]:
     try:
         engine = get_backend().engine
         if not isinstance(engine, ExternalStatisticalEngine):
-            raise RuntimeError("production worker requires ExternalStatisticalEngine")
+            raise RuntimeError("production worker requires ExternalStatisticalEngine")  # noqa: TRY004
         return engine.readiness()
     except (RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
-def _execute(call):  # noqa: ANN001, ANN202
+def _execute(call):
     try:
         return call()
     except (RuntimeError, ValueError, KeyError) as exc:

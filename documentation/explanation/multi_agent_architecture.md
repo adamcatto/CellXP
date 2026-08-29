@@ -2,28 +2,28 @@
 
 > Status: Draft v0.1. Explains the **multi-agent** design of CellXP: who the agents are,
 > how they're layered, how they communicate, and when work is delegated to isolated sub-agents.
-> Structural contract: `specs/agent/graph_spec.md`; rationale for LangGraph: `why_langgraph.md`;
-> implementation guidance: `.agents/guidelines/{langgraph,deepagents}.md`.
+> Structural contract: `specs/agent/skill_plugin_contract.md`; harness decision: ADR-0008.
+> `specs/agent/graph_spec.md` documents the compatibility workflow during migration.
 
 ## 1. It's a hierarchy, not a swarm
 
-CellXP is a **hierarchical, supervisor-led multi-agent system** (ADR-0002), not a free-for-
-all of peer agents negotiating. One **supervisor** owns the run; specialized agents do bounded work
-and return structured results into shared state. This keeps the system auditable (one trace, one
-state) while still getting the benefits of specialization and context isolation.
+CellXP is a **hierarchical, harness-led multi-agent system** (ADR-0008), not a free-for-all of peer
+agents negotiating. One mature harness adapter owns a turn; specialized skills and sub-agents do
+bounded work through the policy kernel and return structured results into canonical run state. This
+keeps the system auditable (one trace, one policy boundary) while preserving specialization and
+context isolation.
 
 Three layers:
 
 | Layer | Agent(s) | Role | Implemented as |
 |---|---|---|---|
-| **L1 Supervisor** | the orchestrator | understand → plan → route → integrate → review → report | top-level LangGraph (`agent/graph.py`) |
-| **L2 Capability agents** | `variant_effect`, `gwas`, `crispr`, `annotation`, `binding`, `structure`, `origami`, `rag`, `visualization` | execute one domain capability end-to-end | LangGraph **subgraphs** (`agent/subgraphs/*`, `capability-subgraphs/*`) |
-| **L3 Isolated sub-agents** | research, optimization, design-search workers | deep, token-heavy subtasks that would pollute the main context | **deepagents `task` sub-agents** (spawned on demand) |
+| **L1 Harness** | planner/orchestrator | understand → plan → select skills → integrate → report | `HarnessAdapter` (Qwen Code first) |
+| **L2 Skills/workflows** | `variant_effect`, `gwas`, `crispr`, `annotation`, `binding`, `structure`, `origami`, `rag`, `visualization` | execute one typed domain capability end-to-end | `SkillPlugin` over services; graph wrappers are temporary |
+| **L3 Isolated sub-agents** | research, coding, optimization, design-search workers | deep, token-heavy subtasks that would pollute parent context | harness-native sandboxed sub-agents |
 
-The supervisor itself is composed of **reasoning roles** that are effectively cooperating agents
-sharing one state: `intent_classifier`, `risk_classifier`, `entity_resolver`, `planner`, `critic`,
-`report_generator` (`specs/agent/nodes/*`). They are distinct prompts/personas with distinct jobs,
-which is why we treat the supervisor as a small society rather than a single monolithic prompt.
+The harness can use distinct **reasoning roles** (risk, entity resolution, planning, critique,
+reporting), but each deterministic or policy-sensitive operation is a typed skill/hook rather than
+an invisible prompt convention.
 
 ## 2. Why multi-agent (vs one big prompt)
 
@@ -40,14 +40,14 @@ which is why we treat the supervisor as a small society rather than a single mon
 
 ## 3. Communication & coordination
 
-- **Shared state is the bus.** Agents do not message each other ad hoc; they read/write the single
-  `AgentState` (`state_schema.md`). The supervisor coordinates by reading capability outputs
-  (`evidence`, `artifacts`, `Subtask.status`) and deciding the next move.
+- **Canonical results are the bus.** Agents do not message each other with raw transcripts; skills
+  publish Steps, evidence, artifacts, statuses, and handles to the run store. The harness receives
+  only bounded projections and decides the next move.
 - **Subtask DAG is the contract.** The planner expresses cooperation as a `Subtask` DAG with
   `depends_on`; `task_selector` dispatches ready subtasks and loops until done
   (`graph_spec.md` §3, `nodes/task_selector.md`).
 - **Isolated sub-agents return summaries, not transcripts.** An L3 sub-agent gets a scoped brief +
-  scratchpad (a deepagents virtual-filesystem path), does its work, and writes back a compact result
+  sandboxed scratchpad, does its work, and writes back a compact result
   (evidence items + an artifact/file reference). The supervisor never ingests the sub-agent's full
   intermediate reasoning — only its conclusions and provenance.
 
@@ -67,33 +67,32 @@ Do **not** spawn a sub-agent for a single deterministic model call — that's a 
 
 ## 5. Models behind the agents
 
-- The **reasoning** layers (L1 supervisor roles, L3 sub-agents) run on the agent's reasoning LLM
-  (default Gemma 4 4B via Ollama; `specs/services/llm_service.md`), with optional per-role model
-  overrides (a stronger model for `planner`, a cheaper one for `report_writer`).
+- The **reasoning** layers (L1 harness roles, L3 sub-agents) run on the agent's reasoning LLM. The
+  capable-GPU quality target is Qwen3.8-27B through a local OpenAI-compatible endpoint; modest
+  hardware retains a smaller explicit profile (`specs/services/llm_service.md`).
 - The **capability** agents (L2) are mostly **orchestrators of domain foundation models**
   (AlphaGenome, Evo 2, ESMFold, Boltz-2, …; `external_models_and_services.md`) — those models are
   tools, not agents. A capability agent's "intelligence" is mostly its pipeline + the reasoning LLM
   for glue/interpretation.
 
-## 6. Relationship to deepagents
+## 6. Relationship to mature harnesses
 
-We use **LangGraph** for the explicit, audited top-level graph (we need precise control of the
-safety-first ordering and the review gate). We use **deepagents** as the **harness for sub-agents**:
-its built-in planning (`write_todos`), virtual **filesystem** (offload/scratchpad), **sub-agent
-spawning** (`task`), and **context compaction** are exactly what L3 work needs, without us
-reinventing them. The two compose cleanly — deepagents is itself built on LangGraph
-(`.agents/guidelines/deepagents.md`).
+Qwen Code is the first adapter target because it already supplies planning, code/file tools, skills,
+sub-agents, memory/compaction, hooks, MCP, sessions, and local OpenAI-compatible providers. Those
+features remain behind `HarnessAdapter`; CellXP's external policy kernel controls biological tool
+execution and actionable release. Deepagents, Prime Agent, Hermes, and other harnesses remain useful
+comparison implementations, not dependencies of domain capabilities.
 
 ## 7. Open questions
 
-- How much of the L1 supervisor should migrate onto deepagents middleware vs stay hand-rolled
-  LangGraph? (Current lean: keep L1 explicit, use deepagents for L2-heavy/L3.)
-- Should capability agents be allowed to spawn their own sub-agents, or only the supervisor?
+- Qwen Code SDK vs headless stream protocol vs daemon transport for the production adapter.
+- Which skill kinds may spawn sub-agents, and under which nested budgets?
 - Cross-session "manager" agent for long-running projects (see `specs/agent/session_types.md`).
 
 ## 8. Related
 
-`specs/agent/graph_spec.md` · `why_langgraph.md` · `harness_and_context_engineering.md` ·
+`specs/agent/skill_plugin_contract.md` · `specs/agent/graph_spec.md` ·
+`harness_and_context_engineering.md` ·
 `specs/agent/session_types.md` · `specs/agent/control-flow/*` ·
-`.agents/guidelines/{langgraph,deepagents,langchain,langsmith}.md` ·
+ADR-0008 ·
 `documentation/reference/external_models_and_services.md`.

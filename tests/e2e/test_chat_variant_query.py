@@ -3,10 +3,9 @@
 import json
 
 import pytest
-from fastapi.testclient import TestClient
-
 from cellxp.api.main import app
 from cellxp.api.runtime import runtime
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture(autouse=True)

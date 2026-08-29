@@ -21,8 +21,14 @@ from cellxp.domain.evidence import Confidence, Provenance
 from cellxp.storage.object_store import ObjectStore
 
 from .schemas import (
-    ColocBatchResult, ColocRequest, FineMapRequest, FineMapResult, GwasRequest, GwasResult,
-    LdRequest, LdResult,
+    ColocBatchResult,
+    ColocRequest,
+    FineMapRequest,
+    FineMapResult,
+    GwasRequest,
+    GwasResult,
+    LdRequest,
+    LdResult,
 )
 
 PLINK_VERSION = "2.00a6.9"
@@ -51,7 +57,7 @@ class GwasWorkerConfig:
     expected_revision: str = GWAS_WORKER_REVISION
 
     @classmethod
-    def from_env(cls) -> "GwasWorkerConfig":
+    def from_env(cls) -> GwasWorkerConfig:
         timeout = int(os.getenv("GWAS_WORKER_TIMEOUT_SECONDS", "1800"))
         if timeout < 1:
             raise ValueError("GWAS_WORKER_TIMEOUT_SECONDS must be positive")
@@ -96,8 +102,10 @@ class ExternalStatisticalEngine:
             raise RuntimeError(f"PLINK version drift: expected {PLINK_VERSION}")
         r_versions = self._capture([
             self.config.rscript_executable, "-e",
-            "cat(as.character(packageVersion('susieR')), '+', "
-            "as.character(packageVersion('coloc')), sep='')",
+            (
+                "cat(as.character(packageVersion('susieR')), '+', "
+                "as.character(packageVersion('coloc')), sep='')"
+            ),
         ])
         if r_versions.strip() != f"{SUSIER_VERSION}+{COLOC_VERSION}":
             raise RuntimeError(
@@ -239,7 +247,7 @@ class GwasWorkerBackend:
         result = self.engine.coloc(request)
         return self._persist(result, "coloc")
 
-    def _persist(self, result, operation: str):  # noqa: ANN001, ANN202
+    def _persist(self, result, operation: str):
         payload = result.model_dump_json(exclude={"storage_ref", "locus_plot_ref"}).encode()
         ref = self.store.put(payload, content_type="application/json")
         provenance = result.provenance.model_copy(update={"output_ref": ref.key,

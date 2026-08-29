@@ -16,7 +16,7 @@ from __future__ import annotations
 import enum
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TypeVar
 
 from sqlalchemy import JSON, DateTime, Enum, Uuid, create_engine
@@ -36,7 +36,7 @@ UuidArray = JSON().with_variant(ARRAY(Uuid(as_uuid=False)), "postgresql")
 
 def utc_now() -> datetime:
     """Timezone-aware UTC now — the Python-side default for `created_at`/domain timestamps."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def pg_enum(enum_cls: type[_E]) -> Enum:
